@@ -2,6 +2,8 @@ package pizdecrp.MCAI.bot;
 
 import com.github.steveice10.mc.protocol.data.game.ClientRequest;
 import com.github.steveice10.mc.protocol.packet.ingame.client.ClientRequestPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerActionPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerPositionRotationPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.world.ClientTeleportConfirmPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerChatPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerJoinGamePacket;
@@ -17,7 +19,9 @@ import com.github.steveice10.packetlib.event.session.SessionAdapter;
 import com.github.steveice10.mc.protocol.data.game.chunk.BlockStorage;
 import com.github.steveice10.mc.protocol.data.game.chunk.Column;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
+import com.github.steveice10.mc.protocol.data.game.entity.player.PlayerAction;
 import com.github.steveice10.mc.protocol.data.game.world.block.BlockChangeRecord;
+import com.github.steveice10.mc.protocol.data.game.world.block.BlockFace;
 import com.github.steveice10.mc.protocol.data.game.world.block.BlockState;
 
 import java.io.FileNotFoundException;
@@ -28,7 +32,7 @@ import world.ChunkCoordinates;
 public class SessionListener extends SessionAdapter {
     private final Bot client;
     static int exline = -1;
-    private HashMap<ChunkCoordinates, Column> columns = new HashMap<>();
+    private static HashMap<ChunkCoordinates, Column> columns = new HashMap<>();
     private boolean movelocked = false;
 
     public SessionListener(Bot client) {
@@ -36,109 +40,265 @@ public class SessionListener extends SessionAdapter {
     }
         
     public void walkTo(Position pos) {
-		BotU.teleport(client, pos);
-    	/*new Thread(() -> {
-	    	for (int o = (int)client.getPosX(); o < pos.getX(); o++) {
-	    		int x = (int)client.getPosX();
-	    		int y = (int)client.getPosY();
-	    		int z = (int)client.getPosZ();
-	    		if (!botCanWalkAt(new Position(x+1,y,z))) {
-	    			
-	    		} else if (blockIsEmpty(getblockid(x+1,y-1,z))) {
-	    			BotU.walk(client, 1, "x");
-	    			ThreadU.sleep(100);
-	    			BotU.move(client, -1, "y");
-	    		} else if (blockIsEmpty(getblockid(x+1,y,z)))  {
-	    			BotU.walk(client, 1, "x");
-	    		} else {
-	    			BotU.jump(client, 1, "x");
-	    		}
-	    	}
-    	}).start();*/
-    	/*
-		// ----------------x----------------
-		double raznicaX = pos.getX() - client.getPosX();
-		if (raznicaX > 0) {
-			for (int i=(int)client.getPosX(); i <= pos.getX(); i++) {
-				if (getblockid(new Position(pos.getX()+1,pos.getY(),pos.getZ())) != 0) {
-					setmovelocked(true);
-					BotU.jump(client, 1, "x");
-					setmovelocked(false);
-				} else if (getblockid(new Position(pos.getX()+1,pos.getY()-1,pos.getZ())) != 0) {
-					setmovelocked(true);
-					BotU.move(client, 1, "x");
-					ThreadU.sleep(10);
-					BotU.move(client, -1, "y");
+    	setmovelocked(true);
+    	//---------------------x-------------------
+    	double raznicax = pos.getX()-client.getPosX();
+    	if (raznicax > 0) {
+			for(double o = client.getPosX(); o < pos.getX() ;o++) {
+				if ((int) Math.floor(client.getPosX()) == (int) Math.floor(pos.getX())) break;
+				if (botCanWalkAt(client.getPosX()+1,client.getPosY(),client.getPosZ())) {
+					if (blockIsEmpty(getblockid(client.getPosX()+1,client.getPosY()-1,client.getPosZ()))) {
+						if (blockIsEmpty(getblockid(client.getPosX()+2,client.getPosY()-1,client.getPosZ()))) {
+							if (blockIsEmpty(getblockid(client.getPosX()+3,client.getPosY()-1,client.getPosZ()))) {
+								if (blockIsEmpty(getblockid(client.getPosX()+4,client.getPosY()-1,client.getPosZ()))) {
+									if (blockIsEmpty(getblockid(client.getPosX()+5,client.getPosY()-1,client.getPosZ()))) {
+										if (blockIsEmpty(getblockid(client.getPosX()+1,client.getPosY()-1,client.getPosZ())) && !blockIsEmpty(getblockid(client.getPosX()+1,client.getPosY()-2,client.getPosZ()))) {
+											BotU.teleport(client, 1, -1, 0);
+											ThreadU.sleep(250);
+										} else {
+											log("passed with client x:"+client.getPosX()+" y:"+client.getPosY()+" and tested pos x:"+client.getPosX()+5+" y:"+(int) (client.getPosY()-1)+"/");
+											ThreadU.sleep(100);
+										}
+									} else {
+										BotU.jump(client, 5, "x");
+										o += 4;
+										ThreadU.sleep(100);
+									}
+								} else {
+									BotU.jump(client, 4, "x");
+									o+=3;
+									ThreadU.sleep(100);
+								}
+							} else {
+								BotU.jump(client, 3, "x");
+								o+=2;
+								ThreadU.sleep(100);
+							}
+						} else {
+							BotU.jump(client, 2, "x");
+							o++;
+							ThreadU.sleep(100);
+						}
+					} else {
+						BotU.walk(client, 1, "x");
+						ThreadU.sleep(100);
+					}
 				} else {
-					BotU.move(client, 1, "x");
+					if (botCanWalkAt(client.getPosX()+1,client.getPosY()+1,client.getPosZ())) {
+						BotU.teleport(client, 1, 1, 0);
+						ThreadU.sleep(250);
+					} else {
+						log("obozhe x");
+					}
 				}
-				ThreadU.sleep(250);
 			}
-		} else if (raznicaX == 0) {
-			//pass
-		} else if (raznicaX < 0) {
-			for (int i=Math.abs((int)client.getPosX()); i <= Math.abs(pos.getX()); i++) {
-				if (getblockid(new Position(pos.getX()-1,pos.getY(),pos.getZ())) != 0) {
-					setmovelocked(true);
-					BotU.jump(client, -1, "x");
-					setmovelocked(false);
-				} else if (getblockid(new Position(pos.getX()-1,pos.getY()-1,pos.getZ())) != 0) {
-					setmovelocked(true);
-					BotU.move(client, -1, "x");
-					ThreadU.sleep(10);
-					BotU.move(client, -1, "y");
+    	} else if (raznicax == 0) {
+    		//pass
+		} else {
+			for(double o = client.getPosX(); o > pos.getX() ;o++) {
+				if ((int) Math.floor(client.getPosX()) == (int) Math.floor(pos.getX())) break;
+				if (botCanWalkAt(client.getPosX()-1,client.getPosY(),client.getPosZ())) {
+					if (blockIsEmpty(getblockid(client.getPosX()-1,client.getPosY()-1,client.getPosZ()))) {
+						if (blockIsEmpty(getblockid(client.getPosX()-2,client.getPosY()-1,client.getPosZ()))) {
+							if (blockIsEmpty(getblockid(client.getPosX()-3,client.getPosY()-1,client.getPosZ()))) {
+								if (blockIsEmpty(getblockid(client.getPosX()-4,client.getPosY()-1,client.getPosZ()))) {
+									if (blockIsEmpty(getblockid(client.getPosX()-5,client.getPosY()-1,client.getPosZ()))) {
+										if (blockIsEmpty(getblockid(client.getPosX()-1,client.getPosY()-1,client.getPosZ())) && !blockIsEmpty(getblockid(client.getPosX()-1,client.getPosY()-2,client.getPosZ()))) {
+											BotU.teleport(client, -1, -1, 0);
+											ThreadU.sleep(250);
+										} else {
+											log("passed with client x:"+client.getPosX()+" y:"+client.getPosY()+" and tested pos (broken(-10)x:"+client.getPosX()+5+" y:"+(int) (client.getPosY()-1)+"/");
+											ThreadU.sleep(100);
+										}
+									} else {
+										BotU.jump(client, -5, "x");
+										o += 4;
+										ThreadU.sleep(100);
+									}
+								} else {
+									BotU.jump(client, -4, "x");
+									o+=3;
+									ThreadU.sleep(100);
+								}
+							} else {
+								BotU.jump(client, -3, "x");
+								o+=2;
+								ThreadU.sleep(100);
+							}
+						} else {
+							BotU.jump(client, -2, "x");
+							o++;
+							ThreadU.sleep(100);
+						}
+					} else {
+						BotU.walk(client, -1, "x");
+						ThreadU.sleep(100);
+					}
 				} else {
-					BotU.move(client, -1, "x");
+					if (botCanWalkAt(client.getPosX()-1,client.getPosY()+1,client.getPosZ())) {
+						BotU.teleport(client, -1, 1, 0);
+						ThreadU.sleep(250);
+					} else {
+						log("obozhe x");
+					}
 				}
-				ThreadU.sleep(250);
 			}
 		}
-		
-		//-----------------z------------------
-		double raznicaZ = pos.getZ() - client.getPosZ();
-		if (raznicaZ > 0) {
-			for (int i=(int)client.getPosZ(); i <= pos.getZ(); i++) {
-				if (getblockid(new Position(pos.getX(),pos.getY(),pos.getZ()+1)) != 0) {
-					setmovelocked(true);
-					BotU.jump(client, 1, "z");
-					setmovelocked(false);
-				} else if (getblockid(new Position(pos.getX(),pos.getY()-1,pos.getZ()+1)) != 0) {
-					setmovelocked(true);
-					BotU.move(client, 1, "z");
-					ThreadU.sleep(10);
-					BotU.move(client, -1, "y");
+    	
+    	//---------------------z-------------------
+    	
+    	double raznicaz = pos.getZ() - client.getPosZ();
+    	
+    	if (raznicaz > 0) {
+			for(double o = client.getPosZ(); o < pos.getZ() ;o++) {
+				if ((int) Math.floor(client.getPosZ()) == (int) Math.floor(pos.getZ())) break;
+				if (botCanWalkAt(client.getPosX(),client.getPosY(),client.getPosZ()+1)) {
+					if (blockIsEmpty(getblockid(client.getPosX(),client.getPosY()-1,client.getPosZ()+1))) {
+						if (blockIsEmpty(getblockid(client.getPosX(),client.getPosY()-1,client.getPosZ()+2))) {
+							if (blockIsEmpty(getblockid(client.getPosX(),client.getPosY()-1,client.getPosZ()+3))) {
+								if (blockIsEmpty(getblockid(client.getPosX(),client.getPosY()-1,client.getPosZ()+4))) {
+									if (blockIsEmpty(getblockid(client.getPosX(),client.getPosY()-1,client.getPosZ()+5))) {
+										if (blockIsEmpty(getblockid(client.getPosX(),client.getPosY()-1,client.getPosZ()+1)) && !blockIsEmpty(getblockid(client.getPosX(),client.getPosY()-2,client.getPosZ()+1))) {
+											BotU.teleport(client, 0, -1, 1);
+											ThreadU.sleep(250);
+										} else {
+											log("passed with client z:"+client.getPosZ()+" y:"+client.getPosY()+" and tested pos z:"+client.getPosZ()+5+" y:"+(int) (client.getPosY()-1)+"/");
+											ThreadU.sleep(100);
+										}
+									} else {
+										BotU.jump(client, 5, "z");
+										o += 4;
+										ThreadU.sleep(100);
+									}
+								} else {
+									BotU.jump(client, 4, "z");
+									o+=3;
+									ThreadU.sleep(100);
+								}
+							} else {
+								BotU.jump(client, 3, "z");
+								o+=2;
+								ThreadU.sleep(100);
+							}
+						} else {
+							BotU.jump(client, 2, "z");
+							o++;
+							ThreadU.sleep(100);
+						}
+					} else {
+						BotU.walk(client, 1, "z");
+						ThreadU.sleep(100);
+					}
 				} else {
-					BotU.move(client, 1, "z");
+					if (botCanWalkAt(client.getPosX(),client.getPosY()+1,client.getPosZ()+1)) {
+						BotU.teleport(client, 0, 1, 1);
+						ThreadU.sleep(250);
+					} else {
+						log("obozhe z");
+					}
 				}
-				ThreadU.sleep(250);
 			}
-		} else if (raznicaZ == 0) {
-			//pass
-		} else if (raznicaZ < 0) {
-			for (int i=Math.abs((int)client.getPosZ()); i <= Math.abs(pos.getZ()); i++) {
-				if (getblockid(new Position(pos.getX(),pos.getY(),pos.getZ()-1)) != 0) {
-					setmovelocked(true);
-					BotU.jump(client, -1, "z");
-					setmovelocked(false);
-				} else if (getblockid(new Position(pos.getX(),pos.getY()-1,pos.getZ()-1)) != 0) {
-					setmovelocked(true);
-					BotU.move(client, -1, "z");
-					ThreadU.sleep(10);
-					BotU.move(client, -1, "y");
+    	} else if (raznicaz == 0) {
+    		//pass
+		} else {
+			for(double o = client.getPosZ(); o < pos.getZ() ;o++) {
+				if ((int) Math.floor(client.getPosZ()) == (int) Math.floor(pos.getZ())) break;
+				if (botCanWalkAt(client.getPosX(),client.getPosY(),client.getPosZ()-1)) {
+					if (blockIsEmpty(getblockid(client.getPosX(),client.getPosY()-1,client.getPosZ()-1))) {
+						if (blockIsEmpty(getblockid(client.getPosX(),client.getPosY()-1,client.getPosZ()-2))) {
+							if (blockIsEmpty(getblockid(client.getPosX(),client.getPosY()-1,client.getPosZ()-3))) {
+								if (blockIsEmpty(getblockid(client.getPosX(),client.getPosY()-1,client.getPosZ()-4))) {
+									if (blockIsEmpty(getblockid(client.getPosX(),client.getPosY()-1,client.getPosZ()-5))) {
+										if (blockIsEmpty(getblockid(client.getPosX(),client.getPosY()-1,client.getPosZ()-1)) && !blockIsEmpty(getblockid(client.getPosX(),client.getPosY()-2,client.getPosZ()-1))) {
+											BotU.teleport(client, 0, -1, 1);
+											ThreadU.sleep(250);
+										} else {
+											log("passed with client z:"+client.getPosZ()+" y:"+client.getPosY()+" and tested pos z:"+client.getPosZ()+5+" y:"+(int) (client.getPosY()-1)+"/");
+											ThreadU.sleep(100);
+										}
+									} else {
+										BotU.jump(client, -5, "z");
+										o += 4;
+										ThreadU.sleep(100);
+									}
+								} else {
+									BotU.jump(client, -4, "z");
+									o+=3;
+									ThreadU.sleep(100);
+								}
+							} else {
+								BotU.jump(client, -3, "z");
+								o+=2;
+								ThreadU.sleep(100);
+							}
+						} else {
+							BotU.jump(client, -2, "z");
+							o++;
+							ThreadU.sleep(100);
+						}
+					} else {
+						BotU.walk(client, -1, "z");
+						ThreadU.sleep(100);
+					}
 				} else {
-					BotU.move(client, -1, "z");
+					if (botCanWalkAt(client.getPosX(),client.getPosY()+1,client.getPosZ()-1)) {
+						BotU.teleport(client, 0, 1, -1);
+						ThreadU.sleep(250);
+					} else {
+						log("obozhe z");
+					}
 				}
-				ThreadU.sleep(250);
 			}
-		}*/
+		}
+    	
+    	//---------------------y-------------------
+    	setmovelocked(false);
+    	
+    	if (client.getPosY() != pos.getY()) {
+    		if (client.getPosY() > pos.getY()) {
+    			while (true) {
+    				if (client.getPosY() == pos.getY()) {
+    					break;
+    				} else {
+    					Position bpos = new Position((int)client.getPosX(),(int)client.getPosY()-1,(int)client.getPosZ());
+    					BotU.mineBlock(client, bpos);
+    					while (true) {
+    						if (blockIsEmpty(getblockid(bpos))) {
+    							//client.getSession().send(new ClientPlayerActionPacket(PlayerAction.CANCEL_DIGGING, bpos, BlockFace.UP));
+    							BotU.teleport(client, 0, -1, 0);
+    							break;
+    						} else {
+    							ThreadU.sleep(100);
+    						}
+    					}
+    				}
+    			}
+    		} else {
+	    		if (blockIsEmpty(blockUpwBot())) {
+	    			
+	    		}
+    		}
+    	}
+    	
+    	if ((int)client.getPosX() != pos.getX()) {
+    		walkTo(pos);
+    		ThreadU.sleep(500);
+    	} else if ((int)client.getPosY() != pos.getY()) {
+    		walkTo(pos);
+    		ThreadU.sleep(500);
+    	} else if ((int)client.getPosZ() != pos.getZ()) {
+    		walkTo(pos);
+    		ThreadU.sleep(500);
+    	} else {/*pass*/}
 	}
+    
     
     public boolean botCanWalkAt(Position pos) {
     	return blockIsEmpty(getblockid(pos.getX(),pos.getY(),pos.getZ())) && blockIsEmpty(getblockid(pos.getX(),pos.getY()+1,pos.getZ()));
     }
     
-    public void mineBlock (int blockid) {
-    	
+    public boolean botCanWalkAt(double x, double y, double z) {
+    	return botCanWalkAt(new Position((int)x,(int)y,(int)z));
     }
     
     public boolean blockIsEmpty(int bid) {
@@ -183,7 +343,7 @@ public class SessionListener extends SessionAdapter {
     public int getblockid (Position pos) {
     	try {
 	    	BlockState block = getBlock(pos);
-	    	if (block == null) log("СЕРВЕР ГОВНО, НЕ ПЕРЕДАЕТ ДАННЫЕ О ЧАНКАХ");
+	    	if (block == null) log("cant get block id");
 	    	int blockid = block.getId();
 			return (int) blockid;
     	} catch (Exception e) {
@@ -192,10 +352,10 @@ public class SessionListener extends SessionAdapter {
 		}
     }
     
-    public int getblockid (int x,int y,int z) {
+    public int getblockid (double x,double y,double z) {
     	try {
-	    	BlockState block = getBlock(new Position(x,y,z));
-	    	if (block == null) log("СЕРВЕР ГОВНО, НЕ ПЕРЕДАЕТ ДАННЫЕ О ЧАНКАХ");
+	    	BlockState block = getBlock(new Position((int)x,(int)y,(int)z));
+	    	if (block == null) log("cant get block id");
 	    	int blockid = block.getId();
 			return (int) blockid;
     	} catch (Exception e) {
@@ -205,7 +365,13 @@ public class SessionListener extends SessionAdapter {
     }
     
     public int blockUnderBot() {
-    	Position pos = new Position((int)client.getPosX(),(int)client.getPosY() - 1,(int)client.getPosZ());
+    	Position pos = new Position((int) Math.floor(client.getPosX()),(int)Math.floor(client.getPosY()) - 1,(int)Math.floor(client.getPosZ()));
+    	int id = getblockid(pos);
+    	return id;
+    }
+    
+    public int blockUpwBot() {
+    	Position pos = new Position((int) Math.floor(client.getPosX()),(int)Math.floor(client.getPosY()) + 2,(int)Math.floor(client.getPosZ()));
     	int id = getblockid(pos);
     	return id;
     }
@@ -215,22 +381,17 @@ public class SessionListener extends SessionAdapter {
         if (receiveEvent.getPacket() instanceof ServerJoinGamePacket) {
         	System.out.println("(" + client.getGameProfile().getName() + ") Подрубился.");
         	ThreadU.sleep(1000);
-        	new Thread(() -> {
+        	Thread t = new Thread(() -> {
         		ThreadU.sleep(2000);
             	while (true) {
             		if (client.isOnline()) {
             			if (blockUnderBot() == 0 && !getmovelocked()) {
-							BotU.move(client, -0.25, "y");
-							ThreadU.sleep(5);
-							BotU.move(client, -0.25, "y");
-							ThreadU.sleep(5);
-							BotU.move(client, -0.25, "y");
-							ThreadU.sleep(5);
-							BotU.move(client, -0.25, "y");
-							ThreadU.sleep(5);
+							BotU.teleport(client, 0, -1, 0);
+							ThreadU.sleep(86);
             			} else if (!getmovelocked() && client.getPosY() > (int)client.getPosY()) {
-            				BotU.teleport(client, new Position((int)(client.getPosX()+0.5),(int)client.getPosY(),(int)(client.getPosZ()+0.5)));
-            				
+            				int xx = (int)client.getPosX();
+            				int zz = (int)client.getPosZ();
+            				BotU.setposto(client, xx+0.5,(int)client.getPosY(),zz+0.5);
             			} else {
             				ThreadU.sleep(500);
             			}
@@ -239,18 +400,26 @@ public class SessionListener extends SessionAdapter {
             		}
             		
             	}
-            }).start();
+            });
+        	t.start();
         }  else if (receiveEvent.getPacket() instanceof ServerChatPacket) {
-        	Position pos = new Position((int)client.getPosX()+10,(int)client.getPosY(),(int)client.getPosZ());
-            walkTo(pos);
+        	//BotU.chat(client, "пидорас, ну ладно сука");
+        	//Position pos = new Position((int)client.getPosX()+28,(int)client.getPosY(),(int)client.getPosZ()+28);
+            //walkTo(pos);
+        	BotU.mineBlock(client, new Position((int)client.getPosX(),((int)client.getPosY())-1,(int)client.getPosZ()));
             
         } else if (receiveEvent.getPacket() instanceof ServerPlayerPositionRotationPacket) {
             ServerPlayerPositionRotationPacket packet = receiveEvent.getPacket();
             client.setPosX(packet.getX());
             client.setPosY(packet.getY());
             client.setPosZ(packet.getZ());
-            log("pos packet received x:"+packet.getX()+" y:"+packet.getY()+" z:"+packet.getZ());
+            client.setYaw(packet.getYaw());
+			client.setPitch(packet.getPitch());
+            log("pos packet received x:"+packet.getX()+" y:"+packet.getY()+" z:"+packet.getZ()+" yaw:"+packet.getYaw()+" pitch:"+packet.getPitch());
             client.getSession().send(new ClientTeleportConfirmPacket(packet.getTeleportId()));
+            client.getSession().send(new ClientPlayerPositionRotationPacket(
+            		true, client.getPosX(), client.getPosY(),client.getPosZ(),client.getYaw(), client.getPitch()
+            		));
             client.getSession().send(new ClientRequestPacket(ClientRequest.STATS));
         } else if (receiveEvent.getPacket() instanceof ServerPlayerHealthPacket) {
             if (((ServerPlayerHealthPacket) receiveEvent.getPacket()).getHealth() < 1) {
@@ -292,14 +461,18 @@ public class SessionListener extends SessionAdapter {
 		}
     }
     
-    public BlockState getBlock(Position pos) {
+    public static BlockState getBlock(Position pos) {
     	try {
-			ChunkCoordinates coords = new ChunkCoordinates((int) Math.floor(pos.getX() / 16.0), (int) Math.floor(pos.getZ() / 16.0));
+    		int cx = (int)Math.floor(pos.getX()/16.0);
+    		int cy = (int)Math.floor(pos.getY()/16.0);
+    		int cz = (int)Math.floor(pos.getZ()/16.0);
+    		//log("chunk pos x "+cx+" z "+cz+" y "+cy);
+			ChunkCoordinates coords = new ChunkCoordinates(cx, cz);
 			Column c = columns.get(coords);
 			if (c == null) {
 				return null;
 			}
-			int yPos = (int) Math.floor(pos.getY() / 16.0);
+			int yPos = cy;
 			BlockStorage blocks = c.getChunks()[yPos].getBlocks();
 			int xb = pos.getX() % 16;
 			int yb = pos.getY() % 16;
@@ -310,6 +483,7 @@ public class SessionListener extends SessionAdapter {
 			if (zb < 0) {
 				zb = 16 - zb;
 			}
+			//log("x "+xb+" z "+zb+" y "+yb);
 			return blocks.get(xb, yb, zb);
     	} catch (Exception e) {
     		e.printStackTrace();
@@ -343,4 +517,8 @@ public class SessionListener extends SessionAdapter {
     public boolean getmovelocked() {
     	return movelocked;
     }
+
+    public static BlockState getBlock(EntityLocation loc) {
+		return getBlock(new Position((int)loc.getX(), (int)loc.getY(), (int)loc.getZ()));
+	}
 }

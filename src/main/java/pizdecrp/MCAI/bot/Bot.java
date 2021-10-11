@@ -24,6 +24,8 @@ public class Bot {
     private double posX;
     private double posY;
     private double posZ;
+    private float yaw;
+    private float pitch;
 
     public Bot(MinecraftProtocol account, String host, int port, Proxy proxy) {
         this.account = account;
@@ -94,4 +96,20 @@ public class Bot {
     public int getPort() {
         return port;
     }
+
+	public float getYaw() {
+		return yaw;
+	}
+
+	public void setYaw(float yaw) {
+		this.yaw = yaw;
+	}
+
+	public float getPitch() {
+		return pitch;
+	}
+
+	public void setPitch(float pitch) {
+		this.pitch = pitch;
+	}
 }
