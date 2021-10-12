@@ -39,7 +39,7 @@ public class SessionListener extends SessionAdapter {
         this.client = client;
     }
         
-    public void walkTo(Position pos) {
+    public boolean walkTo(Position pos) {
     	setmovelocked(true);
     	//---------------------x-------------------
     	double raznicax = pos.getX()-client.getPosX();
@@ -201,8 +201,9 @@ public class SessionListener extends SessionAdapter {
     	} else if (raznicaz == 0) {
     		//pass
 		} else {
-			for(double o = client.getPosZ(); o < pos.getZ() ;o++) {
-				if ((int) Math.floor(client.getPosZ()) == (int) Math.floor(pos.getZ())) break;
+			log("else z event");
+			for(double o = pos.getZ(); o < client.getPosZ() ;o--) {
+				if ((int) Math.floor(client.getPosZ()) == (int) Math.floor(pos.getZ())) {log("pizdec"); break;}
 				if (botCanWalkAt(client.getPosX(),client.getPosY(),client.getPosZ()-1)) {
 					if (blockIsEmpty(getblockid(client.getPosX(),client.getPosY()-1,client.getPosZ()-1))) {
 						if (blockIsEmpty(getblockid(client.getPosX(),client.getPosY()-1,client.getPosZ()-2))) {
@@ -256,22 +257,9 @@ public class SessionListener extends SessionAdapter {
     	
     	if (client.getPosY() != pos.getY()) {
     		if (client.getPosY() > pos.getY()) {
-    			while (true) {
-    				if (client.getPosY() == pos.getY()) {
-    					break;
-    				} else {
-    					Position bpos = new Position((int)client.getPosX(),(int)client.getPosY()-1,(int)client.getPosZ());
-    					BotU.mineBlock(client, bpos);
-    					while (true) {
-    						if (blockIsEmpty(getblockid(bpos))) {
-    							//client.getSession().send(new ClientPlayerActionPacket(PlayerAction.CANCEL_DIGGING, bpos, BlockFace.UP));
-    							BotU.teleport(client, 0, -1, 0);
-    							break;
-    						} else {
-    							ThreadU.sleep(100);
-    						}
-    					}
-    				}
+    			for (int i = pos.getY(); i < (int)client.getPosY();i++) {
+    				int yp = (int)client.getPosY()-1;
+    				BotU.mineBlock(client, new Position((int)client.getPosX(),yp,(int)client.getPosZ()));
     			}
     		} else {
 	    		if (blockIsEmpty(blockUpwBot())) {
@@ -281,15 +269,20 @@ public class SessionListener extends SessionAdapter {
     	}
     	
     	if ((int)client.getPosX() != pos.getX()) {
-    		walkTo(pos);
-    		ThreadU.sleep(500);
+    		/*walkTo(pos);
+    		ThreadU.sleep(500);*/
+    		return false;
     	} else if ((int)client.getPosY() != pos.getY()) {
-    		walkTo(pos);
-    		ThreadU.sleep(500);
+    		/*walkTo(pos);
+    		ThreadU.sleep(500);*/
+    		return false;
     	} else if ((int)client.getPosZ() != pos.getZ()) {
-    		walkTo(pos);
-    		ThreadU.sleep(500);
-    	} else {/*pass*/}
+    		//walkTo(pos);
+    		//ThreadU.sleep(500);
+    		return false;
+    	} else {
+    		return true;
+    	}
 	}
     
     
@@ -376,6 +369,31 @@ public class SessionListener extends SessionAdapter {
     	return id;
     }
     
+    
+    public Position findNearestBlockById(int id) {
+    	int xs = (int)client.getPosX();
+    	int ys = (int)client.getPosY();
+    	int zs = (int)client.getPosZ();
+    	int radius = 10;
+    	Position pos = null;
+    	for (int i = 1; i < radius; i++) {
+    		log("ищу с r="+i);
+    		for (int x = xs; x < i; x++) {
+                for (int y = ys; y < i; y++) {
+                    for (int z = zs; z < i; z++) {
+                    	log("ищу на x:"+x+" y:"+y+" z:"+z);
+                        if (getblockid(x,y,z) == id) {
+                        	pos = new Position(x,y,z);
+                        	log("чето нашел");
+                        	break;
+                        }
+                    }
+                }
+            }
+    	}
+    	return pos;
+    }
+    
     @Override
     public void packetReceived(PacketReceivedEvent receiveEvent) {
         if (receiveEvent.getPacket() instanceof ServerJoinGamePacket) {
@@ -403,10 +421,13 @@ public class SessionListener extends SessionAdapter {
             });
         	t.start();
         }  else if (receiveEvent.getPacket() instanceof ServerChatPacket) {
-        	//BotU.chat(client, "пидорас, ну ладно сука");
-        	//Position pos = new Position((int)client.getPosX()+28,(int)client.getPosY(),(int)client.getPosZ()+28);
-            //walkTo(pos);
-        	BotU.mineBlock(client, new Position((int)client.getPosX(),((int)client.getPosY())-1,(int)client.getPosZ()));
+        	Position pos = new Position((int)client.getPosX(),(int)client.getPosY()-2,(int)client.getPosZ());
+        	walkTo(pos);
+        	//Position pos = findNearestBlockById(2);
+        	//log("find block at x:"+pos.getX()+" y:"+pos.getY()+" z:"+pos.getZ());
+        	//Position posit = new Position(pos.getX()+1,pos.getY(),pos.getZ());
+        	//if (walkTo(posit)) BotU.mineBlock(client, pos);
+        	//BotU.mineBlock(client, new Position((int)client.getPosX(),((int)client.getPosY())-1,(int)client.getPosZ()));
             
         } else if (receiveEvent.getPacket() instanceof ServerPlayerPositionRotationPacket) {
             ServerPlayerPositionRotationPacket packet = receiveEvent.getPacket();
@@ -428,6 +449,7 @@ public class SessionListener extends SessionAdapter {
             }
         //server chunks
         } else if (receiveEvent.getPacket() instanceof ServerMultiBlockChangePacket) {
+        	log("mbcp");
 			ServerMultiBlockChangePacket packet = (ServerMultiBlockChangePacket) receiveEvent.getPacket();
 			for (BlockChangeRecord data : packet.getRecords()) {
 				setBlock(data.getPosition(), data.getBlock());
@@ -445,6 +467,7 @@ public class SessionListener extends SessionAdapter {
 			ChunkCoordinates coords = new ChunkCoordinates(x, z);
 			addChunkColumn(coords, data.getColumn());
 		} else if (receiveEvent.getPacket() instanceof ServerBlockChangePacket) {
+			log("bcp");
 			ServerBlockChangePacket packet = (ServerBlockChangePacket) receiveEvent.getPacket();
 			setBlock(packet.getRecord().getPosition(), packet.getRecord().getBlock());
 		}

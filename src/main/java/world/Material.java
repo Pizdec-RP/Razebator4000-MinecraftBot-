@@ -1,6 +1,6 @@
 package world;
 
-public enum Material { //TODO: boolean isBlock, AABB block AxisAlignedBlockBounding coords.
+public enum Material {
 
 	AIR(0),
 	STONE(1),

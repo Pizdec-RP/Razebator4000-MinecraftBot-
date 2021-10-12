@@ -1,11 +1,15 @@
 package pizdecrp.MCAI.utils;
 
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
+import com.github.steveice10.mc.protocol.data.game.entity.player.BlockBreakStage;
 import com.github.steveice10.mc.protocol.data.game.entity.player.PlayerAction;
 import com.github.steveice10.mc.protocol.data.game.world.block.BlockFace;
 import com.github.steveice10.mc.protocol.packet.ingame.client.ClientChatPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerActionPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerPlaceBlockPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerPositionPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerSwingArmPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerBlockBreakAnimPacket;
 
 import pizdecrp.MCAI.bot.Bot;
 import pizdecrp.MCAI.bot.SessionListener;
@@ -33,7 +37,16 @@ public class BotU {
 		}
 	}
 	
+	public static void calibratePosition(Bot client) {
+		double cx = (int) Math.floor(client.getPosX());
+		cx += 0.5;
+		double cz = (int) Math.floor(client.getPosZ());
+		cz += 0.5;
+		setposto(client, cx, client.getPosY(), cz);
+	}
+	
 	public static void walk (Bot client, int range, String ax) {
+		calibratePosition(client);
 		try {
 			if (range > 0) {
 				switch (ax) {
@@ -62,7 +75,7 @@ public class BotU {
 			} else if (range < 0) {
 				switch (ax) {
 				case "x":
-					for (int i = 0; i < range; i++) {
+					for (int i = 0; i < Math.abs(range); i++) {
 						for (int o = 0; o < 5; o++) {
 							client.getSession().send(new ClientPlayerPositionPacket(true, client.getPosX() - 0.2, client.getPosY(), client.getPosZ()));
 							client.setPosX(client.getPosX() - 0.2);
@@ -71,7 +84,7 @@ public class BotU {
 					}
 					break;
 	            case "z":
-	            	for (int i = 0; i < range; i++) {
+	            	for (int i = 0; i < Math.abs(range); i++) {
 						for (int o = 0; o < 5; o++) {
 							client.getSession().send(new ClientPlayerPositionPacket(true, client.getPosX(), client.getPosY(), client.getPosZ() - 0.2));
 							client.setPosZ(client.getPosZ() - 0.2);
@@ -92,11 +105,14 @@ public class BotU {
 	}
 	
 	public static void jump (Bot client, int range, String ax) {
+		calibratePosition(client);
 		try {
 			double onetprange;
 			if (range > 0) {
 				onetprange = 0.5;
 			} else if (range < 0) {
+				range = Math.abs(range);
+				SessionListener.log("range absed to "+range);
 				onetprange = -0.5;
 			} else {
 				onetprange = 0;
@@ -265,10 +281,19 @@ public class BotU {
 	public static void mineBlock (Bot client, Position pos) {
 		ClientPlayerActionPacket a = new ClientPlayerActionPacket(PlayerAction.START_DIGGING, pos, BlockFace.UP);
 		client.getSession().send(a);
+		ClientPlayerActionPacket aa = new ClientPlayerActionPacket(PlayerAction.FINISH_DIGGING, pos, BlockFace.UP);
+		client.getSession().send(aa);
+		while (true) {
+			if (SessionListener.getBlock(new Position(pos.getX(),pos.getY(),pos.getZ())).getId() == 0) {
+				break;
+			} else {
+				ThreadU.sleep(800);
+			}
+		}
     }
 	
 	public static void placeBlock (Bot client, Position pos) {
-		//idk
+		//ClientPlayerPlaceBlockPacket p = new ClientPlayerPlaceBlockPacket();
 	}
 	
 }
