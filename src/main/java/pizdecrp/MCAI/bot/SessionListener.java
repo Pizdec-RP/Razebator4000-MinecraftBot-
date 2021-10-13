@@ -16,6 +16,9 @@ import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerUnload
 import com.github.steveice10.packetlib.event.session.DisconnectedEvent;
 import com.github.steveice10.packetlib.event.session.PacketReceivedEvent;
 import com.github.steveice10.packetlib.event.session.SessionAdapter;
+
+import cz.GravelCZLP.EntityLocation;
+
 import com.github.steveice10.mc.protocol.data.game.chunk.BlockStorage;
 import com.github.steveice10.mc.protocol.data.game.chunk.Column;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
@@ -23,6 +26,8 @@ import com.github.steveice10.mc.protocol.data.game.entity.player.PlayerAction;
 import com.github.steveice10.mc.protocol.data.game.world.block.BlockChangeRecord;
 import com.github.steveice10.mc.protocol.data.game.world.block.BlockFace;
 import com.github.steveice10.mc.protocol.data.game.world.block.BlockState;
+import com.github.steveice10.mc.protocol.data.message.Message;
+import com.github.steveice10.mc.protocol.data.message.TranslationMessage;
 
 import java.io.FileNotFoundException;
 import java.util.HashMap;
@@ -371,20 +376,22 @@ public class SessionListener extends SessionAdapter {
     
     
     public Position findNearestBlockById(int id) {
-    	int xs = (int)client.getPosX();
-    	int ys = (int)client.getPosY();
-    	int zs = (int)client.getPosZ();
-    	int radius = 10;
+    	int x = (int)client.getPosX();
+    	int ys = 1;
+    	int z = (int)client.getPosZ();
+    	int diametr = 10;
     	Position pos = null;
-    	for (int i = 1; i < radius; i++) {
-    		log("ищу с r="+i);
-    		for (int x = xs; x < i; x++) {
-                for (int y = ys; y < i; y++) {
-                    for (int z = zs; z < i; z++) {
-                    	log("ищу на x:"+x+" y:"+y+" z:"+z);
-                        if (getblockid(x,y,z) == id) {
-                        	pos = new Position(x,y,z);
-                        	log("чето нашел");
+    	for (int i = 1; i < diametr; i++) {
+    		int xs = x-i;
+    		int zs = z-i;
+    		for (int x1 = xs; x1 < x+i; x1++) {
+                for (int y = ys; y < ys+i; y++) {
+                    for (int z1 = zs; z1 < z+i; z1++) {
+                    	int b;
+                    	log("ищу на x:"+x1+" y:"+y+" z:"+z1);
+                    	b = getblockid(x1,y,z1);
+                        if (b == id) {
+                        	pos = new Position(x1,y,z1);
                         	break;
                         }
                     }
@@ -421,12 +428,56 @@ public class SessionListener extends SessionAdapter {
             });
         	t.start();
         }  else if (receiveEvent.getPacket() instanceof ServerChatPacket) {
-        	Position pos = new Position((int)client.getPosX(),(int)client.getPosY()-2,(int)client.getPosZ());
-        	walkTo(pos);
-        	//Position pos = findNearestBlockById(2);
-        	//log("find block at x:"+pos.getX()+" y:"+pos.getY()+" z:"+pos.getZ());
-        	//Position posit = new Position(pos.getX()+1,pos.getY(),pos.getZ());
-        	//if (walkTo(posit)) BotU.mineBlock(client, pos);
+        	String message;
+        	if(((ServerChatPacket) receiveEvent.getPacket()).getMessage() instanceof TranslationMessage){
+        		TranslationMessage tm = (TranslationMessage) ((ServerChatPacket) receiveEvent.getPacket()).getMessage();
+        		String mess = "";
+        		/*for(Message m : tm.getExtra()){
+        			mess = mess + " " + m.getFullText();
+        		}*/
+        		for(Message m : tm.getTranslationParams()){
+        			mess = mess + " " + m.getFullText();
+        		}
+        		message = mess;
+        	} else {
+        		message = (((ServerChatPacket) receiveEvent.getPacket()).getMessage().getFullText());
+        	}
+			log(message.split(" ")[2]);
+            switch (message.split(" ")[2]) {
+            	case "check":
+            		Position pos = findNearestBlockById(4);
+                	if (pos == null) {
+                		BotU.chat(client, "я нихуя не нашел");
+                	} else {
+        	        	BotU.chat(client, "finded block at x:"+pos.getX()+" y:"+pos.getY()+" z:"+pos.getZ());
+                	}
+                	break;
+            	case "checkmine":
+            		for (int i = 0; i < 10; i++) {
+	            		Position pos1 = findNearestBlockById(4);
+	                	if (pos1 == null) {
+	                		BotU.chat(client, "я нихуя не нашел");
+	                	} else {
+	                		BotU.chat(client, "finded block at x:"+pos1.getX()+" y:"+pos1.getY()+" z:"+pos1.getZ());
+	        	        	Position posit = new Position(pos1.getX()+1,pos1.getY(),pos1.getZ());
+	        	        	if (walkTo(posit)) BotU.mineBlock(client, pos1);
+	        	        	ThreadU.sleep(3000);
+	        	        	setBlock(pos1, new BlockState(0, 0));
+	                	}
+            		}
+                	break;
+            }
+        	//Position pos = new Position((int)client.getPosX(),(int)client.getPosY()-2,(int)client.getPosZ());
+        	//walkTo(pos);
+        	
+        	/*Position pos = findNearestBlockById(4);
+        	if (pos == null) {
+        		log("я нихуя не нашел");
+        	} else {
+	        	log("finded block at x:"+pos.getX()+" y:"+pos.getY()+" z:"+pos.getZ());
+	        	Position posit = new Position(pos.getX()+1,pos.getY(),pos.getZ());
+	        	if (walkTo(posit)) BotU.mineBlock(client, pos);
+        	}*/
         	//BotU.mineBlock(client, new Position((int)client.getPosX(),((int)client.getPosY())-1,(int)client.getPosZ()));
             
         } else if (receiveEvent.getPacket() instanceof ServerPlayerPositionRotationPacket) {
@@ -470,7 +521,7 @@ public class SessionListener extends SessionAdapter {
 			log("bcp");
 			ServerBlockChangePacket packet = (ServerBlockChangePacket) receiveEvent.getPacket();
 			setBlock(packet.getRecord().getPosition(), packet.getRecord().getBlock());
-		}
+		} //else if (receiveEvent.getPacket() instanceof )
         
     }
     @Override

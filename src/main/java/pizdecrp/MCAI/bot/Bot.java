@@ -7,6 +7,7 @@ import com.github.steveice10.packetlib.Client;
 import com.github.steveice10.packetlib.Session;
 import com.github.steveice10.packetlib.tcp.TcpSessionFactory;
 
+import georegression.struct.point.Point3D_F64;
 import pizdecrp.MCAI.utils.ThreadU;
 
 import java.io.FileNotFoundException;
@@ -14,7 +15,9 @@ import java.net.Proxy;
 
 public class Bot {
     private final MinecraftProtocol account;
-
+    
+    public Point3D_F64 PlayerPosition;
+    
     private final String host;
     private final int port;
 
@@ -41,6 +44,7 @@ public class Bot {
         client.getSession().connect();
 
         this.session = client.getSession();
+        this.PlayerPosition = new Point3D_F64(0, 0, 0);
     }
 
     public void register() {
@@ -71,6 +75,7 @@ public class Bot {
 
     public void setPosX(double posX) {
         this.posX = posX;
+        PlayerPosition.setX(posX);
     }
 
     public double getPosY() {
@@ -79,6 +84,7 @@ public class Bot {
 
     public void setPosY(double posY) {
         this.posY = posY;
+        PlayerPosition.setY(posY);
     }
 
     public double getPosZ() {
@@ -87,6 +93,7 @@ public class Bot {
 
     public void setPosZ(double posZ) {
         this.posZ = posZ;
+        PlayerPosition.setZ(posZ);
     }
 
     public String getHost() {

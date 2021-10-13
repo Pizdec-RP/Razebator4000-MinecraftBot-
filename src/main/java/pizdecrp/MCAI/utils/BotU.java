@@ -1,16 +1,19 @@
 package pizdecrp.MCAI.utils;
 
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
-import com.github.steveice10.mc.protocol.data.game.entity.player.BlockBreakStage;
 import com.github.steveice10.mc.protocol.data.game.entity.player.PlayerAction;
 import com.github.steveice10.mc.protocol.data.game.world.block.BlockFace;
 import com.github.steveice10.mc.protocol.packet.ingame.client.ClientChatPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerActionPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerPlaceBlockPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerChangeHeldItemPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerPositionPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerSwingArmPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerBlockBreakAnimPacket;
-
+import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerRotationPacket;
+import cz.GravelCZLP.AABB;
+import cz.GravelCZLP.EntityLocation;
+import cz.GravelCZLP.MathHelp;
+import cz.GravelCZLP.Vector3D;
+import georegression.struct.point.Point3D_F64;
+import georegression.struct.point.Vector3D_F64;
 import pizdecrp.MCAI.bot.Bot;
 import pizdecrp.MCAI.bot.SessionListener;
 public class BotU {
@@ -20,7 +23,6 @@ public class BotU {
 	}
 	public static void move (Bot client, double range, String ax) {
 		try {
-			if (range < 0) SessionListener.log("tp down");
 			switch (ax) {
 				case "x":
 					client.getSession().send(new ClientPlayerPositionPacket(true, client.getPosX() + range, client.getPosY(), client.getPosZ()));
@@ -97,7 +99,7 @@ public class BotU {
 	            	break;
 				}
 			} else {
-				SessionListener.log("walk for 0??? rily u dumbass");
+				SessionListener.log("kavo");
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -112,7 +114,6 @@ public class BotU {
 				onetprange = 0.5;
 			} else if (range < 0) {
 				range = Math.abs(range);
-				SessionListener.log("range absed to "+range);
 				onetprange = -0.5;
 			} else {
 				onetprange = 0;
@@ -180,7 +181,7 @@ public class BotU {
 						teleport(client,onetprange,-0.2,0);
 						ThreadU.sleep(175);
 					} else {
-						SessionListener.log("jummp range is too high "+range);
+						//hz
 					}
 					break;
 	            case "z":
@@ -245,7 +246,6 @@ public class BotU {
 						teleport(client,0,-0.2,onetprange);
 						ThreadU.sleep(175);
 					} else {
-						SessionListener.log("jummp range is too high "+range);
 					}
 	            	break;
 	            default:
@@ -264,14 +264,13 @@ public class BotU {
 	    	client.setPosY(y);
 	    	client.setPosZ(z);
 		} catch (Exception e) {
-			SessionListener.log("произошла ошибка при попытке телепорта. ");
+			e.printStackTrace();
 		}
 	}
 	public static void teleport(Bot client, double xa, double ya, double za) {
 		double x = client.getPosX() + xa;
 		double y = client.getPosY() + ya;
 		double z = client.getPosZ() + za;
-		SessionListener.log("trying to tp to x:"+x+" y:"+y+" z:"+z);
 		client.getSession().send(new ClientPlayerPositionPacket(true, x, y, z));
     	client.setPosX(x);
     	client.setPosY(y);
@@ -279,22 +278,122 @@ public class BotU {
 	}
 	
 	public static void mineBlock (Bot client, Position pos) {
+		Point3D_F64 position = new Point3D_F64(pos.getX(),pos.getY(),pos.getZ());
+		LookHead(client, position);
+		//BlockFace bf = blockFaceCollide(client, MathHelp.vectorDirection(new EntityLocation(pos.getX(),pos.getY(),pos.getZ())), null);
+		//if (bf == null) bf = BlockFace.UP;
+		SetSlot(client, 0);
 		ClientPlayerActionPacket a = new ClientPlayerActionPacket(PlayerAction.START_DIGGING, pos, BlockFace.UP);
 		client.getSession().send(a);
+		ThreadU.sleep(400);
 		ClientPlayerActionPacket aa = new ClientPlayerActionPacket(PlayerAction.FINISH_DIGGING, pos, BlockFace.UP);
 		client.getSession().send(aa);
-		while (true) {
-			if (SessionListener.getBlock(new Position(pos.getX(),pos.getY(),pos.getZ())).getId() == 0) {
-				break;
-			} else {
-				ThreadU.sleep(800);
-			}
-		}
     }
 	
 	public static void placeBlock (Bot client, Position pos) {
 		//ClientPlayerPlaceBlockPacket p = new ClientPlayerPlaceBlockPacket();
 	}
 	
+	public static void SetSlot(Bot client, int slot) {
+        client.getSession().send(new ClientPlayerChangeHeldItemPacket(slot));
+    }
+	
+	public static void LookHead(Bot client, Point3D_F64 position) {
+		Point3D_F64 PlayerPosition = client.PlayerPosition;
+        if (!position.equals(PlayerPosition)) {
+            Vector3D_F64 vect = new Vector3D_F64(PlayerPosition, position);
+            vect.normalize();
+            double yaw = Math.toDegrees(Math.atan2(vect.z, vect.x)) - 90;
+            double pitch = Math.toDegrees(Math.asin(-vect.y));
+            client.getSession().send(new ClientPlayerRotationPacket(true, (float) yaw, (float) pitch));
+
+        }
+
+    }
+	
+	public static BlockFace blockFaceCollide(Bot client, Vector3D vec, AABB aabb) {
+		double cons = Double.MAX_VALUE;
+		BlockFace bf = null;
+		
+		if (vec.y > 0) {
+			double b = aabb.getMinY() - client.getPosY();
+			double tc = b / vec.y;
+			if (tc > 0 && tc < cons) {
+				double xCollide = tc * vec.x + client.getPosX();
+				double zCollide = tc * vec.z + client.getPosZ();
+				if (MathHelp.between(xCollide, aabb.getMinX(), aabb.getMaxX(), 0) &&
+						MathHelp.between(zCollide, aabb.getMinZ(), aabb.getMaxZ(), 0)) {
+					cons = tc;
+					bf = BlockFace.DOWN;
+				}
+			}
+		} else {
+			double b = aabb.getMaxY() - client.getPosY();
+			double tc = b / vec.y;
+			if (tc > 0 && tc < cons) {
+				double xCollide = tc * vec.x + client.getPosX();
+				double zCollide = tc * vec.z + client.getPosZ();
+				if (MathHelp.between(xCollide, aabb.getMinX(), aabb.getMaxX(), 0) &&
+						MathHelp.between(zCollide, aabb.getMinZ(), aabb.getMaxZ(), 0)) {
+					cons = tc;
+					bf = BlockFace.UP;
+				}
+			}
+		}
+		
+		if (vec.x < 0) {
+			double b = aabb.getMaxX() - client.getPosX();
+			double tc = b / vec.x;
+			if (tc > 0 && tc < cons) {
+				double yCollide = tc * vec.y + client.getPosY();
+				double zCollide = tc * vec.z + client.getPosZ();
+				if (MathHelp.between(yCollide, aabb.getMinY(), aabb.getMaxY(), 0) &&
+						MathHelp.between(zCollide, aabb.getMinZ(), aabb.getMaxZ(), 0)) {
+					cons = tc;
+					bf = BlockFace.EAST;
+				}
+			}
+		} else {
+			double b = aabb.getMinX() - client.getPosX();
+			double tc = b / vec.x;
+			if (tc > 0 && tc < cons) {
+				double yCollide = tc * vec.y + client.getPosY();
+				double zCollide = tc * vec.z + client.getPosZ();
+				if (MathHelp.between(yCollide, aabb.getMinY(), aabb.getMaxY(), 0) &&
+						MathHelp.between(zCollide, aabb.getMinZ(), aabb.getMaxZ(), 0)) {
+					cons = tc;
+					bf = BlockFace.WEST;
+				}
+			}
+		}
+		
+		if (vec.z > 0) {
+			double b = aabb.getMinZ() - client.getPosZ();
+			double tc = b / vec.z;
+			if (tc > 0 && tc < cons) {
+				double xCollide = tc * vec.x + client.getPosX();
+				double yCollide = tc * vec.y + client.getPosY();
+				if (MathHelp.between(xCollide, aabb.getMinX(), aabb.getMaxX(), 0) &&
+						MathHelp.between(yCollide, aabb.getMinY(), aabb.getMaxY(), 0)) {
+					cons = tc;
+					bf = BlockFace.NORTH;
+				}
+			}
+		} else {
+			double b = aabb.getMaxZ() - client.getPosZ();
+			double tc = b / vec.z;
+			if (tc > 0 && tc < cons) {
+				double xCollide = tc * vec.x + client.getPosX();
+				double yCollide = tc * vec.y + client.getPosY();
+				if (MathHelp.between(xCollide, aabb.getMinX(), aabb.getMaxX(), 0) &&
+						MathHelp.between(yCollide, aabb.getMinY(), aabb.getMaxY(), 0)) {
+					cons = tc;
+					bf = BlockFace.NORTH;
+				}
+			}
+		}
+		
+		return bf;
+	}
 }
 
