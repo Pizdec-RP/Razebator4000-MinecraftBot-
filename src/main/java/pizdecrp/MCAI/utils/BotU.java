@@ -352,7 +352,6 @@ public class BotU {
             double pitch = Math.toDegrees(Math.asin(-vect.y));
             client.getSession().send(new ClientPlayerRotationPacket(true, (float) yaw, (float) pitch));
         } else {log("hueta");}
-
     }
 	
 	public BlockFace blockFaceCollide(Bot client, Vector3D vec, AABB aabb) {

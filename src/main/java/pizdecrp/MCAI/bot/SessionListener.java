@@ -27,6 +27,7 @@ import cz.GravelCZLP.EntityLocation;
 import georegression.struct.point.Point3D_F64;
 
 import com.github.steveice10.mc.protocol.data.game.chunk.BlockStorage;
+import com.github.steveice10.mc.protocol.data.game.chunk.Chunk;
 import com.github.steveice10.mc.protocol.data.game.chunk.Column;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.ItemStack;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
@@ -335,7 +336,7 @@ public class SessionListener extends SessionAdapter {
     			}
     		} else {
 	    		if (blockIsEmpty(blockUpwBot())) {
-	    			//еще не придумал
+	    			
 	    		}
     		}
     	}
@@ -419,15 +420,10 @@ public class SessionListener extends SessionAdapter {
     }
     
     public int getblockid (double x,double y,double z) {
-    	try {
-	    	BlockState block = getBlock(new Position((int)x,(int)y,(int)z));
-	    	if (block == null) log("cant get block id");
-	    	int blockid = block.getId();
-			return (int) blockid;
-    	} catch (Exception e) {
-    		e.printStackTrace();
-			return 0;
-		}
+    	BlockState block = getBlock(new Position((int)x,(int)y,(int)z));
+    	if (block == null) return 0;
+    	int blockid = block.getId();
+		return (int) blockid;
     }
     
     public int blockUnderBot() {
@@ -452,8 +448,6 @@ public class SessionListener extends SessionAdapter {
                 min = distance;
                 minPos = position;
             }
-
-
         }
         return minPos;
     }
@@ -467,17 +461,19 @@ public class SessionListener extends SessionAdapter {
     	int x = (int)client.getPosX();
     	int y = (int)client.getPosY();
     	int z = (int)client.getPosZ();
-    	int diametr = 10;
+    	int radius = 50;
     	Position pos = null;
-    	for (int i = 1; i < diametr; i++) {
+    	for (int i = 1; i < radius; i++) {
     		int xs = x-i;
     		int ys = y-i;
     		if (ys < 1) ys = 0;
     		int yi = y+i;
     		if (yi > 255) yi = 255;
+    		//int ys = 1;
+    		//int yi = 255;
     		int zs = z-i;
-    		for (int x1 = xs; x1 < x+i; x1++) {
-                for (int y1 = ys; y1 < yi; y1++) {
+    		for (int y1 = ys; y1 < yi; y1++) {
+    			for (int x1 = xs; x1 < x+i; x1++) {
                     for (int z1 = zs; z1 < z+i; z1++) {
                     	int b;
                     	//log("ищу на x:"+x1+" y:"+y1+" z:"+z1);
@@ -495,20 +491,34 @@ public class SessionListener extends SessionAdapter {
     }
     
     public Position botCanTouchBlockAt(Position blockPos) {
+    	List<Position> positions = new CopyOnWriteArrayList<>();
     	if (blockIsEmpty(getblockid(new Position(blockPos.getX(),blockPos.getY()+1,blockPos.getZ())))) {
-    		return new Position(blockPos.getX(),blockPos.getY()+1,blockPos.getZ());
-    	} else if (blockIsEmpty(getblockid(new Position(blockPos.getX(),blockPos.getY(),blockPos.getZ()-1)))) {
-    		new Position(blockPos.getX(),blockPos.getY(),blockPos.getZ()-1);
-    	} else if (blockIsEmpty(getblockid(new Position(blockPos.getX()-1,blockPos.getY(),blockPos.getZ())))) {
-    		return new Position(blockPos.getX()-1,blockPos.getY(),blockPos.getZ());
-    	} else if (blockIsEmpty(getblockid(new Position(blockPos.getX(),blockPos.getY(),blockPos.getZ()+1)))) {
-    		return new Position(blockPos.getX(),blockPos.getY(),blockPos.getZ()+1);
-    	} else if (blockIsEmpty(getblockid(new Position(blockPos.getX()+1,blockPos.getY(),blockPos.getZ())))) {
-    		return new Position(blockPos.getX()+1,blockPos.getY(),blockPos.getZ());
-    	} else if (blockIsEmpty(getblockid(new Position(blockPos.getX(),blockPos.getY()-2,blockPos.getZ())))) {
-    		return new Position(blockPos.getX(),blockPos.getY()-2,blockPos.getZ());
+    		positions.add(new Position(blockPos.getX(),blockPos.getY()+1,blockPos.getZ()));
     	}
-		return new Position(blockPos.getX()+1,blockPos.getY(),blockPos.getZ());
+    	if (blockIsEmpty(getblockid(new Position(blockPos.getX(),blockPos.getY(),blockPos.getZ()-1)))) {
+    		positions.add(new Position(blockPos.getX(),blockPos.getY(),blockPos.getZ()-1));
+    	}
+    	if (blockIsEmpty(getblockid(new Position(blockPos.getX()-1,blockPos.getY(),blockPos.getZ())))) {
+    		positions.add(new Position(blockPos.getX()-1,blockPos.getY(),blockPos.getZ()));
+    	}
+    	if (blockIsEmpty(getblockid(new Position(blockPos.getX(),blockPos.getY(),blockPos.getZ()+1)))) {
+    		positions.add(new Position(blockPos.getX(),blockPos.getY(),blockPos.getZ()+1));
+    	}
+    	if (blockIsEmpty(getblockid(new Position(blockPos.getX()+1,blockPos.getY(),blockPos.getZ())))) {
+    		positions.add(new Position(blockPos.getX()+1,blockPos.getY(),blockPos.getZ()));
+    	}
+    	if (blockIsEmpty(getblockid(new Position(blockPos.getX(),blockPos.getY()-2,blockPos.getZ())))) {
+    		positions.add(new Position(blockPos.getX(),blockPos.getY()-2,blockPos.getZ()));
+    	}
+    	if (positions.size() <= 0) {
+    		positions.add(new Position(blockPos.getX(),blockPos.getY()+1,blockPos.getZ()));
+    		positions.add(new Position(blockPos.getX(),blockPos.getY(),blockPos.getZ()-1));
+    		positions.add(new Position(blockPos.getX()-1,blockPos.getY(),blockPos.getZ()));
+    		positions.add(new Position(blockPos.getX(),blockPos.getY(),blockPos.getZ()+1));
+    		positions.add(new Position(blockPos.getX()+1,blockPos.getY(),blockPos.getZ()));
+    		positions.add(new Position(blockPos.getX(),blockPos.getY()-2,blockPos.getZ()));
+    	} else {}
+    	return getNear(new Position((int)client.getPosX(),(int)client.getPosY(),(int)client.getPosZ()),positions);
     }
     
     @Override
@@ -516,7 +526,7 @@ public class SessionListener extends SessionAdapter {
         if (receiveEvent.getPacket() instanceof ServerJoinGamePacket) {
         	System.out.println("(" + client.getGameProfile().getName() + ") Подрубился.");
         	ThreadU.sleep(1000);
-        	Thread t = new Thread(() -> {
+        	Thread physics = new Thread(() -> {
         		ThreadU.sleep(2000);
             	while (true) {
             		if (client.isOnline()) {
@@ -537,7 +547,7 @@ public class SessionListener extends SessionAdapter {
             		
             	}
             });
-        	t.start();
+        	physics.start();
         }  else if (receiveEvent.getPacket() instanceof ServerChatPacket) {
         	String message;
         	if(((ServerChatPacket) receiveEvent.getPacket()).getMessage() instanceof TranslationMessage){
@@ -553,7 +563,9 @@ public class SessionListener extends SessionAdapter {
         	} else {
         		message = (((ServerChatPacket) receiveEvent.getPacket()).getMessage().getFullText());
         	}
-			log(message.split(" ")[2]);
+        	for (int i = 0; i < message.split(" ").length; i++) {
+        		System.out.print(message.split(" ")[i]+" ");
+        	}
             switch (message.split(" ")[2]) {
             	case "check":
             		Position pos = findNearestBlockById(4);
@@ -571,24 +583,23 @@ public class SessionListener extends SessionAdapter {
 		                		BotU.chat(client, " ничего не нашел");
 		                		break;
 		                	} else {
-		                		BotU.chat(client, "нашел нужный блок на "+pos1.toString());
+		                		log("нашел нужный блок на "+pos1.toString());
 		        	        	Position posit = botCanTouchBlockAt(pos1);
 		        	        	if (posit == null) {
 		        	        		BotU.chat(client, "блок я нашел но к нему не подобраться");
 		        	        	} else {
-			                		if (walkTo(posit, false)) BotU.mineBlock(client, pos1, false);
+			                		if (walkTo(posit, true)) BotU.mineBlock(client, pos1, false);
 			        	        	while (!blockIsEmpty(getblockid(pos1))) {
 			        	        		ThreadU.sleep(100);
 			        	        	}
-			        	        	ThreadU.sleep(1000);
 		        	        	}
 		                	}
 	            		}
+	            		BotU.chat(client, "я все");
             		});
             		t.start();
                 	break;
             	case "cslot":
-            		log(message);
             		BotU.SetSlot(client, Integer.parseInt(message.split(" ")[3]));
             	case "faceto":
             		BotU.LookHead(client, new Point3D_F64(Integer.parseInt(message.split(" ")[3]),Integer.parseInt(message.split(" ")[4]),Integer.parseInt(message.split(" ")[5])));
@@ -611,7 +622,7 @@ public class SessionListener extends SessionAdapter {
 	        	        		BotU.chat(client, "блок я нашел но к нему не подобраться");
 	        	        	} else {
 		                		if (walkTo(posit, false)) BotU.rightClickOnBlock(client, pos1);
-		        	        	ICraftable.craft(CraftingUtils.getRecipe(CraftableMaterials.PICKAXE,4));
+		                		((WorkBenchInventory) client.getOpenedInventory()).craft(CraftingUtils.getRecipe(CraftableMaterials.PICKAXE,4));
 	        	        	}
 	                	}
             		}).start();
@@ -722,7 +733,7 @@ public class SessionListener extends SessionAdapter {
 				inv = new PlayerInventory();
 				break;
 			default:
-				log("unknown inventory type");
+				log("чо за инвентарь??? я бомж и не шарю");
 				break;
 			}
 			client.setOpendedInventory(inv);
@@ -763,7 +774,9 @@ public class SessionListener extends SessionAdapter {
 				return null;
 			}
 			int yPos = cy;
-			BlockStorage blocks = c.getChunks()[yPos].getBlocks();
+			Chunk chunk = c.getChunks()[yPos];
+			if (chunk == null) return null;
+			BlockStorage blocks = chunk.getBlocks();
 			int xb = pos.getX() % 16;
 			int yb = pos.getY() % 16;
 			int zb = pos.getZ() % 16;
@@ -776,7 +789,7 @@ public class SessionListener extends SessionAdapter {
 			//log("x "+xb+" z "+zb+" y "+yb);
 			return blocks.get(xb, yb, zb);
     	} catch (Exception e) {
-    		e.printStackTrace();
+    		//e.printStackTrace();
 			return null;
 		}
 	}
