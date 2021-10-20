@@ -11,6 +11,6 @@ public interface IInventory {
 	
 	public void updateSlot(int slot, ItemStack item);
 
-	void craft(CraftingRecipe recipe);
+	//void craft(CraftingRecipe recipe);
 	
 }

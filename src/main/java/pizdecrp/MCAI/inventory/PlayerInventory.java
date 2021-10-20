@@ -18,7 +18,7 @@ public class PlayerInventory implements IInventory {
 
 	@Override
 	public void deconstuctItemArrayToIvn(ItemStack[] array, Bot bot) {
-		try {
+		try {//переделать --------------------------------------------------- уже нет
 			this.bot = bot;
 			crafting = new ItemStack[4];
 			armor = new ItemStack[4];
@@ -52,11 +52,10 @@ public class PlayerInventory implements IInventory {
 	@Override
 	public void updateSlot(int slot, ItemStack item) {
 		try {
-			////переделать ---------------------------------------------------
 			if (slot < 0) {
 				return;
 			}
-			//  1-4 craft, 5-8 armor, 9-35 inv, 36-44 hotbar
+			//  1-4 craft, 5-8 armor, 9-35 inv, 36-44 hotbar, 45 offhand
 			if (slot <= 4) {
 				int arrayId = slot - 1;
 				System.out.println("craft slot id:"+slot+" array id:"+arrayId);
@@ -151,11 +150,5 @@ public class PlayerInventory implements IInventory {
 	public void moveHotbar(int index) {
 		ClientPlayerChangeHeldItemPacket p = new ClientPlayerChangeHeldItemPacket(index);
 		bot.getSession().send(p);
-	}
-
-	@Override
-	public void craft(CraftingRecipe recipe) {
-		// TODO Auto-generated method stub
-		
 	}
 }

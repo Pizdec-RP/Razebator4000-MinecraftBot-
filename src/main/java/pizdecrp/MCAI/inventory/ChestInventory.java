@@ -105,10 +105,4 @@ public class ChestInventory implements IInventory {
 	public boolean isLargeChest() {
 		return isLargeChest;
 	}
-
-	@Override
-	public void craft(CraftingRecipe recipe) {
-		// TODO Auto-generated method stub
-		
-	}
 }

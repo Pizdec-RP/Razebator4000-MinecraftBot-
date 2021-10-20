@@ -88,8 +88,8 @@ public class WorkBenchInventory implements IInventory, ICraftable {
 		return hotbar;
 	}
 	
-	@Override
 	public void craft(CraftingRecipe recipe) {
+		System.out.println("[дебаг] крафт вызван");
 		String[] lines = recipe.getLines();
 		String[] separatedLine1 = lines[0].split(" ");
 		String[] separatedLine2 = lines[1].split(" ");
@@ -111,17 +111,14 @@ public class WorkBenchInventory implements IInventory, ICraftable {
 		int[] line2 = new int[] {line2Slot1, line2Slot2, line2Slot3};
 		int[] line3 = new int[] {line3Slot1, line3Slot2, line3Slot3};
 		
-		//loop 1st line
 		for (int i = 0; i < line1.length; i++) {
 			
 		}
 		
-		//loop 2nd line
 		for (int i = 0; i < line2.length; i++) {
 			
 		}
 		
-		//loop 3rd line
 		for (int i = 0; i < line3.length; i++) {
 			
 		}
