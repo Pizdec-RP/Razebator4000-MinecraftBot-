@@ -162,7 +162,7 @@ public class EntityLocation implements Cloneable {
 				.toString();
 	}
 
-	public BlockState getBlock() {
+	/*public BlockState getBlock() {
 		return SessionListener.getBlock(this);
-	}
+	}*/
 }

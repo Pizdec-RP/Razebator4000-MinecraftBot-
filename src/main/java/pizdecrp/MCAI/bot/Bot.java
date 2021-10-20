@@ -8,6 +8,12 @@ import com.github.steveice10.packetlib.Session;
 import com.github.steveice10.packetlib.tcp.TcpSessionFactory;
 
 import georegression.struct.point.Point3D_F64;
+import pizdecrp.MCAI.inventory.IInventory;
+import pizdecrp.MCAI.inventory.PlayerInventory;
+import pizdecrp.MCAI.inventory.WorkBenchInventory;
+import pizdecrp.MCAI.utils.CraftingRecipe;
+import pizdecrp.MCAI.utils.CraftingUtils;
+import pizdecrp.MCAI.utils.CraftingUtils.CraftableMaterials;
 import pizdecrp.MCAI.utils.ThreadU;
 
 import java.io.FileNotFoundException;
@@ -20,7 +26,7 @@ public class Bot {
     
     private final String host;
     private final int port;
-
+    
     private Session session;
     private Proxy proxy;
 
@@ -29,6 +35,11 @@ public class Bot {
     private double posZ;
     private float yaw;
     private float pitch;
+    
+    private IInventory openedInventory;
+    public int currentSlotInHand;
+    private PlayerInventory playerInventory;
+    private int currentWindowId;
 
     public Bot(MinecraftProtocol account, String host, int port, Proxy proxy) {
         this.account = account;
@@ -56,6 +67,15 @@ public class Bot {
         session.send(new ClientChatPacket("/login 112233asdasd"));
         
     }
+    
+    public void craft(CraftableMaterials mat, int id) {
+		WorkBenchInventory inv = null;
+		if (openedInventory instanceof WorkBenchInventory) {
+			inv = (WorkBenchInventory) openedInventory;
+		}
+		CraftingRecipe recipe = CraftingUtils.getRecipe(mat, id);
+		inv.craft(recipe);
+	}
 
     public boolean isOnline() {
         return session != null && session.isConnected();
@@ -118,5 +138,29 @@ public class Bot {
 
 	public void setPitch(float pitch) {
 		this.pitch = pitch;
+	}
+	
+	public IInventory getOpenedInventory() {
+		return openedInventory;
+	}
+
+	public void setOpendedInventory(IInventory inv) {
+		this.openedInventory = inv;
+	}
+	
+	public PlayerInventory getPlayerInventory() {
+		return playerInventory;
+	}
+	
+	public void setPlayerInventory(PlayerInventory inv) {
+		this.playerInventory = inv;
+	}
+	
+	public int getCurrentWindowId() {
+		return currentWindowId;
+	}
+
+	public void setCurrentWindowId(int i) {
+		currentWindowId = i;
 	}
 }
