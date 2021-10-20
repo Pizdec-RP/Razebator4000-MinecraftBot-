@@ -335,7 +335,7 @@ public class SessionListener extends SessionAdapter {
     			}
     		} else {
 	    		if (blockIsEmpty(blockUpwBot())) {
-	    			
+	    			//еще не придумал
 	    		}
     		}
     	}
