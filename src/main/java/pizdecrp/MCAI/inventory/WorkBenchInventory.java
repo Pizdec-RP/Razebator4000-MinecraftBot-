@@ -88,7 +88,22 @@ public class WorkBenchInventory implements IInventory, ICraftable {
 		return hotbar;
 	}
 	
-	public void craft(CraftingRecipe recipe) {
+	public int countOfItemsWithIdInPlayerInv(Bot Client, int itemid) {
+		PlayerInventory pi = Client.getPlayerInventory();
+		int ininv = 0;
+		int inhotbar = 0;
+		for (int i = 0; i < 9; i++) {
+			ItemStack item = pi.getItemInHotbar(i);
+			if (item.getId() == itemid) inhotbar += item.getAmount(); 
+		}
+		for (int i = 9; i <= 35; i++) {
+			ItemStack item = pi.getItemInInventoryAt(i);
+			if (item.getId() == itemid) ininv += item.getAmount();
+		}
+		return ininv+inhotbar;
+	}
+	
+	public void craft(Bot client, CraftingRecipe recipe) {
 		System.out.println("[дебаг] крафт вызван");
 		String[] lines = recipe.getLines();
 		String[] separatedLine1 = lines[0].split(" ");

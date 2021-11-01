@@ -29,16 +29,14 @@ import georegression.struct.point.Point3D_F64;
 import com.github.steveice10.mc.protocol.data.game.chunk.BlockStorage;
 import com.github.steveice10.mc.protocol.data.game.chunk.Chunk;
 import com.github.steveice10.mc.protocol.data.game.chunk.Column;
-import com.github.steveice10.mc.protocol.data.game.entity.metadata.ItemStack;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
 import com.github.steveice10.mc.protocol.data.game.world.block.BlockChangeRecord;
 import com.github.steveice10.mc.protocol.data.game.world.block.BlockState;
 import com.github.steveice10.mc.protocol.data.message.Message;
 import com.github.steveice10.mc.protocol.data.message.TranslationMessage;
-import pizdecrp.MCAI.inventory.*;
 
+import pizdecrp.MCAI.Main;
 import java.io.FileNotFoundException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -54,7 +52,6 @@ import world.ChunkCoordinates;
 public class SessionListener extends SessionAdapter {
     private final Bot client;
     static int exline = -1;
-    private static HashMap<ChunkCoordinates, Column> columns = new HashMap<>();
     private boolean movelocked = false;
 
     public SessionListener(Bot client) {
@@ -464,6 +461,7 @@ public class SessionListener extends SessionAdapter {
     	int radius = 50;
     	Position pos = null;
     	for (int i = 1; i < radius; i++) {
+    		int localf = 0;
     		int xs = x-i;
     		int ys = y-i;
     		if (ys < 1) ys = 0;
@@ -479,12 +477,17 @@ public class SessionListener extends SessionAdapter {
                     	//log("ищу на x:"+x1+" y:"+y1+" z:"+z1);
                     	b = getblockid(x1,y1,z1);
                         if (b == id) {
+                        	localf++;
                         	pos = new Position(x1,y1,z1);
                         	positions.add(pos);
                         }
                     }
                 }
             }
+    		if (localf > 0 && !positions.isEmpty()) {
+    			pos = getNear(new Position((int)client.getPosX(),(int)client.getPosY(),(int)client.getPosZ()),positions);
+    	    	return pos;
+    		}
     	}
     	pos = getNear(new Position((int)client.getPosX(),(int)client.getPosY(),(int)client.getPosZ()),positions);
     	return pos;
@@ -566,67 +569,71 @@ public class SessionListener extends SessionAdapter {
         	for (int i = 0; i < message.split(" ").length; i++) {
         		System.out.print(message.split(" ")[i]+" ");
         	}
-            switch (message.split(" ")[2]) {
-            	case "check":
-            		Position pos = findNearestBlockById(4);
-                	if (pos == null) {
-                		BotU.chat(client, "я нихуя не нашел");
-                	} else {
-        	        	BotU.chat(client, "finded block at x:"+pos.getX()+" y:"+pos.getY()+" z:"+pos.getZ());
-                	}
-                	break;
-            	case "mine":
-            		Thread t = new Thread(() -> {
-	            		for (int i = 0; i < Integer.parseInt(message.split(" ")[4]); i++) {
-		            		Position pos1 = findNearestBlockById(Integer.parseInt(message.split(" ")[3]));
+        	if (message.split(" ").length > 2) {
+	            switch (message.split(" ")[2]) {
+	            	case "check":
+	            		Position pos = findNearestBlockById(4);
+	                	if (pos == null) {
+	                		BotU.chat(client, "я нихуя не нашел");
+	                	} else {
+	        	        	BotU.chat(client, "finded block at x:"+pos.getX()+" y:"+pos.getY()+" z:"+pos.getZ());
+	                	}
+	                	break;
+	            	case "mine":
+	            		Thread t = new Thread(() -> {
+		            		for (int i = 0; i < Integer.parseInt(message.split(" ")[4]); i++) {
+			            		Position pos1 = findNearestBlockById(Integer.parseInt(message.split(" ")[3]));
+			                	if (pos1 == null) {
+			                		BotU.chat(client, " ничего не нашел");
+			                		break;
+			                	} else {
+			                		log("нашел нужный блок на "+pos1.toString());
+			        	        	Position posit = botCanTouchBlockAt(pos1);
+			        	        	if (posit == null) {
+			        	        		BotU.chat(client, "блок я нашел но к нему не подобраться");
+			        	        	} else {
+				                		if (walkTo(posit, true)) BotU.mineBlock(client, pos1, false);
+				        	        	while (!blockIsEmpty(getblockid(pos1))) {
+				        	        		ThreadU.sleep(100);
+				        	        	}
+			        	        	}
+			                	}
+		            		}
+		            		BotU.chat(client, "я все");
+	            		});
+	            		t.start();
+	                	break;
+	            	case "cslot":
+	            		BotU.SetSlot(client, Integer.parseInt(message.split(" ")[3]));
+	            	case "faceto":
+	            		BotU.LookHead(client, new Point3D_F64(Integer.parseInt(message.split(" ")[3]),Integer.parseInt(message.split(" ")[4]),Integer.parseInt(message.split(" ")[5])));
+	            	case "goto":
+	            		Thread t1 = new Thread(() -> {
+	            			walkTo(new Position(Integer.parseInt(message.split(" ")[3]),Integer.parseInt(message.split(" ")[4]),Integer.parseInt(message.split(" ")[5])),false);
+	            		});
+	            		t1.start();
+	            	case "jump":
+	            		BotU.placeBlock(Hand.MAIN_HAND, client, new Position((int)client.getPosX(),(int)client.getPosY(),(int)client.getPosZ()), true);
+	            	case "craft":
+	            		new Thread(() -> {
+	            			Position pos1 = findNearestBlockById(58);
 		                	if (pos1 == null) {
 		                		BotU.chat(client, " ничего не нашел");
-		                		break;
 		                	} else {
-		                		log("нашел нужный блок на "+pos1.toString());
+		                		BotU.chat(client, "нашел нужный блок на "+pos1.toString());
 		        	        	Position posit = botCanTouchBlockAt(pos1);
 		        	        	if (posit == null) {
 		        	        		BotU.chat(client, "блок я нашел но к нему не подобраться");
 		        	        	} else {
-			                		if (walkTo(posit, true)) BotU.mineBlock(client, pos1, false);
-			        	        	while (!blockIsEmpty(getblockid(pos1))) {
-			        	        		ThreadU.sleep(100);
-			        	        	}
+			                		if (walkTo(posit, false)) BotU.rightClickOnBlock(client, pos1);
+			                		ThreadU.sleep(3000);
+			                		log("крафчу");
+			                		((WorkBenchInventory) client.getOpenedInventory()).craft(client, CraftingUtils.getRecipe(CraftableMaterials.PICKAXE,4));
 		        	        	}
 		                	}
-	            		}
-	            		BotU.chat(client, "я все");
-            		});
-            		t.start();
-                	break;
-            	case "cslot":
-            		BotU.SetSlot(client, Integer.parseInt(message.split(" ")[3]));
-            	case "faceto":
-            		BotU.LookHead(client, new Point3D_F64(Integer.parseInt(message.split(" ")[3]),Integer.parseInt(message.split(" ")[4]),Integer.parseInt(message.split(" ")[5])));
-            	case "goto":
-            		Thread t1 = new Thread(() -> {
-            			walkTo(new Position(Integer.parseInt(message.split(" ")[3]),Integer.parseInt(message.split(" ")[4]),Integer.parseInt(message.split(" ")[5])),false);
-            		});
-            		t1.start();
-            	case "jump":
-            		BotU.placeBlock(Hand.MAIN_HAND, client, new Position((int)client.getPosX(),(int)client.getPosY(),(int)client.getPosZ()), true);
-            	case "craft":
-            		new Thread(() -> {
-            			Position pos1 = findNearestBlockById(58);
-	                	if (pos1 == null) {
-	                		BotU.chat(client, " ничего не нашел");
-	                	} else {
-	                		BotU.chat(client, "нашел нужный блок на "+pos1.toString());
-	        	        	Position posit = botCanTouchBlockAt(pos1);
-	        	        	if (posit == null) {
-	        	        		BotU.chat(client, "блок я нашел но к нему не подобраться");
-	        	        	} else {
-		                		if (walkTo(posit, false)) BotU.rightClickOnBlock(client, pos1);
-		                		((WorkBenchInventory) client.getOpenedInventory()).craft(CraftingUtils.getRecipe(CraftableMaterials.PICKAXE,4));
-	        	        	}
-	                	}
-            		}).start();
-            }
+	            		}).start();
+	            }
+        	} else {}
         	//Position pos = new Position((int)client.getPosX(),(int)client.getPosY()-2,(int)client.getPosZ());
         	//walkTo(pos);
         	
@@ -654,10 +661,9 @@ public class SessionListener extends SessionAdapter {
             		));
             client.getSession().send(new ClientRequestPacket(ClientRequest.STATS));
         } else if (receiveEvent.getPacket() instanceof ServerPlayerHealthPacket) {
-            if (((ServerPlayerHealthPacket) receiveEvent.getPacket()).getHealth() < 1) {
-                client.getSession().send(new ClientRequestPacket(ClientRequest.RESPAWN));
-                System.out.println("(" + client.getGameProfile().getName() + ") бот убит, возрождаю");
-            }
+            final ServerPlayerHealthPacket p = receiveEvent.getPacket();
+            if (p.getHealth() <= 0)
+            	client.getSession().send(new ClientRequestPacket(ClientRequest.RESPAWN));
         //server chunks
         } else if (receiveEvent.getPacket() instanceof ServerMultiBlockChangePacket) {
         	log("mbcp");
@@ -688,15 +694,6 @@ public class SessionListener extends SessionAdapter {
 		} else if (receiveEvent.getPacket() instanceof ServerWindowItemsPacket) {
 			log("swip");
 			ServerWindowItemsPacket packet = (ServerWindowItemsPacket) receiveEvent.getPacket();
-			/*int o = 0;
-			for (ItemStack item : packet.getItems()) {
-				if (item != null) {
-					log(o+" "+item.getId());
-				} else {
-					log("item is null " + o);
-				}
-				o++;
-			}*/
 			if (packet.getWindowId() == 0) {
 				if (client.getPlayerInventory() == null) {
 					client.setPlayerInventory(new PlayerInventory());
@@ -740,7 +737,7 @@ public class SessionListener extends SessionAdapter {
 			client.setCurrentWindowId(packet.getWindowId());
 		} else if (receiveEvent.getPacket() instanceof ServerWindowPropertyPacket) {
 			log("swpp");
-			ServerWindowPropertyPacket packet = (ServerWindowPropertyPacket) receiveEvent.getPacket();
+			//ServerWindowPropertyPacket packet = (ServerWindowPropertyPacket) receiveEvent.getPacket();
 			
 		} else if (receiveEvent.getPacket() instanceof ServerConfirmTransactionPacket) {
 			log("sctp");
@@ -754,7 +751,8 @@ public class SessionListener extends SessionAdapter {
     public void disconnected(DisconnectedEvent event) {
 		
     	try {
-    		log("bot disconected "+event.getReason()+"       asdasdads        "+event.getCause());
+    		log("bot disconected "+event.getReason());
+    		event.getCause().printStackTrace();
 			client.connect();
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -769,7 +767,7 @@ public class SessionListener extends SessionAdapter {
     		int cz = (int)Math.floor(pos.getZ()/16.0);
     		//log("chunk pos x "+cx+" z "+cz+" y "+cy);
 			ChunkCoordinates coords = new ChunkCoordinates(cx, cz);
-			Column c = columns.get(coords);
+			Column c = Main.columns.get(coords);
 			if (c == null) {
 				return null;
 			}
@@ -796,16 +794,16 @@ public class SessionListener extends SessionAdapter {
 	public void setBlock(Position pos, BlockState state) {
 		ChunkCoordinates coords = new ChunkCoordinates((int) (pos.getX() / 16.0), (int) (pos.getZ() / 16.0));
 		int yPos = (int) Math.floor(pos.getY() / 16.0);
-		if (!columns.containsKey(coords)) {
+		if (!Main.columns.containsKey(coords)) {
 			return;
 		}
-		columns.get(coords).getChunks()[yPos].getBlocks().set(Math.abs(pos.getX() % 16), Math.abs(pos.getY() % 16), Math.abs(pos.getZ() % 16), state);
+		Main.columns.get(coords).getChunks()[yPos].getBlocks().set(Math.abs(pos.getX() % 16), Math.abs(pos.getY() % 16), Math.abs(pos.getZ() % 16), state);
 	}
 	public void addChunkColumn(ChunkCoordinates coords, Column column) {
-		columns.put(coords, column);
+		Main.columns.put(coords, column);
 	}
 	public void unloadColumn(ChunkCoordinates coords) {
-		columns.remove(coords);
+		Main.columns.remove(coords);
 	}
 	
 	public static void log(String f) {

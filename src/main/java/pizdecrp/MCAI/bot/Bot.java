@@ -40,6 +40,7 @@ public class Bot {
     public int currentSlotInHand;
     private PlayerInventory playerInventory;
     private int currentWindowId;
+    
 
     public Bot(MinecraftProtocol account, String host, int port, Proxy proxy) {
         this.account = account;
@@ -68,13 +69,13 @@ public class Bot {
         
     }
     
-    public void craft(CraftableMaterials mat, int id) {
+    public void craft(Bot client, CraftableMaterials mat, int id) {
 		WorkBenchInventory inv = null;
 		if (openedInventory instanceof WorkBenchInventory) {
 			inv = (WorkBenchInventory) openedInventory;
 		}
 		CraftingRecipe recipe = CraftingUtils.getRecipe(mat, id);
-		inv.craft(recipe);
+		inv.craft(client, recipe);
 	}
 
     public boolean isOnline() {

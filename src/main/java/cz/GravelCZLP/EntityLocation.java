@@ -2,9 +2,6 @@ package cz.GravelCZLP;
 
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
 import com.github.steveice10.mc.protocol.data.game.world.block.BlockFace;
-import com.github.steveice10.mc.protocol.data.game.world.block.BlockState;
-
-import pizdecrp.MCAI.bot.SessionListener;
 
 public class EntityLocation implements Cloneable {
 

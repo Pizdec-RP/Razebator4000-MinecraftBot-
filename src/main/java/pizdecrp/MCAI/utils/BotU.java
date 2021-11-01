@@ -10,15 +10,12 @@ import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlaye
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerPlaceBlockPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerPositionPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerRotationPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerUseItemPacket;
-
 import cz.GravelCZLP.AABB;
 import cz.GravelCZLP.MathHelp;
 import cz.GravelCZLP.Vector3D;
 import georegression.struct.point.Point3D_F64;
 import georegression.struct.point.Vector3D_F64;
 import pizdecrp.MCAI.bot.Bot;
-import pizdecrp.MCAI.bot.SessionListener;
 public class BotU {
 	//private HashMap<ChunkCoordinates, Column> columns = new HashMap<>();
 	public static void log(String f) {
