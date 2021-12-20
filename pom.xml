@@ -16,10 +16,11 @@
             <id>jitpack.io</id>
             <url>https://jitpack.io</url>
         </repository>
+        
     </repositories>
 
     <dependencies>
-        
+
         <dependency>
             <groupId>com.github.Steveice10</groupId>
             <artifactId>MCProtocolLib</artifactId>
@@ -48,9 +49,20 @@
             <scope>compile</scope>
         </dependency>
         
-
+		<dependency>
+			<groupId>org.georegression</groupId>
+			<artifactId>georegression</artifactId>
+			<version>0.24</version>
+			<scope>compile</scope>
+		</dependency>
+		
+		<dependency>
+		    <groupId>com.github.azbh111</groupId>
+		    <artifactId>spigot-1.12.2</artifactId>
+		    <version>R</version>
+		</dependency>
         
-        
+        <dependency>  <groupId>com.google.guava</groupId>  <artifactId>guava</artifactId>  <version>11.0.2</version></dependency>
     </dependencies>
   <build>
   	<plugins>

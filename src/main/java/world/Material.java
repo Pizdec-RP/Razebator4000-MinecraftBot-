@@ -39,5 +39,9 @@ public enum Material {
 	public int getId() {
 		return id;
 	}
+
+	boolean isSolid() {
+		return false;
+	}
 	
 }
