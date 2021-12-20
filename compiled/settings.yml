@@ -1,0 +1,7 @@
+{
+    "host": "localhost:25565",
+    "bots": 10,
+    "enterrange": 1000, #milis
+    "useproxy": false,
+    "KeepAlivePackets": false
+}
