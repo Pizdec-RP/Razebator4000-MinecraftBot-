@@ -68,15 +68,29 @@ public class Vector3D {
 	public void setZ(double z) {
 		this.z = z;
 	}
-
-	public Vector3D(EntityLocation location) {
-		this(location.getX(), location.getY(), location.getZ());
+	
+	public Vector3D VecToInt() {
+		return new Vector3D((int)x,(int)y,(int)z);
 	}
-
+	
+	@Deprecated
 	public Vector3D(Position pos) {
 		this(pos.getX(), pos.getY(), pos.getZ());
 	}
 	
+	public boolean equals(Object obj) {
+		if (!(obj instanceof Vector3D)) {
+			return false;
+		}
+		Vector3D vec = (Vector3D) obj;
+		if (VectorUtils.equalsInt(vec, this)) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	@Deprecated
 	public Position translate() {
 		return new Position((int)x,(int)y,(int)z);
 	}

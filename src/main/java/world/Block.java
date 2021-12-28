@@ -24,14 +24,15 @@ public class Block {
 		this.type = type;
 	}
 	
+	@SuppressWarnings("deprecation")
 	public Block(BlockChangeRecord data) {
 		Vector3D vector = new Vector3D(data.getPosition());
 		this.pos = vector;
-		int id = data.getBlock().getId();
+		int id = data.getBlock();
 		this.id = id;
 		BlockType bt = BlockType.bt(id);
 		this.type = bt;
-		int subid = data.getBlock().getData();
+		int subid = -1;
 		this.subid = subid;
 	}
 	

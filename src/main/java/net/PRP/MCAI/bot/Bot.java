@@ -1,6 +1,8 @@
 package net.PRP.MCAI.bot;
 
 import com.github.steveice10.mc.auth.data.GameProfile;
+import com.github.steveice10.mc.auth.service.SessionService;
+import com.github.steveice10.mc.protocol.MinecraftConstants;
 import com.github.steveice10.mc.protocol.MinecraftProtocol;
 import com.github.steveice10.mc.protocol.packet.ingame.client.ClientChatPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerPositionPacket;
@@ -8,18 +10,16 @@ import com.github.steveice10.packetlib.Client;
 import com.github.steveice10.packetlib.Session;
 import com.github.steveice10.packetlib.tcp.TcpSessionFactory;
 
-import georegression.struct.point.Point3D_F64;
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.utils.ThreadU;
 import net.PRP.MCAI.utils.Vector3D;
-import java.io.FileNotFoundException;
+import net.PRP.MCAI.utils.VectorUtils;
+import net.PRP.MCAI.Inventory.*;
 import java.net.Proxy;
 import java.util.UUID;
 
 public class Bot {
     private final MinecraftProtocol account;
-    
-    public Point3D_F64 PlayerPosition;
     
     private final String host;
     private final int port;
@@ -36,11 +36,16 @@ public class Bot {
     private UUID UUID;
     private boolean inAction;
     private boolean mainhost;
+    private Inventory openedInventory;
+    private int id;
+    public EntityListener entityListener;
     
     //private IInventory openedInventory;
     public int currentSlotInHand;
     //private PlayerInventory playerInventory;
     private int currentWindowId;
+    
+    public boolean tickMode = true;
     
 
     public Bot(MinecraftProtocol account, String host, int port, Proxy proxy) {
@@ -51,56 +56,79 @@ public class Bot {
         this.port = port;
     }
 
-    public void connect() throws FileNotFoundException {
-        Client client = new Client(host, port, account, new TcpSessionFactory(proxy));
+    public void connect() {
+    	System.gc();
+    	SessionService sessionService = new SessionService();
+        sessionService.setProxy(proxy);
+        
+        Client client = new Client(host, port, account, new TcpSessionFactory());
+        client.getSession().setFlag(MinecraftConstants.SESSION_SERVICE_KEY, sessionService);
         client.getSession().addListener(new SessionListener(this));
         client.getSession().addListener(new PingPacketsManager());
-        //client.getSession().addListener(new EntityListener(this));
+        this.entityListener = new EntityListener(this);
+        client.getSession().addListener(this.entityListener);
         client.getSession().addListener(new ChatListener(this));
+        if (!Main.debug) {
+        	this.tickMode = (boolean) Main.getsett("tickmode");
+	        if ((boolean)Main.getsett("raidmode")) {
+	        	client.getSession().addListener(new RaiderAIListener(this));
+	        }
+        }
         client.getSession().connect();
+        register();
 
         this.session = client.getSession();
-        this.PlayerPosition = new Point3D_F64(0, 0, 0);
+        if (tickMode) {
+        	new Thread(()-> {
+            	while (true) {
+            		Vector3D before = getPosition();
+            		ThreadU.sleep(50);
+            		Vector3D now = getPosition();
+            		if (!VectorUtils.equals(before, now)) {
+            			getSession().send(new ClientPlayerPositionPacket(true, posX, posY, posZ));
+            		}
+            	}
+            }).start();
+        }
     }
 
     public void register() {
-        if (!isOnline())
-            return;
-        ThreadU.sleep(5000);
+        if (!isOnline()) return;
+        ThreadU.sleep(200);
         session.send(new ClientChatPacket("/register 112233asdasd 112233asdasd"));
-        ThreadU.sleep(1000);
+        ThreadU.sleep(100);
         session.send(new ClientChatPacket("/login 112233asdasd"));
         
     }
     
     public void addX(double i) {
     	this.posX += i;
-    	getSession().send(new ClientPlayerPositionPacket(true, posX, posY, posZ));
+    	if (!tickMode) getSession().send(new ClientPlayerPositionPacket(true, posX, posY, posZ));
     }
     
     public void addY(double i) {
     	this.posY += i;
-    	getSession().send(new ClientPlayerPositionPacket(true, posX, posY, posZ));
+    	if (!tickMode) getSession().send(new ClientPlayerPositionPacket(true, posX, posY, posZ));
     }
     
     public void addZ(double i) {
     	this.posZ += i;
-    	getSession().send(new ClientPlayerPositionPacket(true, posX, posY, posZ));
+    	if (!tickMode) getSession().send(new ClientPlayerPositionPacket(true, posX, posY, posZ));
     }
     
     public void remX(double i) {
     	this.posX -= i;
-    	getSession().send(new ClientPlayerPositionPacket(true, posX, posY, posZ));
+    	if (!tickMode) getSession().send(new ClientPlayerPositionPacket(true, posX, posY, posZ));
     }
     
     public void remY(double i) {
     	this.posY -= i;
-    	getSession().send(new ClientPlayerPositionPacket(true, posX, posY, posZ));
+    	if (!tickMode) getSession().send(new ClientPlayerPositionPacket(true, posX, posY, posZ));
     }
     
     public void remZ(double i) {
     	this.posZ -= i;
-    	getSession().send(new ClientPlayerPositionPacket(true, posX, posY, posZ));
+    	if (!tickMode) getSession().send(new ClientPlayerPositionPacket(true, posX, posY, posZ));
     }
 
     public boolean isOnline() {
@@ -121,7 +149,6 @@ public class Bot {
 
     public void setPosX(double posX) {
         this.posX = posX;
-        PlayerPosition.setX(posX);
     }
 
     public double getPosY() {
@@ -130,7 +157,6 @@ public class Bot {
 
     public void setPosY(double posY) {
         this.posY = posY;
-        PlayerPosition.setY(posY);
     }
 
     public double getPosZ() {
@@ -139,7 +165,6 @@ public class Bot {
 
     public void setPosZ(double posZ) {
         this.posZ = posZ;
-        PlayerPosition.setZ(posZ);
     }
 
     public String getHost() {
@@ -221,5 +246,21 @@ public class Bot {
 
 	public void setMainhost(boolean mainhost) {
 		this.mainhost = mainhost;
+	}
+
+	public Inventory getOpenedInventory() {
+		return openedInventory;
+	}
+
+	public void setOpenedInventory(Inventory openedInventory) {
+		this.openedInventory = openedInventory;
+	}
+
+	public int getId() {
+		return id;
+	}
+
+	public void setId(int id) {
+		this.id = id;
 	}
 }

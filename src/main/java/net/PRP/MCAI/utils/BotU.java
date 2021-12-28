@@ -1,13 +1,10 @@
 package net.PRP.MCAI.utils;
 
-import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
-import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
 import com.github.steveice10.mc.protocol.data.game.entity.player.PlayerAction;
 import com.github.steveice10.mc.protocol.data.game.world.block.BlockFace;
 import com.github.steveice10.mc.protocol.packet.ingame.client.ClientChatPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerActionPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerChangeHeldItemPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerPlaceBlockPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerPositionPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerRotationPacket;
 import georegression.struct.point.Point3D_F64;
@@ -45,6 +42,10 @@ public class BotU {
 		double cz = (int) Math.floor(client.getPosZ());
 		cz += 0.5;
 		setposto(client, cx, client.getPosY(), cz);
+	}
+	
+	public static void calibrateY(Bot client) {
+		client.setPosY((int) Math.floor(client.getPosY()));
 	}
 	
 	public static void walk (Bot client, int range, String ax) {
@@ -285,51 +286,16 @@ public class BotU {
     	client.setPosZ(z);
 	}
 	
-	public static void mineBlock (Bot client, Position pos, boolean inthread) {
-		/*if (inthread) {
-			new Thread(() -> {
-				Point3D_F64 position = new Point3D_F64(pos.getX(),pos.getY(),pos.getZ());
-				LookHead(client, position);
-				//BlockFace bf = blockFaceCollide(client, MathHelp.vectorDirection(new EntityLocation(pos.getX(),pos.getY(),pos.getZ())), null);
-				//if (bf == null) bf = BlockFace.UP;
-				ClientPlayerActionPacket a = new ClientPlayerActionPacket(PlayerAction.START_DIGGING, pos, BlockFace.UP);
-				client.getSession().send(a);
-				ThreadU.sleep(400);
-				ClientPlayerActionPacket aa = new ClientPlayerActionPacket(PlayerAction.FINISH_DIGGING, pos, BlockFace.UP);
-				client.getSession().send(aa);
-				while (!SessionListener.blockIsEmpty(SessionListener.getblockid(pos))) {
-	        		ThreadU.sleep(100);
-	        	}
-			}).start();
-		} else {*/
+	@SuppressWarnings("deprecation")
+	public static void mineBlock (Bot client, Vector3D pos) {
 		Point3D_F64 position = new Point3D_F64(pos.getX(),pos.getY(),pos.getZ());
 		LookHead(client, position);
-		//BlockFace bf = blockFaceCollide(client, MathHelp.vectorDirection(new EntityLocation(pos.getX(),pos.getY(),pos.getZ())), null);
-		//if (bf == null) bf = BlockFace.UP;
-		ClientPlayerActionPacket a = new ClientPlayerActionPacket(PlayerAction.START_DIGGING, pos, BlockFace.UP);
+		ClientPlayerActionPacket a = new ClientPlayerActionPacket(PlayerAction.START_DIGGING, pos.translate(), BlockFace.UP);
 		client.getSession().send(a);
 		ThreadU.sleep(400);
-		ClientPlayerActionPacket aa = new ClientPlayerActionPacket(PlayerAction.FINISH_DIGGING, pos, BlockFace.UP);
+		ClientPlayerActionPacket aa = new ClientPlayerActionPacket(PlayerAction.FINISH_DIGGING, pos.translate(), BlockFace.UP);
 		client.getSession().send(aa);
-		//}
     }
-	
-	public static void placeBlock (Hand h,Bot client, Position pos, boolean jumpup) {
-		if (jumpup) {
-			teleport(client, 0, 0.5, 0);
-			ThreadU.sleep(100);
-			teleport(client, 0, 0.5, 0);
-			ThreadU.sleep(100);
-			client.getSession().send(new ClientPlayerPlaceBlockPacket(pos, BlockFace.UP, h, 7, 7, 7));
-		} else {
-			client.getSession().send(new ClientPlayerPlaceBlockPacket(pos, BlockFace.UP, h, 7, 7, 7));
-		}
-	}
-	
-	public static void rightClickOnBlock(Bot client, Position pos) {
-		LookHead(client, new Point3D_F64(pos.getX(),pos.getY(),pos.getZ()));
-		client.getSession().send(new ClientPlayerPlaceBlockPacket(pos, BlockFace.DOWN, Hand.MAIN_HAND, 0, 0, 0));
-	}
 	
 	public static void SetSlot(Bot client, int slot) {
         client.getSession().send(new ClientPlayerChangeHeldItemPacket(slot));
@@ -338,7 +304,7 @@ public class BotU {
 	public static void LookHead(Bot client, Point3D_F64 position) {
 		int y = (int) (position.getY() - 1);
 		position.setY(y);
-		Point3D_F64 PlayerPosition = client.PlayerPosition;
+		Point3D_F64 PlayerPosition = new Point3D_F64(client.posX, client.posY, client.posZ);
         if (!position.equals(PlayerPosition)) {
             Vector3D_F64 vect = new Vector3D_F64(PlayerPosition, position);
             vect.normalize();

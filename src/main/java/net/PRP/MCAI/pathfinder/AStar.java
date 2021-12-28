@@ -2,11 +2,13 @@ package net.PRP.MCAI.pathfinder;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
 
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.movements.Movements;
+import net.PRP.MCAI.pathfinder.Waypoint.WType;
 import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.ThreadU;
 import net.PRP.MCAI.utils.Vector3D;
@@ -15,7 +17,7 @@ import net.PRP.MCAI.utils.VectorUtils;
 @SuppressWarnings("unused")
 public class AStar {
 	public List<Vector3D> used = new ArrayList<>();
-	public List<Vector3D> toWalk = new ArrayList<>();
+	public List<Waypoint> toWalk = new CopyOnWriteArrayList<>();
 	public Vector3D start;
 	public Vector3D end;
 	public Movements mv;
@@ -30,39 +32,42 @@ public class AStar {
 	public void startCalc3D(Bot client) {
 		try {
 			if (!VectorUtils.equalsInt(start, end)) {
-				Waypoint cursor = wp(start);
+				Waypoint cursor = wp(start, null);
 				while (!VectorUtils.equals(cursor.loc, end)) {
 					List<Waypoint> neighbors = getWalkableWPAround(cursor);
 					cursor = getNear(neighbors);
 					used.add(cursor.loc);
-					toWalk.add(cursor.loc);
+					toWalk.add(cursor);
 				}
 				client.setmovelocked(true);
-				for(Vector3D p : toWalk) {
-					boolean t = this.mv.move(client.getPositionInt(), p);
-				}
-				client.setmovelocked(false);
+				Walk();
 			}
 		} catch (NullPointerException e) {
 			//pass
 		}
 	}
 	
+	public void Walk() {
+		for(Waypoint p : toWalk) {
+			String wp = mv.EnumMove(p);
+			if (wp == "unknown") break;
+			mv.moveAct(wp);
+		}
+		client.setmovelocked(false);
+	}
+	
 	public void startCalc2D(Bot client) {
 		try {
 			if (!VectorUtils.equalsInt(start, end)) {
-				Waypoint cursor = wp(start);
+				Waypoint cursor = wp(start, null);
 				while (!VectorUtils.equals(cursor.loc, end)) {
 					List<Waypoint> neighbors = getWalkableWPAround(cursor);
 					cursor = getNear(neighbors);
 					used.add(cursor.loc);
-					toWalk.add(cursor.loc);
+					toWalk.add(cursor);
 				}
 				client.setmovelocked(true);
-				for(Vector3D p : toWalk) {
-					boolean t = this.mv.move(client.getPositionInt(), p);
-				}
-				client.setmovelocked(false);
+				Walk();
 			}
 		} catch (NullPointerException e) {
 			//pass
@@ -103,28 +108,6 @@ public class AStar {
         return minpos;
     }
 	
-	//Zalypa ne rabochaya hz pochemu
-	public Waypoint pickCloser(List<Waypoint> neighbors) {
-		System.out.println("start");
-		Waypoint last = null;
-		for (Waypoint wp : neighbors) {
-			//System.out.println("curcost "+wp.cost);
-			if (last == null) {
-				System.out.println("last is empty => "+wp.cost);
-				last = wp;
-			} else {
-				if (wp.cost < last.cost) {
-					System.out.println(wp.cost+" < "+last.cost);
-					last = wp;
-				} else {
-					System.out.println(wp.cost+" >= "+last.cost);
-				}
-			}
-		}
-		System.out.println("end");
-		return last;
-	}
-	
 	public boolean wpAlreadyUsed(Waypoint wp) {
 		boolean isused = false;
 		for (Vector3D pos : used) {
@@ -136,13 +119,26 @@ public class AStar {
 		return isused;
 	}
 	
-	public Waypoint wp(Vector3D curpos) {
-		Waypoint wp = new Waypoint();
-		wp.loc = curpos;
-		wp.active = true;
-		int hr = (int)Math.sqrt(Math.pow(curpos.getX() - this.end.getX(), 2) + Math.pow(curpos.getY() - this.end.getY(), 2) + Math.pow(curpos.getZ() - this.end.getZ(), 2));
-		wp.cost = hr;
-		return wp;
+	public Waypoint wp(Vector3D curpos, Vector3D beforePos) {
+		if (beforePos == null) {
+			Waypoint wp = new Waypoint();
+			wp.loc = curpos;
+			wp.active = true;
+			int hr = (int)Math.sqrt(Math.pow(curpos.getX() - this.end.getX(), 2) + Math.pow(curpos.getY() - this.end.getY(), 2) + Math.pow(curpos.getZ() - this.end.getZ(), 2));
+			wp.cost = hr;
+			wp.type = WType.STARTPOS;
+			return wp;
+		} else {
+			Waypoint wp = new Waypoint();
+			wp.loc = curpos;
+			wp.active = true;
+			int hr = (int)Math.sqrt(Math.pow(curpos.getX() - this.end.getX(), 2) + Math.pow(curpos.getY() - this.end.getY(), 2) + Math.pow(curpos.getZ() - this.end.getZ(), 2));
+			wp.cost = hr;
+			wp.type = WType.NORMAL;
+			wp.beforeLoc = beforePos;
+			wp.movetype = mv.EnumMove(wp);
+			return wp;
+		}
 	}
 	
 	public List<Waypoint> getWalkableWPAround(Waypoint ps) {
@@ -154,7 +150,8 @@ public class AStar {
 					//System.out.println(x+" "+y+" "+z);
 					Vector3D curpos = new Vector3D((int)(pos.x + x), (int)(pos.y + y),(int)(pos.z + z));
 					if (!VectorUtils.equals(this.start, curpos) || !VectorUtils.equals(pos, curpos)) {
-						Waypoint wp = wp(curpos);
+						Waypoint wp = wp(curpos, ps.loc);
+						
 						if (!wpAlreadyUsed(wp) && VectorUtils.positionIsSafe(wp.loc)) {
 							neighbors.add(wp);
 							//System.out.println("neighbours add"+wp.loc.toString());
