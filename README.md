@@ -1,4 +1,4 @@
-# MinecraftBot eblan
+# MinecraftBot eblan сам ты еблан
 
 шо к чему
  * Поддержка только 1.16.5.
