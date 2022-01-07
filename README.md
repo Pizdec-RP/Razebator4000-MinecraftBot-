@@ -1,4 +1,4 @@
-# MinecraftAIBot
+# MinecraftBot eblan
 
 шо к чему
  * Поддержка только 1.16.5.
