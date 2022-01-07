@@ -95,11 +95,11 @@ public class Movements {
 	}
 	
 	public boolean s(Vector3D pos) {
-		return VectorUtils.positionIsSafe(pos);
+		return VectorUtils.positionIsSafe(pos, client);
 	}
 	
 	public boolean avoid(Vector3D pos) {
-		return VectorUtils.BTavoid(pos.getBlock().type) && VectorUtils.BTavoid(pos.add(0, 1, 0).getBlock().type);
+		return VectorUtils.BTavoid(pos.getBlock(client).type) && VectorUtils.BTavoid(pos.add(0, 1, 0).getBlock(client).type);
 	}
 	
 	public void warn() {System.out.println("идиот чини хуйню свою");}
@@ -416,21 +416,21 @@ public class Movements {
 				} else {
 					if (!avoid(client.getPosition().add(1, 0, 0))) {
 						BotU.mineBlock(client, client.getPosition().add(1, 0, 0));
-						while (!VectorUtils.BTavoid(client.getPosition().add(1, 0, 0).getBlock().type)) {
+						while (!VectorUtils.BTavoid(client.getPosition().add(1, 0, 0).getBlock(client).type)) {
 			        		ThreadU.sleep(200);
 			        	}
 						BotU.mineBlock(client, client.getPosition().add(1, 1, 0));
-						while (!VectorUtils.BTavoid(client.getPosition().add(1, 1, 0).getBlock().type)) {
+						while (!VectorUtils.BTavoid(client.getPosition().add(1, 1, 0).getBlock(client).type)) {
 			        		ThreadU.sleep(200);
 			        	}
 						moveAct(ax);
 					} else if (!avoid(client.getPosition().add(0, 0, 1))) {
 						BotU.mineBlock(client, client.getPosition().add(0, 0, 1));
-						while (!VectorUtils.BTavoid(client.getPosition().add(0, 0, 1).getBlock().type)) {
+						while (!VectorUtils.BTavoid(client.getPosition().add(0, 0, 1).getBlock(client).type)) {
 			        		ThreadU.sleep(200);
 			        	}
 						BotU.mineBlock(client, client.getPosition().add(0, 1, 1));
-						while (!VectorUtils.BTavoid(client.getPosition().add(0, 1, 1).getBlock().type)) {
+						while (!VectorUtils.BTavoid(client.getPosition().add(0, 1, 1).getBlock(client).type)) {
 			        		ThreadU.sleep(200);
 			        	}
 						moveAct(ax);
@@ -478,21 +478,21 @@ public class Movements {
 				} else {
 					if (!avoid(client.getPosition().add(-1, 0, 0))) {
 						BotU.mineBlock(client, client.getPosition().add(-1, 0, 0));
-						while (!VectorUtils.BTavoid(client.getPosition().add(-1, 0, 0).getBlock().type)) {
+						while (!VectorUtils.BTavoid(client.getPosition().add(-1, 0, 0).getBlock(client).type)) {
 			        		ThreadU.sleep(200);
 			        	}
 						BotU.mineBlock(client, client.getPosition().add(-1, 1, 0));
-						while (!VectorUtils.BTavoid(client.getPosition().add(-1, 1, 0).getBlock().type)) {
+						while (!VectorUtils.BTavoid(client.getPosition().add(-1, 1, 0).getBlock(client).type)) {
 			        		ThreadU.sleep(200);
 			        	}
 						moveAct(ax);
 					} else if (!avoid(client.getPosition().add(0, 0, 1))) {
 						BotU.mineBlock(client, client.getPosition().add(0, 0, 1));
-						while (!VectorUtils.BTavoid(client.getPosition().add(0, 0, 1).getBlock().type)) {
+						while (!VectorUtils.BTavoid(client.getPosition().add(0, 0, 1).getBlock(client).type)) {
 			        		ThreadU.sleep(200);
 			        	}
 						BotU.mineBlock(client, client.getPosition().add(0, 1, 1));
-						while (!VectorUtils.BTavoid(client.getPosition().add(0, 1, 1).getBlock().type)) {
+						while (!VectorUtils.BTavoid(client.getPosition().add(0, 1, 1).getBlock(client).type)) {
 			        		ThreadU.sleep(200);
 			        	}
 						moveAct(ax);
@@ -539,21 +539,21 @@ public class Movements {
 				} else {
 					if (!avoid(client.getPosition().add(-1, 0, 0))) {
 						BotU.mineBlock(client, client.getPosition().add(-1, 0, 0));
-						while (!VectorUtils.BTavoid(client.getPosition().add(-1, 0, 0).getBlock().type)) {
+						while (!VectorUtils.BTavoid(client.getPosition().add(-1, 0, 0).getBlock(client).type)) {
 			        		ThreadU.sleep(200);
 			        	}
 						BotU.mineBlock(client, client.getPosition().add(1, 1, 0));
-						while (!VectorUtils.BTavoid(client.getPosition().add(-1, 1, 0).getBlock().type)) {
+						while (!VectorUtils.BTavoid(client.getPosition().add(-1, 1, 0).getBlock(client).type)) {
 			        		ThreadU.sleep(200);
 			        	}
 						moveAct(ax);
 					} else if (!avoid(client.getPosition().add(0, 0, 1))) {
 						BotU.mineBlock(client, client.getPosition().add(0, 0, -1));
-						while (!VectorUtils.BTavoid(client.getPosition().add(0, 0, -1).getBlock().type)) {
+						while (!VectorUtils.BTavoid(client.getPosition().add(0, 0, -1).getBlock(client).type)) {
 			        		ThreadU.sleep(200);
 			        	}
 						BotU.mineBlock(client, client.getPosition().add(0, 1, -1));
-						while (!VectorUtils.BTavoid(client.getPosition().add(0, 1, -1).getBlock().type)) {
+						while (!VectorUtils.BTavoid(client.getPosition().add(0, 1, -1).getBlock(client).type)) {
 			        		ThreadU.sleep(200);
 			        	}
 						moveAct(ax);
@@ -600,21 +600,21 @@ public class Movements {
 				} else {
 					if (!avoid(client.getPosition().add(1, 0, 0))) {
 						BotU.mineBlock(client, client.getPosition().add(1, 0, 0));
-						while (!VectorUtils.BTavoid(client.getPosition().add(1, 0, 0).getBlock().type)) {
+						while (!VectorUtils.BTavoid(client.getPosition().add(1, 0, 0).getBlock(client).type)) {
 			        		ThreadU.sleep(200);
 			        	}
 						BotU.mineBlock(client, client.getPosition().add(1, 1, 0));
-						while (!VectorUtils.BTavoid(client.getPosition().add(1, 1, 0).getBlock().type)) {
+						while (!VectorUtils.BTavoid(client.getPosition().add(1, 1, 0).getBlock(client).type)) {
 			        		ThreadU.sleep(200);
 			        	}
 						moveAct(ax);
 					} else if (!avoid(client.getPosition().add(0, 0, -1))) {
 						BotU.mineBlock(client, client.getPosition().add(0, 0, -1));
-						while (!VectorUtils.BTavoid(client.getPosition().add(0, 0, -1).getBlock().type)) {
+						while (!VectorUtils.BTavoid(client.getPosition().add(0, 0, -1).getBlock(client).type)) {
 			        		ThreadU.sleep(200);
 			        	}
 						BotU.mineBlock(client, client.getPosition().add(0, 1, -1));
-						while (!VectorUtils.BTavoid(client.getPosition().add(0, 1, -1).getBlock().type)) {
+						while (!VectorUtils.BTavoid(client.getPosition().add(0, 1, -1).getBlock(client).type)) {
 			        		ThreadU.sleep(200);
 			        	}
 						moveAct(ax);

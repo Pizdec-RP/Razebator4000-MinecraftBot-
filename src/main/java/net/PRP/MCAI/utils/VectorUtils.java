@@ -7,9 +7,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
 import com.google.common.collect.AbstractIterator;
 
-import net.PRP.MCAI.*;
 import net.PRP.MCAI.bot.Bot;
-import world.BlockType;
+import world.BlockType.Type;
 
 public class VectorUtils {
 	public static boolean equals(Vector3D one, Vector3D two) {
@@ -24,36 +23,32 @@ public class VectorUtils {
 		return false;
 	}
 	
+	public static boolean equalsIntNoY(Vector3D one, Vector3D two) {
+		if ((int)one.getX() == (int)two.getX() && (int)one.getZ() == (int)two.getZ()) return true;
+		return false;
+	}
+	
 	public static Vector3D convert(Position pos) {
 		return new Vector3D(pos.getX(), pos.getY(), pos.getZ());
 	}
 	
-	public static boolean positionIsSafe(Vector3D pos) {
-		BlockType cursor = Main.getWorld().getBlock(pos).type;
-		if (BTavoid(cursor)) {
-			Vector3D pos1 = pos.clone().add(0,1,0);
-			BlockType cursor1 = Main.getWorld().getBlock(pos1).type;
-			if (BTavoid(cursor1)) {
-				Vector3D pos2 = pos.clone().add(0,-1,0);
-				BlockType cursor2 = Main.getWorld().getBlock(pos2).type;
-				if (BThard(cursor2)) {
-					//System.out.println("pos is safe "+pos.toStringInt()+cursor+" "+pos1.toStringInt()+cursor1+" "+pos2.toStringInt()+ cursor2);
-					return true;
-				}
-			}
-		}
-		return false;
+	public static boolean positionIsSafe(Vector3D pos, Bot client) {
+		return BTavoid(client.getWorld().getBlock(pos).type) && BTavoid(client.getWorld().getBlock(pos.add(0,1,0)).type) && icanstayhere(client.getWorld().getBlock(pos.add(0,-1,0)).type);
 	}
 	
-	public static boolean BTavoid(BlockType bt) {
-		if (bt == BlockType.AIR || bt == BlockType.AVOID || bt == BlockType.VOID) {
+	public static boolean BTavoid(Type bt) {
+		if (bt == Type.AIR || bt == Type.AVOID || bt == Type.VOID) {
 			return true;
 		}
 		return false;
 	}
 	
-	public static boolean BThard(BlockType bt) {
-		if (bt == BlockType.HARD) {
+	public static boolean icanstayhere(Type bt) {
+		return bt == Type.HARD || bt == Type.UNBREAKABLE;
+	}
+	
+	public static boolean BThard(Type bt) {
+		if (bt == Type.HARD) {
 			return true;
 		}
 		return false;
@@ -92,6 +87,12 @@ public class VectorUtils {
         return minpos;
     }
 	
+	public static Vector3D findSafePointInRadius(Bot client, int rad) {
+		Vector3D aye = client.getPositionInt().add(MathU.rnd(-rad, rad), 0, MathU.rnd(-rad, rad));
+		//System.out.println(aye);
+		return aye;
+	}
+	
 	public static Vector3D findNearestBlockById(Bot client, int id) {
     	List<Vector3D> positions = new CopyOnWriteArrayList<>();
     	int x = (int)client.getPosX();
@@ -114,7 +115,7 @@ public class VectorUtils {
                     for (int z1 = zs; z1 < z+i; z1++) {
                     	int b;
                     	//log("ищу на x:"+x1+" y:"+y1+" z:"+z1);
-                    	b = new Vector3D(x1,y1,z1).getBlock().id;
+                    	b = new Vector3D(x1,y1,z1).getBlock(client).id;
                         if (b == id && !equalsInt(new Vector3D(x1,y1+1,z1), client.getPosition())) {
                         	localf++;
                         	pos = new Vector3D(x1,y1,z1);
@@ -181,22 +182,22 @@ public class VectorUtils {
 	
 	public static Vector3D botCanTouchBlockAt(Bot client, Vector3D blockPos) {
     	List<Vector3D> positions = new CopyOnWriteArrayList<>();
-    	if (BTavoid(new Vector3D(blockPos.getX(),blockPos.getY()+1,blockPos.getZ()).getBlock().type)) {
+    	if (BTavoid(new Vector3D(blockPos.getX(),blockPos.getY()+1,blockPos.getZ()).getBlock(client).type)) {
     		positions.add(new Vector3D(blockPos.getX(),blockPos.getY()+1,blockPos.getZ()));
     	}
-    	if (BTavoid(new Vector3D(blockPos.getX(),blockPos.getY(),blockPos.getZ()-1).getBlock().type)) {
+    	if (BTavoid(new Vector3D(blockPos.getX(),blockPos.getY(),blockPos.getZ()-1).getBlock(client).type)) {
     		positions.add(new Vector3D(blockPos.getX(),blockPos.getY(),blockPos.getZ()-1));
     	}
-    	if (BTavoid(new Vector3D(blockPos.getX()-1,blockPos.getY(),blockPos.getZ()).getBlock().type)) {
+    	if (BTavoid(new Vector3D(blockPos.getX()-1,blockPos.getY(),blockPos.getZ()).getBlock(client).type)) {
     		positions.add(new Vector3D(blockPos.getX()-1,blockPos.getY(),blockPos.getZ()));
     	}
-    	if (BTavoid(new Vector3D(blockPos.getX(),blockPos.getY(),blockPos.getZ()+1).getBlock().type)) {
+    	if (BTavoid(new Vector3D(blockPos.getX(),blockPos.getY(),blockPos.getZ()+1).getBlock(client).type)) {
     		positions.add(new Vector3D(blockPos.getX(),blockPos.getY(),blockPos.getZ()+1));
     	}
-    	if (BTavoid(new Vector3D(blockPos.getX()+1,blockPos.getY(),blockPos.getZ()).getBlock().type)) {
+    	if (BTavoid(new Vector3D(blockPos.getX()+1,blockPos.getY(),blockPos.getZ()).getBlock(client).type)) {
     		positions.add(new Vector3D(blockPos.getX()+1,blockPos.getY(),blockPos.getZ()));
     	}
-    	if (BTavoid(new Vector3D(blockPos.getX(),blockPos.getY()-2,blockPos.getZ()).getBlock().type)) {
+    	if (BTavoid(new Vector3D(blockPos.getX(),blockPos.getY()-2,blockPos.getZ()).getBlock(client).type)) {
     		positions.add(new Vector3D(blockPos.getX(),blockPos.getY()-2,blockPos.getZ()));
     	}
     	if (positions.size() <= 0) {

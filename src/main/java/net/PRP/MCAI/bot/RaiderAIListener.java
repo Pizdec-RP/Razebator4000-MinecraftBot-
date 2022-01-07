@@ -3,7 +3,6 @@ package net.PRP.MCAI.bot;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerJoinGamePacket;
 import com.github.steveice10.packetlib.event.session.PacketReceivedEvent;
 import com.github.steveice10.packetlib.event.session.SessionAdapter;
-
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.pathfinder.AStar;
 import net.PRP.MCAI.utils.*;

@@ -3,10 +3,15 @@ package world;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.github.steveice10.mc.protocol.data.game.chunk.BitStorage;
 import com.github.steveice10.mc.protocol.data.game.chunk.Column;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
 import com.github.steveice10.mc.protocol.data.game.setting.Difficulty;
+import com.github.steveice10.mc.protocol.data.game.world.block.value.GenericBlockValue;
+
 import net.PRP.MCAI.utils.Vector3D;
+import world.BlockType.Type;
+import net.PRP.MCAI.*;
 
 
 public class World {
@@ -51,12 +56,16 @@ public class World {
 	}
 	
 	public void setBlock(Position pos, int state) {
-		ChunkCoordinates coords = new ChunkCoordinates((int) (pos.getX() / 16.0), (int) (pos.getZ() / 16.0));
-		int yPos = (int) Math.floor(pos.getY() / 16.0);
-		if (!columns.containsKey(coords)) {
-			return;
+		try {
+			ChunkCoordinates coords = new ChunkCoordinates((int) (pos.getX() / 16.0), (int) (pos.getZ() / 16.0));
+			int yPos = (int) Math.floor(pos.getY() / 16.0);
+			if (!columns.containsKey(coords)) {
+				return;
+			}
+			columns.get(coords).getChunks()[yPos].set(Math.abs(pos.getX() % 16), Math.abs(pos.getY() % 16), Math.abs(pos.getZ() % 16), state);
+		} catch (Exception e) {
+			
 		}
-		columns.get(coords).getChunks()[yPos].set(Math.abs(pos.getX() % 16), Math.abs(pos.getY() % 16), Math.abs(pos.getZ() % 16), state);
 	}
 	
 	public Block getBlock(Vector3D pos) {
@@ -68,11 +77,12 @@ public class World {
             int chunkY = (int)pos.getY() >> 4;
             int chunkZ = (int)pos.getZ() >> 4;
             //System.out.println("x: "+bx+"y: "+by+"z: "+bz);
-            int bsb = columns.get(new ChunkCoordinates(chunkX, chunkZ)).getChunks()[chunkY].get(bx, by, bz);
-			return new Block(bsb, pos, BlockType.bt(bsb));
+            int state = columns.get(new ChunkCoordinates(chunkX, chunkZ)).getChunks()[chunkY].get(bx, by, bz);
+            
+            int id = Main.getBlockType().blockStates.get(state).id;
+			return new Block(state, id, pos, Main.getBlockType().bt(id));
     	} catch (Exception e) {
-    		
-			return new Block(0, pos, BlockType.AIR);
+			return new Block(-1 , -1, pos, Type.UNKNOWN);
 		}
 	}
 	

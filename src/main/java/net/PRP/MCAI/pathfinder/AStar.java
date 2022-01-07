@@ -26,6 +26,7 @@ public class AStar {
 	public AStar(Bot client, Vector3D start, Vector3D end) {
 		this.start = start;
 		this.end = end;
+		this.client = client;
 		this.mv = new Movements(client, 6);
 	}
 	
@@ -42,7 +43,7 @@ public class AStar {
 				client.setmovelocked(true);
 				Walk();
 			}
-		} catch (NullPointerException e) {
+		} catch (Exception e) {
 			//pass
 		}
 	}
@@ -60,7 +61,7 @@ public class AStar {
 		try {
 			if (!VectorUtils.equalsInt(start, end)) {
 				Waypoint cursor = wp(start, null);
-				while (!VectorUtils.equals(cursor.loc, end)) {
+				while (!VectorUtils.equalsIntNoY(cursor.loc, end)) {
 					List<Waypoint> neighbors = getWalkableWPAround(cursor);
 					cursor = getNear(neighbors);
 					used.add(cursor.loc);
@@ -68,9 +69,10 @@ public class AStar {
 				}
 				client.setmovelocked(true);
 				Walk();
+			} else {
 			}
-		} catch (NullPointerException e) {
-			//pass
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 	
@@ -152,7 +154,7 @@ public class AStar {
 					if (!VectorUtils.equals(this.start, curpos) || !VectorUtils.equals(pos, curpos)) {
 						Waypoint wp = wp(curpos, ps.loc);
 						
-						if (!wpAlreadyUsed(wp) && VectorUtils.positionIsSafe(wp.loc)) {
+						if (!wpAlreadyUsed(wp) && VectorUtils.positionIsSafe(wp.loc, client)) {
 							neighbors.add(wp);
 							//System.out.println("neighbours add"+wp.loc.toString());
 						}

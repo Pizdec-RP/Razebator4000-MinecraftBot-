@@ -4,7 +4,6 @@ import com.github.steveice10.mc.protocol.packet.ingame.client.ClientKeepAlivePac
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerKeepAlivePacket;
 import com.github.steveice10.packetlib.event.session.PacketReceivedEvent;
 import com.github.steveice10.packetlib.event.session.SessionAdapter;
-
 import net.PRP.MCAI.Main;
 
 public class PingPacketsManager extends SessionAdapter {
@@ -14,7 +13,7 @@ public class PingPacketsManager extends SessionAdapter {
 		if (event.getPacket() instanceof ServerKeepAlivePacket) {
 			if (!Main.debug) {
 				if ((boolean) Main.getsett("KeepAlivePackets")) {
-					final ServerKeepAlivePacket p = event.getPacket();
+					final ServerKeepAlivePacket p = (ServerKeepAlivePacket) event.getPacket();
 				    event.getSession().send(new ClientKeepAlivePacket(p.getPingId()));
 				}
 			}

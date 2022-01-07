@@ -1,21 +1,21 @@
 package net.PRP.MCAI.bot;
 
 import com.github.steveice10.mc.auth.data.GameProfile;
-import com.github.steveice10.mc.auth.service.SessionService;
-import com.github.steveice10.mc.protocol.MinecraftConstants;
 import com.github.steveice10.mc.protocol.MinecraftProtocol;
 import com.github.steveice10.mc.protocol.packet.ingame.client.ClientChatPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerPositionPacket;
-import com.github.steveice10.packetlib.Client;
+import com.github.steveice10.packetlib.ProxyInfo;
+import com.github.steveice10.packetlib.ProxyInfo.Type;
 import com.github.steveice10.packetlib.Session;
-import com.github.steveice10.packetlib.tcp.TcpSessionFactory;
-
+import com.github.steveice10.packetlib.tcp.TcpClientSession;
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.utils.ThreadU;
 import net.PRP.MCAI.utils.Vector3D;
 import net.PRP.MCAI.utils.VectorUtils;
+import world.World;
 import net.PRP.MCAI.Inventory.*;
 import java.net.Proxy;
+import java.net.SocketAddress;
 import java.util.UUID;
 
 public class Bot {
@@ -39,6 +39,7 @@ public class Bot {
     private Inventory openedInventory;
     private int id;
     public EntityListener entityListener;
+    public static World world;
     
     //private IInventory openedInventory;
     public int currentSlotInHand;
@@ -57,27 +58,44 @@ public class Bot {
     }
 
     public void connect() {
-    	System.gc();
-    	SessionService sessionService = new SessionService();
-        sessionService.setProxy(proxy);
-        
-        Client client = new Client(host, port, account, new TcpSessionFactory());
-        client.getSession().setFlag(MinecraftConstants.SESSION_SERVICE_KEY, sessionService);
-        client.getSession().addListener(new SessionListener(this));
-        client.getSession().addListener(new PingPacketsManager());
+    	//SessionService sessionService = new SessionService();
+        //sessionService.setProxy(proxy);
+    	world = new World();
+        SocketAddress sa = proxy.address();
+        String pt = (String)Main.getsett("proxytype");
+        Type proxypype = null;
+		if (pt.equalsIgnoreCase("socks4")) {
+			proxypype = ProxyInfo.Type.SOCKS4;
+		} else if (pt.equalsIgnoreCase("socks5")) {
+			proxypype = ProxyInfo.Type.SOCKS5;
+		} else if (pt.equalsIgnoreCase("http")) {
+			proxypype = ProxyInfo.Type.HTTP;
+		} else {
+			
+		}
+        ProxyInfo pr = new ProxyInfo(proxypype, sa);
+        Session client = null;
+		if ((boolean) Main.getsett("useproxy")) {
+        	client = new TcpClientSession(host, port, account, pr);
+        } else {
+        	client = new TcpClientSession(host, port, account);
+        }
+        //client.setFlag(MinecraftConstants.SESSION_SERVICE_KEY, sessionService);
+        client.addListener(new SessionListener(this));
+        client.addListener(new PingPacketsManager());
         this.entityListener = new EntityListener(this);
-        client.getSession().addListener(this.entityListener);
-        client.getSession().addListener(new ChatListener(this));
+        client.addListener(this.entityListener);
+        client.addListener(new ChatListener(this));
         if (!Main.debug) {
         	this.tickMode = (boolean) Main.getsett("tickmode");
 	        if ((boolean)Main.getsett("raidmode")) {
-	        	client.getSession().addListener(new RaiderAIListener(this));
+	        	client.addListener(new RaiderAIListener(this));
 	        }
         }
-        client.getSession().connect();
+        client.connect();
         register();
 
-        this.session = client.getSession();
+        this.session = client;
         if (tickMode) {
         	new Thread(()-> {
             	while (true) {
@@ -207,8 +225,9 @@ public class Bot {
 		return new Vector3D((int)this.posX, (int)this.posY, (int)this.posZ);
 	}
 	
+	@Deprecated
 	public boolean isInLiquid() {
-		int id = Main.getWorld().getBlock(getPosition()).id;
+		int id = getWorld().getBlock(getPosition()).id;
 		if (id == 8 || id == 9 || id == 10 || id == 11) {
 			return true;
 		} else {
@@ -262,5 +281,9 @@ public class Bot {
 
 	public void setId(int id) {
 		this.id = id;
+	}
+	
+	public World getWorld() {
+		return world;
 	}
 }

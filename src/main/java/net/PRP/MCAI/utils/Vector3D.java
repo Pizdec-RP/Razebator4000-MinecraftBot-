@@ -3,8 +3,10 @@ package net.PRP.MCAI.utils;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
 
 import net.PRP.MCAI.Main;
+import net.PRP.MCAI.bot.Bot;
 import world.Block;
 import world.BlockType;
+import world.BlockType.Type;
 import world.World;
 
 public class Vector3D {
@@ -154,19 +156,19 @@ public class Vector3D {
         return this.distanceSq((double)to.getX(), (double)to.getY(), (double)to.getZ());
     }
 	
-	public Block getBlock() {
-		Block b = Main.getWorld().getBlock(this);
+	public Block getBlock(Bot client) {
+		Block b = client.getWorld().getBlock(this);
 		if (b == null) {
 			b = new Block();
 			b.id = 0;
-			b.type = BlockType.UNKNOWN;
+			b.type = Type.UNKNOWN;
 			b.pos = this;
 		}
 		return b;
 	}
 	
-	public World getWorld() {
-		return Main.getWorld();
+	public World getWorld(Bot client) {
+		return client.getWorld();
 	}
 	
 	public Vector3D clone() {

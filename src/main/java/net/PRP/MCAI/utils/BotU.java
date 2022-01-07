@@ -287,7 +287,7 @@ public class BotU {
 	}
 	
 	@SuppressWarnings("deprecation")
-	public static void mineBlock (Bot client, Vector3D pos) {
+	public static void mineBlock(Bot client, Vector3D pos) {
 		Point3D_F64 position = new Point3D_F64(pos.getX(),pos.getY(),pos.getZ());
 		LookHead(client, position);
 		ClientPlayerActionPacket a = new ClientPlayerActionPacket(PlayerAction.START_DIGGING, pos.translate(), BlockFace.UP);

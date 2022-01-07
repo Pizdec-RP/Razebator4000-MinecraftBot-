@@ -38,7 +38,7 @@ public class InventoryListener extends SessionAdapter {
 			//final ServerWindowPropertyPacket packet = (ServerWindowPropertyPacket) receiveEvent.getPacket();
 			
 		} else if (receiveEvent.getPacket() instanceof ServerConfirmTransactionPacket) {
-            final ServerConfirmTransactionPacket p = receiveEvent.getPacket();
+            final ServerConfirmTransactionPacket p = (ServerConfirmTransactionPacket) receiveEvent.getPacket();
             client.getSession().send(new ClientConfirmTransactionPacket(p.getWindowId(), p.getActionId(), true));
 		}
 	}

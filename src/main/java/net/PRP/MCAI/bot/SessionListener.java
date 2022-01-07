@@ -12,11 +12,11 @@ import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerBlockC
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerChunkDataPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerMultiBlockChangePacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerUnloadChunkPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerBlockValuePacket;
 import com.github.steveice10.mc.protocol.packet.login.server.LoginSuccessPacket;
 import com.github.steveice10.packetlib.event.session.DisconnectedEvent;
 import com.github.steveice10.packetlib.event.session.PacketReceivedEvent;
 import com.github.steveice10.packetlib.event.session.SessionAdapter;
-
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.utils.*;
 
@@ -53,13 +53,12 @@ public class SessionListener extends SessionAdapter {
         	Thread physics = new Thread(() -> {
             	while (true) {
             		if (client.isOnline()) {
-            			if (VectorUtils.BTavoid(client.getPosition().add(0, -1, 0).getBlock().type) && !client.isInAction()) {
+            			if (VectorUtils.BTavoid(client.getPosition().add(0, -1, 0).getBlock(client).type) && !client.isInAction()) {
 							client.remY(1);
 							ThreadU.sleep(86);
             			} else if (!client.isInAction() && client.getPosY() > (int)client.getPosY()) {
             				BotU.calibratePosition(client);
             				BotU.calibrateY(client);
-            				System.out.println(client.getPosY());
             			} else {
             				ThreadU.sleep(500);
             			}
@@ -71,7 +70,7 @@ public class SessionListener extends SessionAdapter {
             });
         	physics.start();
         } else if (receiveEvent.getPacket() instanceof ServerPlayerPositionRotationPacket) {
-            ServerPlayerPositionRotationPacket packet = receiveEvent.getPacket();
+            ServerPlayerPositionRotationPacket packet = (ServerPlayerPositionRotationPacket) receiveEvent.getPacket();
             client.setPosX(packet.getX());
             client.setPosY(packet.getY());
             client.setPosZ(packet.getZ());
@@ -84,7 +83,7 @@ public class SessionListener extends SessionAdapter {
             		));
             client.getSession().send(new ClientRequestPacket(ClientRequest.STATS));
         } else if (receiveEvent.getPacket() instanceof ServerPlayerHealthPacket) {
-            final ServerPlayerHealthPacket p = receiveEvent.getPacket();
+            final ServerPlayerHealthPacket p = (ServerPlayerHealthPacket) receiveEvent.getPacket();
             if (p.getHealth() <= 0)
             	client.getSession().send(new ClientRequestPacket(ClientRequest.RESPAWN));
         
@@ -94,32 +93,39 @@ public class SessionListener extends SessionAdapter {
         	//log("mbcp");
 			ServerMultiBlockChangePacket packet = (ServerMultiBlockChangePacket) receiveEvent.getPacket();
 			for (BlockChangeRecord data : packet.getRecords()) {
-				Main.getWorld().setBlock(data.getPosition(), data.getBlock());
+				client.getWorld().setBlock(data.getPosition(), data.getBlock());
+				
 			}
         } else if (receiveEvent.getPacket() instanceof ServerUnloadChunkPacket) {
 			
 		} else if (receiveEvent.getPacket() instanceof ServerChunkDataPacket) {
 			
 			ServerChunkDataPacket data = (ServerChunkDataPacket) receiveEvent.getPacket();
-			Main.getWorld().addChunkColumn(new ChunkCoordinates(data.getColumn().getX(), data.getColumn().getZ()), data.getColumn());
+			client.getWorld().addChunkColumn(new ChunkCoordinates(data.getColumn().getX(), data.getColumn().getZ()), data.getColumn());
 		
 		} else if (receiveEvent.getPacket() instanceof ServerBlockChangePacket) {
 			
 			ServerBlockChangePacket packet = (ServerBlockChangePacket) receiveEvent.getPacket();
-			Main.getWorld().setBlock(packet.getRecord().getPosition(), packet.getRecord().getBlock());
+			client.getWorld().setBlock(packet.getRecord().getPosition(), packet.getRecord().getBlock());
+			//System.out.println(packet.toString());
 			
 		} else if (receiveEvent.getPacket() instanceof LoginSuccessPacket) {
-            final LoginSuccessPacket p = receiveEvent.getPacket();
+            final LoginSuccessPacket p = (LoginSuccessPacket) receiveEvent.getPacket();
             UUID MyUUID = p.getProfile().getId();
             client.setUUID(MyUUID);
             System.out.println("UUID: " + MyUUID);
-		}
+		} /*else if (receiveEvent.getPacket() instanceof ServerBlockValuePacket) {
+			final ServerBlockValuePacket p = (ServerBlockValuePacket) receiveEvent.getPacket();
+			
+		}*/
     }
     
     @Override
     public void disconnected(DisconnectedEvent event) {
     	log("bot disconected "+event.getReason());
-    	client.connect();
+    	if (!Main.debug) {
+    		if ((boolean) Main.getsett("reconect")) client.connect();
+    	}
 		event.getCause().printStackTrace();
     }
 	
