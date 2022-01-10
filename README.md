@@ -1,6 +1,6 @@
 # MinecraftBot eblan сам ты еблан
 
-<img src="https://imgur.com/a/fZ3WhKL" alt="unknow1n" width="200">
+<img src="https://imgur.com/a/fZ3WhKL"></img>
 
 ### шо к чему
  * Поддержка только 1.16.5.
