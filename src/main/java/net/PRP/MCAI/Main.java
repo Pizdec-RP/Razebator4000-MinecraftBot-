@@ -26,7 +26,6 @@ import net.PRP.MCAI.utils.BreakTimeU;
 import net.PRP.MCAI.utils.ThreadU;
 import world.BlockType;
 import world.BlockType.Type;
-import world.World;
 
 public class Main {
 	static int nicksnumb = -1;
@@ -35,21 +34,23 @@ public class Main {
 	static Map<?, ?> data;
 	static List<Proxy> proxies = ProxyScraper.ab();
 	static int proxyNumb = 0;
-	public static boolean debug = false;
+	public static boolean debug = true;
 	public static List<Bot> bots = new ArrayList<Bot>();
 	public static Proxy proxy = Proxy.NO_PROXY;
 	public static List<String> pasti = new CopyOnWriteArrayList<String>();
 	private static BlockType blockType = new BlockType();
 	private static BreakTimeU BreakTimeU = new BreakTimeU();
 	
-	
     public static void main(String[] args) {
     	initializeBlockType();
     	BreakTimeU.initialize();
+    	Obshak.startTickLoop();
     	if (debug) {
     		new Thread(() -> {
-		        new Bot(new MinecraftProtocol("smartass"), "localhost", 25565, Proxy.NO_PROXY).connect();
-		    }).start();
+		        Bot client = new Bot(new MinecraftProtocol("smartass"), "localhost", 25565, Proxy.NO_PROXY);
+		        client.connect();
+		        bots.add(client);
+    		}).start();
     	} else {
     		if ((boolean)getsett("raidmode")) {
     			new Thread(()->{while (true) { updatePasti(); ThreadU.sleep(2000);} }).start();
@@ -80,7 +81,7 @@ public class Main {
 			    }).start();
 			    ThreadU.sleep((int) getsett("enterrange"));
 	    	}
-	    	MultibotCalculations.pickMainhost();
+	    	Obshak.pickMainhost();
     	}
 	}
     
@@ -137,7 +138,7 @@ public class Main {
                 }
             }
             catch (Exception e) {
-                System.out.println(e);
+                e.printStackTrace();
             }
         }
     }
@@ -150,6 +151,7 @@ public class Main {
 
             for (Map.Entry<String, JsonElement> item : obj.get("minecraft:blocks").getAsJsonObject().get("bt").getAsJsonObject().entrySet()) {
                 Type typ = null;
+                System.out.println(item.getKey());
                 switch (item.getKey()) {
                 	case "hard":
                 		typ = Type.HARD;
@@ -182,6 +184,7 @@ public class Main {
                 		typ = Type.GOAWAY;
                 		break;
                 	default:
+                		System.out.println("unknownelement");
                 		typ = Type.UNKNOWN;
                 }
             	for (JsonElement block : item.getValue().getAsJsonArray()) {
@@ -194,6 +197,7 @@ public class Main {
             JsonReader reader1nahuy = new JsonReader(new FileReader("data/registries.json"));
             obj = (JsonObject) new JsonParser().parse(reader1nahuy);
             List<oldMinecraftBlocks> omb = new ArrayList<oldMinecraftBlocks>();
+            
             for (JsonElement ass : obj.get("entries").getAsJsonArray()) {
             	String name = ass.getAsJsonObject().get("type").getAsString();
             	int id = ass.getAsJsonObject().get("protocol_id").getAsInt();
@@ -208,8 +212,13 @@ public class Main {
             	for (JsonElement state : newBlockState.get("states").getAsJsonArray()) {
             		int newid = state.getAsJsonObject().get("id").getAsInt();
             		getBlockType().blockStates.put(newid, oldBlock);
+            		//getBlockType().bablkvas.put(newid, oldBlock);
+            		//System.out.println(newid+" "+oldBlock.id);
             	}
             }
+            //System.out.println(getBlockType().bts.toString());
+            //ThreadU.sleep(1000);
+            //System.out.println(getBlockType().blockStates.get(16001).id);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }

@@ -7,12 +7,11 @@ import net.PRP.MCAI.oldMinecraftBlocks;
 
 public class BlockType {
 	public enum Type {
-		HARD, VOID, AVOID, AIR, LIQUID, DOOR, UNKNOWN, LADDER, GOAWAY, UNBREAKABLE;
+		HARD, VOID, AVOID, AIR, LIQUID, DOOR, GATE, DOOR_GATE, UNKNOWN, LADDER, GOAWAY, UNBREAKABLE;
 	}
 	
 	public Map<Integer, Type> bts = new HashMap<>();
 	public Map<Integer, oldMinecraftBlocks> blockStates = new HashMap<>();// key - newmcid
-	
 	
 	public BlockType() {
 		

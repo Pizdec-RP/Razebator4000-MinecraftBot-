@@ -1,6 +1,5 @@
 package net.PRP.MCAI.movements;
 
-import georegression.struct.point.Point3D_F64;
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.pathfinder.Waypoint;
 import net.PRP.MCAI.utils.BotU;
@@ -20,7 +19,6 @@ public class Movements {
 	public String EnumMove(Waypoint point) {
 		Vector3D from = point.beforeLoc;
 		Vector3D to = point.loc;
-		BotU.LookHead(client, new Point3D_F64(to.x,to.y,to.z));
 		
 		if (e(from,to)) {
 			return "";
@@ -102,7 +100,7 @@ public class Movements {
 		return VectorUtils.BTavoid(pos.getBlock(client).type) && VectorUtils.BTavoid(pos.add(0, 1, 0).getBlock(client).type);
 	}
 	
-	public void warn() {System.out.println("идиот чини хуйню свою");}
+	public void warn() {System.out.println("asd");}
 	
 	public double spb() {
 		return 1000 / BPS;

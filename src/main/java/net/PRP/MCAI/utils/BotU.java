@@ -45,7 +45,7 @@ public class BotU {
 	}
 	
 	public static void calibrateY(Bot client) {
-		client.setPosY((int) Math.floor(client.getPosY()));
+		client.setPosY(Math.floor(client.getPosY()));
 	}
 	
 	public static void walk (Bot client, int range, String ax) {

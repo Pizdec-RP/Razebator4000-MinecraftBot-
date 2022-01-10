@@ -1,7 +1,5 @@
 package world;
 
-import com.github.steveice10.mc.protocol.data.game.world.block.BlockChangeRecord;
-
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.utils.Vector3D;
@@ -26,6 +24,13 @@ public class Block {
 		this.pos = pos;
 		this.type = type;
 		this.state = state;
+	}
+	
+	public Block(int state, Vector3D pos) {
+		this.pos = pos;
+		this.state = state;
+		this.id = Main.getBlockType().blockStates.get(state).id;
+		this.type = Main.getBlockType().bt(this.id);
 	}
 	
 	/*@SuppressWarnings("deprecation")

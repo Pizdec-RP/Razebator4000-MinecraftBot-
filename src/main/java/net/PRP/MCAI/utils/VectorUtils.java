@@ -28,6 +28,16 @@ public class VectorUtils {
 		return false;
 	}
 	
+	public static boolean equalsForPF(Vector3D one, Vector3D two, boolean nonY) {
+		if (nonY) {
+			if ((int)one.getX() == (int)two.getX() && (int)one.getZ() == (int)two.getZ()) return true;
+			return false;
+		} else {
+			if ((int)one.getX() == (int)two.getX() && (int)one.getY() == (int)two.getY() && (int)one.getZ() == (int)two.getZ()) return true;
+			return false;
+		}
+	}
+	
 	public static Vector3D convert(Position pos) {
 		return new Vector3D(pos.getX(), pos.getY(), pos.getZ());
 	}
@@ -87,8 +97,8 @@ public class VectorUtils {
         return minpos;
     }
 	
-	public static Vector3D findSafePointInRadius(Bot client, int rad) {
-		Vector3D aye = client.getPositionInt().add(MathU.rnd(-rad, rad), 0, MathU.rnd(-rad, rad));
+	public static Vector3D findSafePointInRadius(Vector3D position, int rad) {
+		Vector3D aye = position.add(MathU.rnd(-rad, rad), 0, MathU.rnd(-rad, rad));
 		//System.out.println(aye);
 		return aye;
 	}

@@ -18,7 +18,7 @@ public class Actions {
 					Vector3D pos12 = VectorUtils.findNearestBlockById(client, 17);
 					Vector3D end = VectorUtils.botCanTouchBlockAt(client, pos12);
 	    			AStar pf = new AStar(client, client.getPositionInt(), end);
-	    			pf.startCalc2D(client);
+	    			pf.startCalc(client, true);
 					while (true) {
 	    				if (VectorUtils.sqrt(client.getPositionInt(), end) <= 4.5) {
 	        				client.setmovelocked(false);
@@ -44,7 +44,7 @@ public class Actions {
 		try {
 			client.setInAction(true);
 			AStar pf = new AStar(client, client.getPositionInt(), end);
-			pf.startCalc3D(client);
+			pf.startCalc(client, false);
 			client.setInAction(false);
 		} catch (Exception passed) {
 			client.setInAction(false);
@@ -57,7 +57,7 @@ public class Actions {
 				new Thread(()->{
 					client.setInAction(true);
 					AStar pf = new AStar(client, client.getPositionInt(), end);
-					pf.startCalc2D(client);
+					pf.startCalc(client, true);
 					client.setInAction(false);
 				}).start();
 				return true;
@@ -70,7 +70,7 @@ public class Actions {
 			try {
 				client.setInAction(true);
 				AStar pf = new AStar(client, client.getPositionInt(), end);
-				pf.startCalc2D(client);
+				pf.startCalc(client, true);
 				client.setInAction(false);
 				return true;
 			} catch (Exception passed) {
@@ -94,7 +94,7 @@ public class Actions {
 						Vector3D pos12 = VectorUtils.findNearestBlockById(client, blockId);
 						Vector3D end = VectorUtils.botCanTouchBlockAt(client, pos12);
 		    			AStar pf = new AStar(client, client.getPositionInt(), end);
-		    			pf.startCalc2D(client);
+		    			pf.startCalc(client, true);
 						while (true) {
 		    				if (VectorUtils.sqrt(client.getPositionInt(), end) <= 4.5) {
 		        				client.setmovelocked(false);
@@ -104,7 +104,7 @@ public class Actions {
 		        	        	}
 		        	        	break;
 		    				} else {
-		    					System.out.println("nu");
+		    					//System.out.println("nu");
 		    					ThreadU.sleep(1000);
 		    				}
 						}
@@ -126,7 +126,7 @@ public class Actions {
 					Vector3D pos12 = VectorUtils.findNearestBlockById(client, blockId);
 					Vector3D end = VectorUtils.botCanTouchBlockAt(client, pos12);
 	    			AStar pf = new AStar(client, client.getPositionInt(), end);
-	    			pf.startCalc2D(client);
+	    			pf.startCalc(client, true);
 					while (true) {
 	    				if (VectorUtils.sqrt(client.getPositionInt(), end) <= 4.5) {
 	        				client.setmovelocked(false);
@@ -136,7 +136,7 @@ public class Actions {
 	        	        	}
 	        	        	break;
 	    				} else {
-	    					System.out.println("nu");
+	    					//System.out.println("nu");
 	    					ThreadU.sleep(1000);
 	    				}
 					}
@@ -163,7 +163,7 @@ public class Actions {
 					Vector3D pos12 = VectorUtils.findNearestBlockById(client, blockId);
 					Vector3D end = VectorUtils.botCanTouchBlockAt(client, pos12);
 	    			AStar pf = new AStar(client, client.getPositionInt(), end);
-	    			pf.startCalc3D(client);
+	    			pf.startCalc(client, false);
 					while (true) {
 	    				if (VectorUtils.sqrt(client.getPositionInt(), end) <= 4.5) {
 	        				client.setmovelocked(false);
@@ -173,7 +173,7 @@ public class Actions {
 	        	        	}
 	        	        	break;
 	    				} else {
-	    					System.out.println("nu");
+	    					//System.out.println("nu");
 	    					ThreadU.sleep(1000);
 	    				}
 					}

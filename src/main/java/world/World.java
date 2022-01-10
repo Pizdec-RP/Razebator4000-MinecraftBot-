@@ -3,12 +3,9 @@ package world;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.github.steveice10.mc.protocol.data.game.chunk.BitStorage;
 import com.github.steveice10.mc.protocol.data.game.chunk.Column;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
 import com.github.steveice10.mc.protocol.data.game.setting.Difficulty;
-import com.github.steveice10.mc.protocol.data.game.world.block.value.GenericBlockValue;
-
 import net.PRP.MCAI.utils.Vector3D;
 import world.BlockType.Type;
 import net.PRP.MCAI.*;
@@ -82,6 +79,7 @@ public class World {
             int id = Main.getBlockType().blockStates.get(state).id;
 			return new Block(state, id, pos, Main.getBlockType().bt(id));
     	} catch (Exception e) {
+    		e.printStackTrace();
 			return new Block(-1 , -1, pos, Type.UNKNOWN);
 		}
 	}

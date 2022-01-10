@@ -3,7 +3,6 @@ package net.PRP.MCAI.bot;
 import com.github.steveice10.mc.auth.data.GameProfile;
 import com.github.steveice10.mc.protocol.MinecraftProtocol;
 import com.github.steveice10.mc.protocol.packet.ingame.client.ClientChatPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerPositionPacket;
 import com.github.steveice10.packetlib.ProxyInfo;
 import com.github.steveice10.packetlib.ProxyInfo.Type;
 import com.github.steveice10.packetlib.Session;
@@ -11,7 +10,6 @@ import com.github.steveice10.packetlib.tcp.TcpClientSession;
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.utils.ThreadU;
 import net.PRP.MCAI.utils.Vector3D;
-import net.PRP.MCAI.utils.VectorUtils;
 import world.World;
 import net.PRP.MCAI.Inventory.*;
 import java.net.Proxy;
@@ -40,6 +38,7 @@ public class Bot {
     private int id;
     public EntityListener entityListener;
     public static World world;
+    public boolean onGround = true;
     
     //private IInventory openedInventory;
     public int currentSlotInHand;
@@ -47,12 +46,16 @@ public class Bot {
     private int currentWindowId;
     
     public boolean tickMode = true;
+
+	private PhysicsMGR pm;
+
+	public String name;
     
 
     public Bot(MinecraftProtocol account, String host, int port, Proxy proxy) {
         this.account = account;
         this.proxy = proxy;
-
+        this.name = account.getProfile().getName();
         this.host = host;
         this.port = port;
     }
@@ -83,70 +86,67 @@ public class Bot {
         //client.setFlag(MinecraftConstants.SESSION_SERVICE_KEY, sessionService);
         client.addListener(new SessionListener(this));
         client.addListener(new PingPacketsManager());
-        this.entityListener = new EntityListener(this);
-        client.addListener(this.entityListener);
-        client.addListener(new ChatListener(this));
-        if (!Main.debug) {
-        	this.tickMode = (boolean) Main.getsett("tickmode");
-	        if ((boolean)Main.getsett("raidmode")) {
-	        	client.addListener(new RaiderAIListener(this));
-	        }
+        if ((boolean) Main.getsett("listenEntities")) {
+        	this.entityListener = new EntityListener(this);
+        	client.addListener(this.entityListener);
         }
+        client.addListener(new ChatListener(this));
+    	this.tickMode = (boolean) Main.getsett("tickmode");
+        if ((boolean)Main.getsett("raidmode")) {
+        	client.addListener(new RaidListener(this));
+        }
+        this.pm = new PhysicsMGR(this);
+        client.addListener(pm);
         client.connect();
         register();
 
         this.session = client;
-        if (tickMode) {
-        	new Thread(()-> {
-            	while (true) {
-            		Vector3D before = getPosition();
-            		ThreadU.sleep(50);
-            		Vector3D now = getPosition();
-            		if (!VectorUtils.equals(before, now)) {
-            			getSession().send(new ClientPlayerPositionPacket(true, posX, posY, posZ));
-            		}
-            	}
-            }).start();
-        }
     }
 
     public void register() {
         if (!isOnline()) return;
-        ThreadU.sleep(200);
+        ThreadU.sleep(500);
         session.send(new ClientChatPacket("/register 112233asdasd 112233asdasd"));
         ThreadU.sleep(100);
         session.send(new ClientChatPacket("/login 112233asdasd"));
-        
+    }
+    
+    public boolean isGameReady() {
+    	return this.getPositionInt().getBlock(this) != null;
+    }
+    
+    public void tick() {
+    	this.pm.tick();
     }
     
     public void addX(double i) {
     	this.posX += i;
-    	if (!tickMode) getSession().send(new ClientPlayerPositionPacket(true, posX, posY, posZ));
+    	
     }
     
     public void addY(double i) {
     	this.posY += i;
-    	if (!tickMode) getSession().send(new ClientPlayerPositionPacket(true, posX, posY, posZ));
+    	
     }
     
     public void addZ(double i) {
     	this.posZ += i;
-    	if (!tickMode) getSession().send(new ClientPlayerPositionPacket(true, posX, posY, posZ));
+    	
     }
     
     public void remX(double i) {
     	this.posX -= i;
-    	if (!tickMode) getSession().send(new ClientPlayerPositionPacket(true, posX, posY, posZ));
+    	
     }
     
     public void remY(double i) {
     	this.posY -= i;
-    	if (!tickMode) getSession().send(new ClientPlayerPositionPacket(true, posX, posY, posZ));
+    	
     }
     
     public void remZ(double i) {
     	this.posZ -= i;
-    	if (!tickMode) getSession().send(new ClientPlayerPositionPacket(true, posX, posY, posZ));
+    	
     }
 
     public boolean isOnline() {

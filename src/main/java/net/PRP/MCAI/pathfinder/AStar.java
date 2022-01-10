@@ -6,6 +6,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
 
+import georegression.struct.point.Point3D_F64;
+import net.PRP.MCAI.Main;
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.movements.Movements;
 import net.PRP.MCAI.pathfinder.Waypoint.WType;
@@ -30,26 +32,36 @@ public class AStar {
 		this.mv = new Movements(client, 6);
 	}
 	
-	public void startCalc3D(Bot client) {
+	public void startCalc(Bot client, boolean nonY) {
 		try {
 			if (!VectorUtils.equalsInt(start, end)) {
 				Waypoint cursor = wp(start, null);
-				while (!VectorUtils.equals(cursor.loc, end)) {
+				while (!VectorUtils.equalsForPF(cursor.loc, end, nonY)) {
 					List<Waypoint> neighbors = getWalkableWPAround(cursor);
-					cursor = getNear(neighbors);
+					if (nonY) {
+						cursor = getNear2D(neighbors);
+					} else {
+						cursor = getNear(neighbors);
+					}
 					used.add(cursor.loc);
 					toWalk.add(cursor);
+					if ((boolean) Main.getsett("visualizePath")) {
+						BotU.chat(client, "/setblock "+(int)cursor.loc.x+" "+(int)cursor.loc.y+" "+(int)cursor.loc.z+" minecraft:lime_wool");
+						ThreadU.sleep(300);
+						if ((boolean) Main.getsett("removeafter")) BotU.chat(client, "/setblock "+(int)cursor.loc.x+" "+(int)cursor.loc.y+" "+(int)cursor.loc.z+" minecraft:air");
+					}
 				}
 				client.setmovelocked(true);
-				Walk();
+				if (!(boolean) Main.getsett("visualizePath")) Walk();
 			}
 		} catch (Exception e) {
-			//pass
+			e.printStackTrace();
 		}
 	}
 	
 	public void Walk() {
 		for(Waypoint p : toWalk) {
+			BotU.LookHead(client, new Point3D_F64(p.loc.x,p.loc.y,p.loc.z));
 			String wp = mv.EnumMove(p);
 			if (wp == "unknown") break;
 			mv.moveAct(wp);
@@ -57,26 +69,8 @@ public class AStar {
 		client.setmovelocked(false);
 	}
 	
-	public void startCalc2D(Bot client) {
-		try {
-			if (!VectorUtils.equalsInt(start, end)) {
-				Waypoint cursor = wp(start, null);
-				while (!VectorUtils.equalsIntNoY(cursor.loc, end)) {
-					List<Waypoint> neighbors = getWalkableWPAround(cursor);
-					cursor = getNear(neighbors);
-					used.add(cursor.loc);
-					toWalk.add(cursor);
-				}
-				client.setmovelocked(true);
-				Walk();
-			} else {
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-	
 	public Waypoint getNear(List<Waypoint> allPos) {
+		if (allPos.size() == 0) throw new NullPointerException("spisok pust");
 		Waypoint minpos = null;
         for (Waypoint pos : allPos) {
         	Vector3D position = pos.loc;
@@ -155,6 +149,7 @@ public class AStar {
 						Waypoint wp = wp(curpos, ps.loc);
 						
 						if (!wpAlreadyUsed(wp) && VectorUtils.positionIsSafe(wp.loc, client)) {
+							
 							neighbors.add(wp);
 							//System.out.println("neighbours add"+wp.loc.toString());
 						}

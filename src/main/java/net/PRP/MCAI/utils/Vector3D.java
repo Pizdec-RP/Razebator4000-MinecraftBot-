@@ -2,10 +2,8 @@ package net.PRP.MCAI.utils;
 
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
 
-import net.PRP.MCAI.Main;
 import net.PRP.MCAI.bot.Bot;
 import world.Block;
-import world.BlockType;
 import world.BlockType.Type;
 import world.World;
 
