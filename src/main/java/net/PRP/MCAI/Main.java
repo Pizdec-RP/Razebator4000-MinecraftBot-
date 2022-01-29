@@ -16,38 +16,55 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.yaml.snakeyaml.Yaml;
 
 import com.github.steveice10.mc.protocol.MinecraftProtocol;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
 
 import net.PRP.MCAI.bot.Bot;
-import net.PRP.MCAI.utils.BreakTimeU;
+import net.PRP.MCAI.data.BlockData;
+import net.PRP.MCAI.data.MinecraftData;
+import net.PRP.MCAI.data.materialsBreakTime;
+import net.PRP.MCAI.data.MinecraftData.Type;
 import net.PRP.MCAI.utils.ThreadU;
-import world.BlockType;
-import world.BlockType.Type;
 
 public class Main {
 	static int nicksnumb = -1;
 	static FileInputStream inputStream;
 	static Yaml yaml = new Yaml();
 	static Map<?, ?> data;
-	static List<Proxy> proxies = ProxyScraper.ab();
+	static List<Proxy> proxies;
 	static int proxyNumb = 0;
-	public static boolean debug = true;
+	public static boolean debug = false;
 	public static List<Bot> bots = new ArrayList<Bot>();
 	public static Proxy proxy = Proxy.NO_PROXY;
 	public static List<String> pasti = new CopyOnWriteArrayList<String>();
-	private static BlockType blockType = new BlockType();
-	private static BreakTimeU BreakTimeU = new BreakTimeU();
+	private static MinecraftData MCData = new MinecraftData();
+	
+	public static void g() {
+		new Thread(()->{
+			while (true) {
+				System.out.println(Thread.activeCount()); 
+				ThreadU.sleep(500);
+			}
+		}).start();
+	}
 	
     public static void main(String[] args) {
+    	try {
+    		data = (Map<?, ?>)yaml.load(new FileInputStream(new File("settings.yml")));
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+			System.exit(0);
+		}
+    	//g();
+    	//new Window();
+    	proxies = ProxyScraper.ab();
     	initializeBlockType();
-    	BreakTimeU.initialize();
-    	Obshak.startTickLoop();
     	if (debug) {
     		new Thread(() -> {
-		        Bot client = new Bot(new MinecraftProtocol("smartass"), "localhost", 25565, Proxy.NO_PROXY);
+		        Bot client = new Bot(new MinecraftProtocol("tpa282"), "localhost", 25565, Proxy.NO_PROXY);
 		        client.connect();
 		        bots.add(client);
     		}).start();
@@ -115,12 +132,6 @@ public class Main {
 		return nicks;                   
     }
     public static Object getsett(String type) {
-    	try {
-			inputStream = new FileInputStream(new File("settings.yml"));
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
-    	data = (Map<?, ?>)yaml.load(inputStream);
     	return data.get(type);
     }
     
@@ -151,7 +162,6 @@ public class Main {
 
             for (Map.Entry<String, JsonElement> item : obj.get("minecraft:blocks").getAsJsonObject().get("bt").getAsJsonObject().entrySet()) {
                 Type typ = null;
-                System.out.println(item.getKey());
                 switch (item.getKey()) {
                 	case "hard":
                 		typ = Type.HARD;
@@ -184,18 +194,17 @@ public class Main {
                 		typ = Type.GOAWAY;
                 		break;
                 	default:
-                		System.out.println("unknownelement");
                 		typ = Type.UNKNOWN;
                 }
             	for (JsonElement block : item.getValue().getAsJsonArray()) {
-            		getBlockType().bts.put(block.getAsInt(), typ);
+            		getMCData().bts.put(block.getAsInt(), typ);
             	}
             	
             }
             //System.out.println(getBlockType().bts.toString());
             
-            JsonReader reader1nahuy = new JsonReader(new FileReader("data/registries.json"));
-            obj = (JsonObject) new JsonParser().parse(reader1nahuy);
+            JsonReader reader1 = new JsonReader(new FileReader("data/registries.json"));
+            obj = (JsonObject) new JsonParser().parse(reader1);
             List<oldMinecraftBlocks> omb = new ArrayList<oldMinecraftBlocks>();
             
             for (JsonElement ass : obj.get("entries").getAsJsonArray()) {
@@ -204,36 +213,60 @@ public class Main {
             	omb.add(new oldMinecraftBlocks(name, id));
             }
             
-            JsonReader reader2nahuy = new JsonReader(new FileReader("data/blocks.json"));
-            obj = (JsonObject) new JsonParser().parse(reader2nahuy);
+            JsonReader reader2 = new JsonReader(new FileReader("data/blocks.json"));
+            obj = (JsonObject) new JsonParser().parse(reader2);
             
             for (oldMinecraftBlocks oldBlock : omb) {
             	JsonObject newBlockState = obj.get(oldBlock.name).getAsJsonObject();
             	for (JsonElement state : newBlockState.get("states").getAsJsonArray()) {
             		int newid = state.getAsJsonObject().get("id").getAsInt();
-            		getBlockType().blockStates.put(newid, oldBlock);
-            		//getBlockType().bablkvas.put(newid, oldBlock);
-            		//System.out.println(newid+" "+oldBlock.id);
+            		getMCData().blockStates.put(newid, oldBlock);
             	}
             }
-            //System.out.println(getBlockType().bts.toString());
-            //ThreadU.sleep(1000);
-            //System.out.println(getBlockType().blockStates.get(16001).id);
+            
+            JsonReader reader3 = new JsonReader(new FileReader("data/blockData.json"));
+            JsonArray obj1 = (JsonArray) new JsonParser().parse(reader3);
+            
+            for (JsonElement d1 : obj1) {
+            	JsonObject d2 = d1.getAsJsonObject();
+            	BlockData f1 = new BlockData();
+            	f1.displayName = d2.get("displayName").getAsString();
+            	f1.name = d2.get("name").getAsString();
+            	f1.hardness = d2.get("hardness").getAsDouble();
+            	f1.diggable = d2.get("diggable").getAsBoolean();
+            	if (d2.get("material") == null) {
+            		//System.out.println("unhandled material of:"+f1.name);
+            		f1.material = "default";
+            	} else {
+            		f1.material = d2.get("material").getAsString();
+            	}
+            	f1.resistance = d2.get("resistance").getAsDouble();
+            	getMCData().blockData.put(d2.get("id").getAsInt(), f1);
+            }
+            
+            JsonReader reader4 = new JsonReader(new FileReader("data/materials.json"));
+            JsonArray obj2 = (JsonArray) new JsonParser().parse(reader4);
+            
+            for (JsonElement d2 : obj2) {
+            	List<materialsBreakTime> g1 = new CopyOnWriteArrayList<>();
+            	for (JsonElement element : d2.getAsJsonObject().get("ids").getAsJsonArray()) {
+            		materialsBreakTime f5 = new materialsBreakTime();
+            		f5.toolId = element.getAsJsonObject().get("id").getAsInt();
+            		f5.multipiler = element.getAsJsonObject().get("value").getAsDouble();
+            		g1.add(f5);
+            	}
+            	getMCData().materialToolMultipliers.put(d2.getAsJsonObject().get("name").getAsString(), g1);
+            }
+            //System.out.println(getBlockType().blockData);
+            //System.out.println(getBlockType().materialToolMultipliers);
+            //ThreadU.sleep(10000);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        System.out.println("Block-Types loaded");
+        System.out.println("Minecraft-data loaded");
    }
 
-	public static BlockType getBlockType() {
-		return blockType;
-	}
-
-	public static BreakTimeU getBreakTimeU() {
-		return BreakTimeU;
-	}
-
-	public static void setBreakTimeU(BreakTimeU breakTimeU) {
-		BreakTimeU = breakTimeU;
+	public static MinecraftData getMCData() {
+		return MCData;
 	}
 }

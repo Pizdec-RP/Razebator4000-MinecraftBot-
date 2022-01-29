@@ -3,9 +3,9 @@ package net.PRP.MCAI.utils;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
 
 import net.PRP.MCAI.bot.Bot;
-import world.Block;
-import world.BlockType.Type;
-import world.World;
+import net.PRP.MCAI.data.Block;
+import net.PRP.MCAI.data.World;
+import net.PRP.MCAI.data.MinecraftData.Type;
 
 public class Vector3D {
 
@@ -19,6 +19,32 @@ public class Vector3D {
 		this.x = x;
 		this.y = y;
 		this.z = z;
+	}
+	
+	@Override
+	public int hashCode() {
+		int hash = 7;
+		hash = 31 * hash + (int)x;
+		hash = 31 * hash + (int)y;
+		hash = 31 * hash + (int)z;
+		return hash;
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (!(obj instanceof Vector3D)) {
+			return false;
+		}
+		Vector3D co = (Vector3D) obj;
+		return co.x == x && co.y == y && co.z == z;
+	}
+	
+	public Vector3D down() {
+		return new Vector3D(x,y-1,z);
+	}
+	
+	public boolean IsOnGround(Bot client) {
+		return VectorUtils.BTavoid(this.add(0,-1,0).getBlock(client).type);
 	}
 
 	public double getX() {
@@ -78,18 +104,6 @@ public class Vector3D {
 		this(pos.getX(), pos.getY(), pos.getZ());
 	}
 	
-	public boolean equals(Object obj) {
-		if (!(obj instanceof Vector3D)) {
-			return false;
-		}
-		Vector3D vec = (Vector3D) obj;
-		if (VectorUtils.equalsInt(vec, this)) {
-			return true;
-		} else {
-			return false;
-		}
-	}
-	
 	@Deprecated
 	public Position translate() {
 		return new Position((int)x,(int)y,(int)z);
@@ -141,6 +155,10 @@ public class Vector3D {
 	
 	public String toStringInt() {
 		return "x:"+(int)x+" y:"+(int)y+" z:"+(int)z;
+	}
+	
+	public String forCommnad() {
+		return (int)x+" "+(int)y+" "+(int)z;
 	}
 	
 	public double distanceSq(double toX, double toY, double toZ) {

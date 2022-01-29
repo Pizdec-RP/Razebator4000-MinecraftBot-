@@ -14,8 +14,8 @@ import com.github.steveice10.mc.protocol.packet.ingame.server.entity.spawn.Serve
 import com.github.steveice10.packetlib.event.session.PacketReceivedEvent;
 import com.github.steveice10.packetlib.event.session.SessionAdapter;
 
+import net.PRP.MCAI.data.Entity;
 import net.PRP.MCAI.utils.Vector3D;
-import world.Entity;
 
 public class EntityListener extends SessionAdapter {
 	
@@ -31,7 +31,7 @@ public class EntityListener extends SessionAdapter {
     public void packetReceived(PacketReceivedEvent event) {
 		try {
 			if (event.getPacket() instanceof ServerEntityPositionPacket) {
-	            final ServerEntityPositionPacket p = (ServerEntityPositionPacket) event.getPacket();
+				final ServerEntityPositionPacket p = (ServerEntityPositionPacket) event.getPacket();
 	
 	            Entity entity = client.getWorld().Entites.get(p.getEntityId());
 	            
@@ -40,67 +40,51 @@ public class EntityListener extends SessionAdapter {
 	        		double xa = p.getMoveX();
 	        		double ya = p.getMoveY();
 	        		double za = p.getMoveZ();
-	        		System.out.println("x:"+String.format("%.2f",xa)+"  y:"+String.format("%.2f",ya)+"  z:"+String.format("%.2f",za)+"  milis:"+System.currentTimeMillis());
+	        		System.out.println("x:"+xa+"  y:"+String.format("%.2f",ya)+"  z:"+String.format("%.2f",za)+"  milis:"+System.currentTimeMillis());
 	        		entity.Position.x += p.getMoveX();
 	                entity.Position.y += p.getMoveY();
 	                entity.Position.z += p.getMoveZ();
-	                System.out.println("x:"+String.format("%.2f",entity.Position.x)+"  y:"+String.format("%.2f",entity.Position.y)+"  z:"+String.format("%.2f",entity.Position.z));
+	                //System.out.println("x:"+String.format("%.2f",entity.Position.x)+"  y:"+String.format("%.2f",entity.Position.y)+"  z:"+String.format("%.2f",entity.Position.z));
 	            } else {
 	            	entity.Position.x += p.getMoveX();
 	                entity.Position.y += p.getMoveY();
 	                entity.Position.z += p.getMoveZ();
 	            }
 	            
-	        } else if (event.getPacket() instanceof ServerSpawnPlayerPacket) {
-	            final ServerSpawnPlayerPacket p = (ServerSpawnPlayerPacket) event.getPacket();
-	
-	            if (p.getUuid() == client.getUUID()) {
-	                client.setId(p.getEntityId());
-	            }
-	            client.getWorld().Entites.put(p.getEntityId(), new Entity(p.getEntityId(), p.getUuid(), EntityType.PLAYER, new Vector3D(p.getX(), p.getY(), p.getZ()), p.getYaw(), p.getPitch()));
-	            
-	        } else if (event.getPacket() instanceof ServerSpawnEntityPacket) {
-	            final ServerSpawnEntityPacket p = (ServerSpawnEntityPacket) event.getPacket();
-	            client.getWorld().Entites.put(p.getEntityId(), new Entity(p.getEntityId(), p.getUuid(), p.getType(), new Vector3D(p.getX(), p.getY(), p.getZ()), p.getYaw(), p.getPitch()));
-	
-	        } else if (event.getPacket() instanceof ServerSpawnLivingEntityPacket) {
-	            final ServerSpawnLivingEntityPacket p = (ServerSpawnLivingEntityPacket) event.getPacket();
-	            if (client.getWorld().Entites.get(p.getEntityId()) == null) client.getWorld().Entites.put(p.getEntityId(), new Entity(p.getEntityId(), p.getUuid(), p.getType(), new Vector3D(p.getX(), p.getY(), p.getZ()), p.getYaw(), p.getPitch()));
-	        } else if (event.getPacket() instanceof ServerEntityDestroyPacket) {
-	        	final ServerEntityDestroyPacket p = (ServerEntityDestroyPacket) event.getPacket();
-	        	for (int id : p.getEntityIds()) {
-	        		client.getWorld().Entites.remove(id);
-	        	}
-	        } else if (event.getPacket() instanceof ServerEntityTeleportPacket) {
-		        final ServerEntityTeleportPacket p = (ServerEntityTeleportPacket) event.getPacket();
-		        Entity entity = client.getWorld().Entites.get(p.getEntityId());
-		        entity.Position = new Vector3D(p.getX(), p.getY(), p.getZ());
-		
-		    } else if (event.getPacket() instanceof ServerEntityPositionRotationPacket) {
-		        final ServerEntityPositionRotationPacket p = (ServerEntityPositionRotationPacket) event.getPacket();
-		        Entity entity = client.getWorld().Entites.get(p.getEntityId());
-		        if (entity == null) return;
-		        entity.Position.setX(entity.Position.getX() + p.getMoveX());
-		        entity.Position.setY(entity.Position.getY() + p.getMoveY());
-		        entity.Position.setZ(entity.Position.getZ() + p.getMoveZ());
-		    } else if (event.getPacket() instanceof ServerEntityRotationPacket) {
-		        final ServerEntityRotationPacket p = (ServerEntityRotationPacket) event.getPacket();
-		        Entity entity = client.getWorld().Entites.get(p.getEntityId());
-		        entity.Yaw = p.getYaw();
-		        entity.Pitch = p.getPitch();
-		
-		    } /*else if (event instanceof ServerEntityEffectPacket) {
-		        //final ServerEntityEffectPacket p = event;
-		
-		    } else if (event instanceof ServerEntityStatusPacket) {
-		        //final ServerEntityStatusPacket p = event;
-		
-		    } else if (event instanceof ServerEntityMetadataPacket) {
-		        //final ServerEntityMetadataPacket p = event;
-		    	// nicho ne delat
-		    }*/
+            } else if (event.getPacket() instanceof ServerSpawnPlayerPacket) {
+                final ServerSpawnPlayerPacket p = event.getPacket();
+                client.getWorld().Entites.put(p.getEntityId(), new Entity(p.getEntityId(), p.getUuid(), EntityType.PLAYER, new Vector3D(p.getX(), p.getY(), p.getZ()), p.getYaw(), p.getPitch()));
+
+            } else if (event.getPacket() instanceof ServerSpawnEntityPacket) {
+                final ServerSpawnEntityPacket p = event.getPacket();
+                client.getWorld().Entites.put(p.getEntityId(), new Entity(p.getEntityId(), p.getUuid(), p.getType(), new Vector3D(p.getX(), p.getY(), p.getZ()), p.getYaw(), p.getPitch()));
+            } else if (event.getPacket() instanceof ServerSpawnLivingEntityPacket) {
+                final ServerSpawnLivingEntityPacket p = event.getPacket();
+                client.getWorld().Entites.put(p.getEntityId(), new Entity(p.getEntityId(), p.getUuid(), p.getType(), new Vector3D(p.getX(), p.getY(), p.getZ()), p.getYaw(), p.getPitch()));
+
+                // System.out.println("SpawnEntityLIv: " + p.getEntityId());
+            } else if (event.getPacket() instanceof ServerEntityDestroyPacket) {
+                final ServerEntityDestroyPacket p = event.getPacket();
+                for (int i : p.getEntityIds()) {
+                    client.getWorld().Entites.remove(i);
+                }
+            } else if (event.getPacket() instanceof ServerEntityTeleportPacket) {
+                final ServerEntityTeleportPacket p = event.getPacket();
+                Entity entity = client.getWorld().Entites.get(p.getEntityId());
+                entity.Position = new Vector3D(p.getX(), p.getY(), p.getZ());
+
+            } else if (event.getPacket() instanceof ServerEntityPositionRotationPacket) {
+                final ServerEntityPositionRotationPacket p = event.getPacket();
+                Entity entity = client.getWorld().Entites.get(p.getEntityId());
+                entity.Position.setX(entity.Position.getX() + p.getMoveX());
+                entity.Position.setY(entity.Position.getY() + p.getMoveY());
+                entity.Position.setZ(entity.Position.getZ() + p.getMoveZ());
+            } else if (event.getPacket() instanceof ServerEntityRotationPacket) {
+                //final ServerEntityRotationPacket p = event.getPacket();
+            }
 		} catch (Exception e) {
-			e.printStackTrace();
+			//System.out.println(client.name);
+			//e.printStackTrace();
 		}
 	}
 

@@ -6,7 +6,9 @@ import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.utils.ThreadU;
 import net.PRP.MCAI.utils.Vector3D;
 
-public class Obshak {//петушинный общак
+public class Obshak {
+	
+	public static int tickrate = 50;
 	
 	public static void startTickLoop() {
 		System.out.println("tick loop started");
@@ -15,16 +17,16 @@ public class Obshak {//петушинный общак
 			while (true) {
 				long timeone = System.currentTimeMillis();
 				for (Bot client : getBots()) {
-					client.tick();
+					if (client.isOnline()) client.tick();
 				}
 				long timetwo = System.currentTimeMillis();
 				int raznica = (int) (timetwo - timeone);
-				if (raznica > 0 && raznica < 50) {
-					curcomp = 50-raznica;
-					//System.out.println("comp "+curcomp+"ms");
+				if (raznica > 0 && raznica < tickrate) {
+					curcomp = tickrate-raznica;
+					System.out.println("comp "+curcomp+"ms");
 					ThreadU.sleep(curcomp);
 				} else if (raznica == 0){
-					ThreadU.sleep(50);
+					ThreadU.sleep(tickrate);
 				}
 			}
 		}).start();

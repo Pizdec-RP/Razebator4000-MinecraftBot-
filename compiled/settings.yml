@@ -1,25 +1,28 @@
 {
-    "host": "localhost:25565", #айпи:порт
-    "bots": 1, #скок ботов
-    "enterrange": 10, #задержка между соединениями (в милисекундах)
+    "host": "51.159.169.225:13880", #айпи:порт
+    "bots": 5, #скок ботов
+    "enterrange": 6500, #задержка между соединениями (в милисекундах)
     "useproxy": false,
     "proxytype": "socks5", #socks4 socks5 http
     "KeepAlivePackets": false, #не советую менять
-    "tickmode": true, #true - передача координат каждые 50 мс (не передаются если совпадают с предыдущими) | false - передача координат при каждом изменении
-    "reconect": true,
+    "reconect": false,
 
-    "visualizePath": true,
+    "visualizePath": false,
     "removeafter": true,
 
-    "listenEntities": true,
+    "listenEntities": false,
+
+    "raznos": false,
 
     #-------raid---------
-    "raidmode": false, #режим рейд-атаки на сервер
+    "raidmode": true, #режим рейд-атаки на сервер
     #---setup---
-    "raidwalkradius": 2, #боты ходят на случайные координаты в этом радиусе относительно своих
-    "walkeverymilseconds": 3000, #цикл ходьбы каждые X милисекунд
-    "raidspam": true, #спам в режиме рейда
+    "raidwalkradius": 3, #боты ходят на случайные координаты в этом радиусе относительно своих
+    "walkeverymilseconds": 0, #цикл ходьбы каждые X милисекунд
+    "withmining": true,
+    "minertargetid": [9,8,498], #8 grass 16 sp log 47-oakwood 28-sand 452-oak_slab 13-oak_planks 9-dirt 1-stone 498-grass_path
+    "raidspam": false, #спам в режиме рейда
     "spamrange": 1000, #спам каждые X милисекунд
-    "timebeforeraidon": 2000 #задержка между входом бота на сервер и включением режима рейд-атаки
+    "timebeforeraidon": 500 #задержка между входом бота на сервер и включением режима рейд-атаки
     #-------raid---------
 }

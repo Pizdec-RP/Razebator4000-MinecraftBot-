@@ -1,12 +1,14 @@
 package net.PRP.MCAI.utils;
 
+import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
 import com.github.steveice10.mc.protocol.data.game.entity.player.PlayerAction;
 import com.github.steveice10.mc.protocol.data.game.world.block.BlockFace;
 import com.github.steveice10.mc.protocol.packet.ingame.client.ClientChatPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerActionPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerChangeHeldItemPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerPositionPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerRotationPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerSwingArmPacket;
+//import com.github.steveice10.mc.protocol.packet.ingame.client.player.
 import georegression.struct.point.Point3D_F64;
 import georegression.struct.point.Vector3D_F64;
 import net.PRP.MCAI.bot.Bot;
@@ -41,6 +43,8 @@ public class BotU {
 		cx += 0.5;
 		double cz = (int) Math.floor(client.getPosZ());
 		cz += 0.5;
+		//System.out.println("calibrated");
+		
 		setposto(client, cx, client.getPosY(), cz);
 	}
 	
@@ -290,6 +294,8 @@ public class BotU {
 	public static void mineBlock(Bot client, Vector3D pos) {
 		Point3D_F64 position = new Point3D_F64(pos.getX(),pos.getY(),pos.getZ());
 		LookHead(client, position);
+		
+		client.getSession().send(new ClientPlayerSwingArmPacket(Hand.MAIN_HAND));
 		ClientPlayerActionPacket a = new ClientPlayerActionPacket(PlayerAction.START_DIGGING, pos.translate(), BlockFace.UP);
 		client.getSession().send(a);
 		ThreadU.sleep(400);
@@ -299,7 +305,12 @@ public class BotU {
 	
 	public static void SetSlot(Bot client, int slot) {
         client.getSession().send(new ClientPlayerChangeHeldItemPacket(slot));
+        client.currentHotbarSlot = 36+slot;
     }
+	
+	public static void LookHead(Bot client, Vector3D p) {
+		LookHead(client, new Point3D_F64(p.x,p.y,p.z));
+	}
 	
 	public static void LookHead(Bot client, Point3D_F64 position) {
 		int y = (int) (position.getY() - 1);
@@ -310,7 +321,8 @@ public class BotU {
             vect.normalize();
             double yaw = Math.toDegrees(Math.atan2(vect.z, vect.x)) - 90;
             double pitch = Math.toDegrees(Math.asin(-vect.y));
-            client.getSession().send(new ClientPlayerRotationPacket(true, (float) yaw, (float) pitch));
+            client.setYaw((float) yaw);
+            client.setPitch((float) pitch);
         } else {log("hueta");}
     }
 	

@@ -8,7 +8,7 @@ import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
 import com.google.common.collect.AbstractIterator;
 
 import net.PRP.MCAI.bot.Bot;
-import world.BlockType.Type;
+import net.PRP.MCAI.data.MinecraftData.Type;
 
 public class VectorUtils {
 	public static boolean equals(Vector3D one, Vector3D two) {
@@ -43,6 +43,8 @@ public class VectorUtils {
 	}
 	
 	public static boolean positionIsSafe(Vector3D pos, Bot client) {
+		//System.out.println(pos.toStringInt());
+		//System.out.println(BTavoid(client.getWorld().getBlock(pos).type)+" "+client.getWorld().getBlock(pos).state+" "+BTavoid(client.getWorld().getBlock(pos.add(0,1,0)).type)+" "+client.getWorld().getBlock(pos.add(0,1,0)).type+" "+icanstayhere(client.getWorld().getBlock(pos.add(0,-1,0)).type)+" "+client.getWorld().getBlock(pos.add(0,-1,0)).type);
 		return BTavoid(client.getWorld().getBlock(pos).type) && BTavoid(client.getWorld().getBlock(pos.add(0,1,0)).type) && icanstayhere(client.getWorld().getBlock(pos.add(0,-1,0)).type);
 	}
 	
@@ -117,8 +119,6 @@ public class VectorUtils {
     		if (ys < 1) ys = 0;
     		int yi = y+i;
     		if (yi > 255) yi = 255;
-    		//int ys = 1;
-    		//int yi = 255;
     		int zs = z-i;
     		for (int y1 = ys; y1 < yi; y1++) {
     			for (int x1 = xs; x1 < x+i; x1++) {
@@ -126,7 +126,7 @@ public class VectorUtils {
                     	int b;
                     	//log("ищу на x:"+x1+" y:"+y1+" z:"+z1);
                     	b = new Vector3D(x1,y1,z1).getBlock(client).id;
-                        if (b == id && !equalsInt(new Vector3D(x1,y1+1,z1), client.getPosition())) {
+                        if (b == id && !pos.getBlock(client).touchLiquid(client)) {
                         	localf++;
                         	pos = new Vector3D(x1,y1,z1);
                         	positions.add(pos);
@@ -134,6 +134,11 @@ public class VectorUtils {
                     }
                 }
             }
+    		if (positions.size() > 1) {
+    			for (Vector3D poss : positions) {
+    				if (VectorUtils.equalsInt(new Vector3D(poss.x,poss.y+1,poss.z), client.getPosition())) positions.remove(poss);
+    			}
+    		}
     		if (localf > 0 && !positions.isEmpty()) {
     			pos = getNear(new Vector3D((int)client.getPosX(),(int)client.getPosY(),(int)client.getPosZ()),positions);
     	    	return pos;
@@ -142,6 +147,69 @@ public class VectorUtils {
     	pos = getNear(new Vector3D((int)client.getPosX(),(int)client.getPosY(),(int)client.getPosZ()),positions);
     	return pos;
     }
+	
+	public static Vector3D findNearestBlockByArrayId(Bot client, List<Integer> ids) {
+    	List<Vector3D> positions = new CopyOnWriteArrayList<>();
+    	int x = (int)client.getPosX();
+    	int y = (int)client.getPosY();
+    	int z = (int)client.getPosZ();
+    	int radius = 50;
+    	Vector3D pos = null;
+    	for (int i = 1; i < radius; i++) {
+    		int localf = 0;
+    		int xs = x-i;
+    		int ys = y-i;
+    		if (ys < 1) ys = 0;
+    		int yi = y+i;
+    		if (yi > 255) yi = 255;
+    		int zs = z-i;
+    		for (int y1 = ys; y1 < yi; y1++) {
+    			for (int x1 = xs; x1 < x+i; x1++) {
+                    for (int z1 = zs; z1 < z+i; z1++) {
+                    	//log("ищу на x:"+x1+" y:"+y1+" z:"+z1);
+                        if (ids.contains(new Vector3D(x1,y1,z1).getBlock(client).id)) {
+                        	localf++;
+                        	positions.add(new Vector3D(x1,y1,z1));
+                        }
+                    }
+                }
+            }
+    		if (positions.size() > 1) {
+    			for (Vector3D poss : positions) {
+    				if (VectorUtils.equalsInt(new Vector3D(poss.x,poss.y+1,poss.z), client.getPosition())) positions.remove(poss);
+    			}
+    		}
+    		if (localf > 0 && !positions.isEmpty()) {
+    			pos = getNear(new Vector3D((int)client.getPosX(),(int)client.getPosY(),(int)client.getPosZ()),positions);
+    	    	return pos;
+    		}
+    	}
+    	pos = getNear(new Vector3D((int)client.getPosX(),(int)client.getPosY(),(int)client.getPosZ()),positions);
+    	return pos;
+    }
+	
+	public static List<Vector3D> getAllInBox(Vector3D pos, int radius) {
+		List<Vector3D> positions = new CopyOnWriteArrayList<>();
+    	int x = (int)pos.getPosX();
+    	int y = (int)pos.getPosY();
+    	int z = (int)pos.getPosZ();
+    	for (int i = 1; i < radius; i++) {
+    		int xs = x-i;
+    		int ys = y-i;
+    		if (ys < 1) ys = 0;
+    		int yi = y+i;
+    		if (yi > 255) yi = 255;
+    		int zs = z-i;
+    		for (int y1 = ys; y1 < yi; y1++) {
+    			for (int x1 = xs; x1 < x+i; x1++) {
+                    for (int z1 = zs; z1 < z+i; z1++) {
+                        positions.add(new Vector3D(x1,y1,z1));
+                    }
+                }
+            }
+    	}
+    	return positions;
+	}
 
 	public static Iterable<Vector3D> getAllInBox(final int fromX, final int fromY, final int fromZ, final int toX, final int toY, final int toZ) {
         final Vector3D posMin = new Vector3D(Math.min(fromX, toX), Math.min(fromY, toY), Math.min(fromZ, toZ));
@@ -219,5 +287,36 @@ public class VectorUtils {
     		positions.add(new Vector3D(blockPos.getX(),blockPos.getY()-2,blockPos.getZ()));
     	} else {}
     	return getNear(new Vector3D((int)client.getPosX(),(int)client.getPosY(),(int)client.getPosZ()),positions);
+    }
+	
+	public static Vector3D randomOfBotCanTouchBlockAt(Bot client, Vector3D blockPos) {
+    	List<Vector3D> positions = new CopyOnWriteArrayList<>();
+    	if (BTavoid(new Vector3D(blockPos.getX(),blockPos.getY()+1,blockPos.getZ()).getBlock(client).type)) {
+    		positions.add(new Vector3D(blockPos.getX(),blockPos.getY()+1,blockPos.getZ()));
+    	}
+    	if (BTavoid(new Vector3D(blockPos.getX(),blockPos.getY(),blockPos.getZ()-1).getBlock(client).type)) {
+    		positions.add(new Vector3D(blockPos.getX(),blockPos.getY(),blockPos.getZ()-1));
+    	}
+    	if (BTavoid(new Vector3D(blockPos.getX()-1,blockPos.getY(),blockPos.getZ()).getBlock(client).type)) {
+    		positions.add(new Vector3D(blockPos.getX()-1,blockPos.getY(),blockPos.getZ()));
+    	}
+    	if (BTavoid(new Vector3D(blockPos.getX(),blockPos.getY(),blockPos.getZ()+1).getBlock(client).type)) {
+    		positions.add(new Vector3D(blockPos.getX(),blockPos.getY(),blockPos.getZ()+1));
+    	}
+    	if (BTavoid(new Vector3D(blockPos.getX()+1,blockPos.getY(),blockPos.getZ()).getBlock(client).type)) {
+    		positions.add(new Vector3D(blockPos.getX()+1,blockPos.getY(),blockPos.getZ()));
+    	}
+    	if (BTavoid(new Vector3D(blockPos.getX(),blockPos.getY()-2,blockPos.getZ()).getBlock(client).type)) {
+    		positions.add(new Vector3D(blockPos.getX(),blockPos.getY()-2,blockPos.getZ()));
+    	}
+    	if (positions.size() <= 0) {
+    		positions.add(new Vector3D(blockPos.getX(),blockPos.getY()+1,blockPos.getZ()));
+    		positions.add(new Vector3D(blockPos.getX(),blockPos.getY(),blockPos.getZ()-1));
+    		positions.add(new Vector3D(blockPos.getX()-1,blockPos.getY(),blockPos.getZ()));
+    		positions.add(new Vector3D(blockPos.getX(),blockPos.getY(),blockPos.getZ()+1));
+    		positions.add(new Vector3D(blockPos.getX()+1,blockPos.getY(),blockPos.getZ()));
+    		positions.add(new Vector3D(blockPos.getX(),blockPos.getY()-2,blockPos.getZ()));
+    	} else {}
+    	return positions.get(MathU.rnd(0, positions.size()));
     }
 }
