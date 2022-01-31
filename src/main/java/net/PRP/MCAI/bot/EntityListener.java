@@ -15,7 +15,7 @@ import com.github.steveice10.packetlib.event.session.PacketReceivedEvent;
 import com.github.steveice10.packetlib.event.session.SessionAdapter;
 
 import net.PRP.MCAI.data.Entity;
-import net.PRP.MCAI.utils.Vector3D;
+import net.PRP.MCAI.data.Vector3D;
 
 public class EntityListener extends SessionAdapter {
 	

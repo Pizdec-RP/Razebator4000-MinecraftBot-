@@ -10,9 +10,9 @@ import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlaye
 
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.data.BlockData;
+import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.data.materialsBreakTime;
 import net.PRP.MCAI.utils.BotU;
-import net.PRP.MCAI.utils.Vector3D;
 import net.PRP.MCAI.utils.VectorUtils;
 
 public class BlockBreakManager {
@@ -89,6 +89,7 @@ public class BlockBreakManager {
 				
 			}
 		} catch (Exception e) {
+			if (e instanceof NullPointerException) reset();
 			e.printStackTrace();
 		}
 	}

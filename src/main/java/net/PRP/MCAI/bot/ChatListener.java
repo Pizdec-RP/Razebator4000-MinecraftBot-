@@ -13,6 +13,7 @@ import com.google.gson.JsonElement;
 
 import net.PRP.MCAI.bot.BlockBreakManager.bbmct;
 import net.PRP.MCAI.data.Entity;
+import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.utils.*;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
@@ -128,6 +129,26 @@ public class ChatListener extends SessionAdapter {
 						}
 						if (en == null) return;
 						BotU.chat(client, en.Position.toStringInt());
+					} else if (command.get(0).equalsIgnoreCase("gfb")) {
+						BotU.chat(client, client.vis.GetLookingBlockVector3D(client.getYaw(), client.getPitch()).getBlock(client).pos.toStringInt());
+					} else if (command.get(0).equalsIgnoreCase("youface")) {
+						BotU.chat(client, "y:"+client.getYaw()+" p:"+client.getPitch());
+					} else if (command.get(0).equalsIgnoreCase("aroundme")) {
+						if (client.ztp) {
+							client.ztp = false;
+						} else {
+							UUID uuid = ((ServerChatPacket) receiveEvent.getPacket()).getSenderUuid();
+							Entity en = null;
+							for (Entity entity : client.getWorld().Entites.values()) {
+								if (entity.uuid.toString().equalsIgnoreCase(uuid.toString())) {
+									en=entity;
+									break;
+								}
+							}
+							if (en == null) return;
+							client.targetpos = en.Position;
+							client.ztp = true;
+						}
 					}
 				}
 			}).start();

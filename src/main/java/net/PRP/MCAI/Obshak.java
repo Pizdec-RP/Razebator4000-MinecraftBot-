@@ -3,35 +3,10 @@ package net.PRP.MCAI;
 import java.util.List;
 
 import net.PRP.MCAI.bot.Bot;
+import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.utils.ThreadU;
-import net.PRP.MCAI.utils.Vector3D;
 
 public class Obshak {
-	
-	public static int tickrate = 50;
-	
-	public static void startTickLoop() {
-		System.out.println("tick loop started");
-		new Thread(()->{
-			int curcomp = 0;
-			while (true) {
-				long timeone = System.currentTimeMillis();
-				for (Bot client : getBots()) {
-					if (client.isOnline()) client.tick();
-				}
-				long timetwo = System.currentTimeMillis();
-				int raznica = (int) (timetwo - timeone);
-				if (raznica > 0 && raznica < tickrate) {
-					curcomp = tickrate-raznica;
-					System.out.println("comp "+curcomp+"ms");
-					ThreadU.sleep(curcomp);
-				} else if (raznica == 0){
-					ThreadU.sleep(tickrate);
-				}
-			}
-		}).start();
-	}
-	
 	public static void pickMainhost() {
 		try {
 			List<Bot> bots = getBots();

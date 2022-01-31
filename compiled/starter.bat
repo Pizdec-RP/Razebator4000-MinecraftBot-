@@ -1,2 +1,2 @@
-java -jar pizdecrp.MCAI-1-jar-with-dependencies.jar
+java -jar main.jar
 pause

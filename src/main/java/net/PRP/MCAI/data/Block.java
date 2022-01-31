@@ -7,7 +7,6 @@ import net.PRP.MCAI.Main;
 import net.PRP.MCAI.bot.AABB;
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.data.MinecraftData.Type;
-import net.PRP.MCAI.utils.Vector3D;
 import net.PRP.MCAI.utils.VectorUtils;
 
 public class Block {

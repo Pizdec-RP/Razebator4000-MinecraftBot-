@@ -10,10 +10,11 @@ import com.github.steveice10.packetlib.Session;
 import com.github.steveice10.packetlib.tcp.TcpClientSession;
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.utils.ThreadU;
-import net.PRP.MCAI.utils.Vector3D;
 import net.PRP.MCAI.Inventory.*;
 import net.PRP.MCAI.bot.pathfinder.AStar;
+import net.PRP.MCAI.data.ChunkCoordinates;
 import net.PRP.MCAI.data.EntityEffects;
+import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.data.World;
 
 import java.net.Proxy;
@@ -43,7 +44,7 @@ public class Bot {
     private int id;
     
     public EntityListener entityListener;
-    public RaidListener rl;
+    public LivingListener rl;
     public PhysicsListener pm;
     
     public static World world;
@@ -53,6 +54,7 @@ public class Bot {
     public int currentHotbarSlot = 0;
     public boolean raidmode;
     public AStar pathfinder;
+    public Vision vis = new Vision(this, 0, 0);
     
     public boolean listencaptcha = false;
     //public boolean isInWeb = false;
@@ -66,6 +68,10 @@ public class Bot {
 	public boolean connected = false;
 	
 	public static int tickrate = 50;
+	
+	public Vector3D targetpos = Vector3D.ORIGIN;
+	public boolean ztp = false;
+	public int targetradius = 10;
     
 
     public Bot(MinecraftProtocol account, String host, int port, Proxy proxy) {
@@ -128,18 +134,17 @@ public class Bot {
         }
         client.addListener(new ChatListener(this));
         if (raidmode) {
-        	this.rl = new RaidListener(this);
+        	this.rl = new LivingListener(this);
         	client.addListener(rl);
         }
         this.bbm = new BlockBreakManager(this);
         
         this.pm = new PhysicsListener(this);
         client.addListener(pm);
-        client.connect();
         
         this.session = client;
         this.playerInventory = new PlayerInventory(this);
-        
+        client.connect();
     }
 
     public void register() {
@@ -161,14 +166,19 @@ public class Bot {
     }
     
     public void tick() {
+    	if (!getWorld().columns.containsKey(new ChunkCoordinates((int)posX >> 4, (int)posZ >> 4))) return;
     	//System.out.println("inact: "+this.inAction+" mining: "+this.bbm.state+" pos: "+this.bbm.getBlockPos().toStringInt()+" pf:"+this.pathfinder.clientIsOnFinish+" pft:"+this.pathfinder.end.toStringInt());
     	//if (this.pathfinder.clientIsOnFinish && this.bbm.state == bbmct.ENDED) setInAction(false);
-    	this.pathfinder.tick();
-    	this.bbm.tick();
-    	if (raidmode) {
-    		this.rl.tick();
+    	try {
+	    	this.pathfinder.tick();
+	    	this.bbm.tick();
+	    	if (raidmode) {
+	    		this.rl.tick();
+	    	}
+	    	this.pm.tick();
+    	} catch (Exception e) {
+    		e.printStackTrace();
     	}
-    	this.pm.tick();
     }
     
     public void setposto(Vector3D pos) {
@@ -373,5 +383,9 @@ public class Bot {
 		} else {
 			return null;
 		}
+	}
+
+	public Vector3D getEyeLocation() {
+		return getPositionInt().add(0, 0.5, 0);
 	}
 }

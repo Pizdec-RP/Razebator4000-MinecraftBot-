@@ -4,8 +4,6 @@ import java.util.UUID;
 
 import com.github.steveice10.mc.protocol.data.game.entity.type.EntityType;
 
-import net.PRP.MCAI.utils.Vector3D;
-
 public class Entity {
 	public int EntityID;
     public EntityType type;

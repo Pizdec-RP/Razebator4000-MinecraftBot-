@@ -12,6 +12,7 @@ import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlaye
 import georegression.struct.point.Point3D_F64;
 import georegression.struct.point.Vector3D_F64;
 import net.PRP.MCAI.bot.Bot;
+import net.PRP.MCAI.data.Vector3D;
 public class BotU {
 	//private HashMap<ChunkCoordinates, Column> columns = new HashMap<>();
 	public static void log(String f) {

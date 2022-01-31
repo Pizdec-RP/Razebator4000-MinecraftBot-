@@ -7,11 +7,11 @@ import com.github.steveice10.mc.protocol.packet.ingame.server.entity.player.Serv
 import com.github.steveice10.packetlib.event.session.PacketReceivedEvent;
 import com.github.steveice10.packetlib.event.session.SessionAdapter;
 
-import net.PRP.MCAI.utils.Vector3D;
 import net.PRP.MCAI.utils.VectorUtils;
 import net.PRP.MCAI.utils.physics;
 import net.PRP.MCAI.bot.pathfinder.AStar.State;
 import net.PRP.MCAI.data.Block;
+import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.MathU;
 

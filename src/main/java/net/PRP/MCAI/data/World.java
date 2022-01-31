@@ -8,7 +8,6 @@ import com.github.steveice10.mc.protocol.data.game.chunk.Column;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
 import com.github.steveice10.mc.protocol.data.game.setting.Difficulty;
 
-import net.PRP.MCAI.utils.Vector3D;
 import net.PRP.MCAI.*;
 import net.PRP.MCAI.data.MinecraftData.Type;
 
@@ -23,7 +22,7 @@ public class World {
 	private long age;
 	private long time;
 	
-	private HashMap<ChunkCoordinates, Column> columns = new HashMap<>();
+	public HashMap<ChunkCoordinates, Column> columns = new HashMap<>();
 	private HashMap<ChunkCoordinates, byte[]> biomeData = new HashMap<>();
 	public final Map<Integer, Entity> Entites = new HashMap<>();
 	
@@ -87,7 +86,7 @@ public class World {
             int chunkZ = (int)pos.getZ() >> 4;
             //System.out.println("x: "+bx+"y: "+by+"z: "+bz);
 			Chunk cc = columns.get(new ChunkCoordinates(chunkX, chunkZ)).getChunks()[chunkY];
-            if (cc == null) return new Block(0, 0, pos, Type.AIR);
+            if (cc == null) return new Block(0, 0, pos, Type.VOID);
             int state = cc.get(bx, by, bz);
             int id = Main.getMCData().blockStates.get(state).id;
 			return new Block(state, id, pos, Main.getMCData().bt(id));

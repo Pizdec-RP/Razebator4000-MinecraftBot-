@@ -22,6 +22,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
 
+import net.PRP.MCAI.GUI.Window;
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.data.BlockData;
 import net.PRP.MCAI.data.MinecraftData;
@@ -59,7 +60,7 @@ public class Main {
 			System.exit(0);
 		}
     	//g();
-    	//new Window();
+    	if ((boolean) getsett("window")) new Window();
     	proxies = ProxyScraper.ab();
     	initializeBlockType();
     	if (debug) {
@@ -138,18 +139,13 @@ public class Main {
     public static void updatePasti() {
     	File file = new File("text_dlya_spama.txt");
         if (file.exists()) {
-            try {
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader((InputStream)new FileInputStream(file), "UTF8"));){
-                    while (reader.ready()) {
-                        pasti.add(reader.readLine());
-                    }
-                }
-                catch (Exception pohuy) {
-                    //mne pohuy
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader((InputStream)new FileInputStream(file), "UTF8"));){
+                while (reader.ready()) {
+                    pasti.add(reader.readLine());
                 }
             }
-            catch (Exception e) {
-                e.printStackTrace();
+            catch (Exception pohuy) {
+                System.exit(0);
             }
         }
     }
@@ -257,13 +253,10 @@ public class Main {
             	}
             	getMCData().materialToolMultipliers.put(d2.getAsJsonObject().get("name").getAsString(), g1);
             }
-            //System.out.println(getBlockType().blockData);
-            //System.out.println(getBlockType().materialToolMultipliers);
-            //ThreadU.sleep(10000);
+            System.out.println("Minecraft-data loaded");
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        System.out.println("Minecraft-data loaded");
    }
 
 	public static MinecraftData getMCData() {

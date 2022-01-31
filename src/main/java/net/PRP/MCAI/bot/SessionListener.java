@@ -4,7 +4,6 @@ import com.github.steveice10.mc.protocol.data.game.ClientRequest;
 import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
 import com.github.steveice10.mc.protocol.packet.ingame.client.ClientRequestPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerPositionRotationPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerRotationPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.world.ClientTeleportConfirmPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerJoinGamePacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.player.ServerPlayerHealthPacket;
@@ -20,6 +19,7 @@ import com.github.steveice10.packetlib.event.session.SessionAdapter;
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.data.ChunkCoordinates;
 import net.PRP.MCAI.data.Entity;
+import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.utils.*;
 
 

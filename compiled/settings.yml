@@ -1,26 +1,27 @@
 {
-    "host": "51.159.169.225:13880", #айпи:порт
-    "bots": 5, #скок ботов
-    "enterrange": 6500, #задержка между соединениями (в милисекундах)
+    "host": "localhost:25565", #айпи:порт
+    "bots": 70, #скок ботов
+    "enterrange": 500, #задержка между соединениями (в милисекундах)
     "useproxy": false,
     "proxytype": "socks5", #socks4 socks5 http
-    "KeepAlivePackets": false, #не советую менять
-    "reconect": false,
+    "KeepAlivePackets": false, #говно
+    "reconect": true,
 
-    "visualizePath": false,
-    "removeafter": true,
+    "visualizePath": false, #ставит блоки при построении пути
+    "removeafter": true, #потом их убирает
 
-    "listenEntities": false,
+    "listenEntities": true, #ага понятно хуета
 
-    "raznos": false,
+    "raznos": false, #непомню че это
+
+    "window": false, #неробит покашо
 
     #-------raid---------
     "raidmode": true, #режим рейд-атаки на сервер
     #---setup---
-    "raidwalkradius": 3, #боты ходят на случайные координаты в этом радиусе относительно своих
-    "walkeverymilseconds": 0, #цикл ходьбы каждые X милисекунд
-    "withmining": true,
-    "minertargetid": [9,8,498], #8 grass 16 sp log 47-oakwood 28-sand 452-oak_slab 13-oak_planks 9-dirt 1-stone 498-grass_path
+    "walkeverymilseconds": 0, #цикл действий каждые X милисекунд
+    "mining": true, #копает вместо того чтобы тупо стоять
+    "minertargetid": [8,35,13,12,139,191,243], # самое основное: 8 grass 16 sp log 47-oakwood 28-sand 452-oak_slab 13-oak_planks 9-dirt 1-stone 35-oak_log 12-cobla 139-mossy_cobble 191-oak_fence 243-glass_pane
     "raidspam": false, #спам в режиме рейда
     "spamrange": 1000, #спам каждые X милисекунд
     "timebeforeraidon": 500 #задержка между входом бота на сервер и включением режима рейд-атаки

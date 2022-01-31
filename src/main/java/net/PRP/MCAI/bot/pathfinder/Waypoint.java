@@ -1,6 +1,6 @@
 package net.PRP.MCAI.bot.pathfinder;
 
-import net.PRP.MCAI.utils.Vector3D;
+import net.PRP.MCAI.data.Vector3D;
 
 public class Waypoint {
 	

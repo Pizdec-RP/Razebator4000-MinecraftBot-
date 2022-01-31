@@ -8,9 +8,28 @@ import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
 import com.google.common.collect.AbstractIterator;
 
 import net.PRP.MCAI.bot.Bot;
+import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.data.MinecraftData.Type;
 
 public class VectorUtils {
+	
+	public static Vector3D func_31(Bot client, Vector3D pos, int radius) {
+		List<Vector3D> positions = getAllInBox(pos, radius);
+		List<Vector3D> normal = new CopyOnWriteArrayList<>();
+		for (Vector3D position : positions) {
+			if (!positionIsSafe(position, client)) {
+				positions.remove(position);
+			}
+		}
+		for (Vector3D position : positions) {
+			if (client.pathfinder.testForPath(position)) {
+				normal.add(position);
+			}
+		}
+		int i = normal.size()-1;
+		return normal.get(MathU.rnd(0, i));
+	}
+	
 	public static boolean equals(Vector3D one, Vector3D two) {
 		//System.out.println(one.toString() + " <<>> " + two.toString());
 		if (one.getX() == two.getX() && one.getY() == two.getY() && one.getZ() == two.getZ()) return true;
