@@ -9,7 +9,9 @@ import com.google.common.collect.AbstractIterator;
 
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.data.Vector3D;
+import net.PRP.MCAI.data.Block;
 import net.PRP.MCAI.data.MinecraftData.Type;
+import net.minecraft.server.v1_12_R1.Blocks;
 
 public class VectorUtils {
 	
@@ -27,6 +29,7 @@ public class VectorUtils {
 			}
 		}
 		int i = normal.size()-1;
+		if (normal.isEmpty()) return null;
 		return normal.get(MathU.rnd(0, i));
 	}
 	
@@ -118,6 +121,23 @@ public class VectorUtils {
         return minpos;
     }
 	
+	public static Vector3D getNearBlock(Vector3D target, List<Block> allPos) {
+        Vector3D minpos = null;
+        for (Block b : allPos) {
+        	Vector3D position = b.pos;
+        	double distance = Math.sqrt(Math.pow(position.getX() - target.getX(), 2) + Math.pow(position.getY() - target.getY(), 2) + Math.pow(position.getZ() - target.getZ(), 2));
+        	if (minpos == null) {
+        		minpos = position;
+        	} else {
+        		double distanceminpos = Math.sqrt(Math.pow(minpos.getX() - target.getX(), 2) + Math.pow(minpos.getY() - target.getY(), 2) + Math.pow(minpos.getZ() - target.getZ(), 2));
+        		if (distance < distanceminpos) {
+        			minpos = position;
+        		}
+        	}
+        }
+        return minpos;
+    }
+	
 	public static Vector3D findSafePointInRadius(Vector3D position, int rad) {
 		Vector3D aye = position.add(MathU.rnd(-rad, rad), 0, MathU.rnd(-rad, rad));
 		//System.out.println(aye);
@@ -167,7 +187,19 @@ public class VectorUtils {
     	return pos;
     }
 	
-	public static Vector3D findNearestBlockByArrayId(Bot client, List<Integer> ids) {
+	public static Vector3D func_1488(Bot client, List<Integer> ids, List<Vector3D> blacklist) {
+		List<Block> blocks = new CopyOnWriteArrayList<>();
+		blocks.addAll(client.vis.getVisibleBlocks());
+		for (Block a : blocks) {
+			if (blacklist.contains(a.pos) || a.touchLiquid(client) || !ids.contains(a.id)) {
+				blocks.remove(a);
+			}
+		}
+		if (blocks.isEmpty()) return null;
+		return getNearBlock(client.getPosition(), blocks);
+	}
+	
+	public static Vector3D findNearestBlockByArrayId(Bot client, List<Integer> ids, List<Vector3D> blacklist) {
     	List<Vector3D> positions = new CopyOnWriteArrayList<>();
     	int x = (int)client.getPosX();
     	int y = (int)client.getPosY();
@@ -185,10 +217,12 @@ public class VectorUtils {
     		for (int y1 = ys; y1 < yi; y1++) {
     			for (int x1 = xs; x1 < x+i; x1++) {
                     for (int z1 = zs; z1 < z+i; z1++) {
-                    	//log("ищу на x:"+x1+" y:"+y1+" z:"+z1);
-                        if (ids.contains(new Vector3D(x1,y1,z1).getBlock(client).id)) {
-                        	localf++;
-                        	positions.add(new Vector3D(x1,y1,z1));
+                    	Vector3D a = new Vector3D(x1,y1,z1);
+                        if (ids.contains(a.getBlock(client).id)) {
+                        	if (!blacklist.contains(a) && !a.getBlock(client).touchLiquid(client)) {
+                        		positions.add(a);
+                        		localf++;
+                        	}
                         }
                     }
                 }
@@ -223,6 +257,30 @@ public class VectorUtils {
     			for (int x1 = xs; x1 < x+i; x1++) {
                     for (int z1 = zs; z1 < z+i; z1++) {
                         positions.add(new Vector3D(x1,y1,z1));
+                    }
+                }
+            }
+    	}
+    	return positions;
+	}
+	
+	public static List<Vector3D> getAllInBoxWithBlackList(Vector3D pos, int radius, List<Vector3D> blacklist) {
+		List<Vector3D> positions = new CopyOnWriteArrayList<>();
+    	int x = (int)pos.getPosX();
+    	int y = (int)pos.getPosY();
+    	int z = (int)pos.getPosZ();
+    	for (int i = 1; i < radius; i++) {
+    		int xs = x-i;
+    		int ys = y-i;
+    		if (ys < 1) ys = 0;
+    		int yi = y+i;
+    		if (yi > 255) yi = 255;
+    		int zs = z-i;
+    		for (int y1 = ys; y1 < yi; y1++) {
+    			for (int x1 = xs; x1 < x+i; x1++) {
+                    for (int z1 = zs; z1 < z+i; z1++) {
+                    	Vector3D a = new Vector3D(x1,y1,z1);
+                        if (!blacklist.contains(a)) positions.add(a);
                     }
                 }
             }

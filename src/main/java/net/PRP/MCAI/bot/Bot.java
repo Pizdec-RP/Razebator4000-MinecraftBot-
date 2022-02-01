@@ -54,7 +54,7 @@ public class Bot {
     public int currentHotbarSlot = 0;
     public boolean raidmode;
     public AStar pathfinder;
-    public Vision vis = new Vision(this, 0, 0);
+    public Vision vis = new Vision(this, 120, 80);
     
     public boolean listencaptcha = false;
     //public boolean isInWeb = false;
@@ -148,7 +148,6 @@ public class Bot {
     }
 
     public void register() {
-        if (!isOnline()) return;
         session.send(new ClientChatPacket("/register 112233asdasd 112233asdasd"));
         ThreadU.sleep(100);
         session.send(new ClientChatPacket("/login 112233asdasd"));
@@ -166,7 +165,7 @@ public class Bot {
     }
     
     public void tick() {
-    	if (!getWorld().columns.containsKey(new ChunkCoordinates((int)posX >> 4, (int)posZ >> 4))) return;
+    	if (!getWorld().columns.containsKey(new ChunkCoordinates((int)posX >> 4, (int)posZ >> 4)) || !this.connected) return;
     	//System.out.println("inact: "+this.inAction+" mining: "+this.bbm.state+" pos: "+this.bbm.getBlockPos().toStringInt()+" pf:"+this.pathfinder.clientIsOnFinish+" pft:"+this.pathfinder.end.toStringInt());
     	//if (this.pathfinder.clientIsOnFinish && this.bbm.state == bbmct.ENDED) setInAction(false);
     	try {
@@ -269,6 +268,22 @@ public class Bot {
 
 	public void setPitch(float pitch) {
 		this.pitch = pitch;
+	}
+	
+	public void addYaw(float i) {
+		if (yaw == 360) {
+			yaw = 0;
+		} else {
+			yaw+=i;
+		}
+	}
+	
+	public void addPitch(float i) {
+		if (pitch == 90) {
+			pitch = -90;
+		} else {
+			pitch+=i;
+		}
 	}
 	
 	public int getCurrentWindowId() {
@@ -386,6 +401,6 @@ public class Bot {
 	}
 
 	public Vector3D getEyeLocation() {
-		return getPositionInt().add(0, 0.5, 0);
+		return getPositionInt().add(0, 1.95, 0);
 	}
 }

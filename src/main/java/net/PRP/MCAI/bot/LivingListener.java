@@ -2,6 +2,7 @@ package net.PRP.MCAI.bot;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerJoinGamePacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerMapDataPacket;
@@ -22,9 +23,12 @@ public class LivingListener extends SessionAdapter {
 	private boolean firstJoin = false;
 	public raidState state = raidState.IDLE;
 	public Vector3D asd = Vector3D.ORIGIN;
+	public List<Vector3D> blacklist = new CopyOnWriteArrayList<>();
+	public boolean trusted = false;
 
 	public LivingListener(Bot client) {
         this.client = client;
+        if (!Main.debug) this.trusted = (boolean) Main.getsett("living");
     }
 	
 	public enum raidState {
@@ -65,6 +69,7 @@ public class LivingListener extends SessionAdapter {
 	
 	public void tick() {
 		try {
+			if (!this.trusted) return;
 			if (!firstJoin || !client.isOnline()) return;
 			//System.out.println("pf:"+client.pathfinder.clientIsOnFinish+" bbm:"+client.bbm.state+" action:"+action);
 			if (!((boolean) Main.getsett("mining"))) return;
@@ -81,14 +86,19 @@ public class LivingListener extends SessionAdapter {
 				} else {
 					@SuppressWarnings("unchecked")
 					List<Integer> d1 = (ArrayList<Integer>)Main.getsett("minertargetid");
-					Vector3D block = VectorUtils.findNearestBlockByArrayId(client, d1);
+					Vector3D block;
+					block = VectorUtils.func_1488(client, d1, this.blacklist);
+					if (block == null) block = VectorUtils.findNearestBlockByArrayId(client, d1, this.blacklist);
 					if (block == null) return;
-					if (VectorUtils.sqrt(client.getPosition(), block) <= 4.8) {
+					if (VectorUtils.sqrt(client.getPosition(), block) <= 5) {
 						client.bbm.setup(block);
 						this.state = raidState.MINING;
 				    } else {
 				    	Vector3D pos = VectorUtils.func_31(client, block, 5);
-				    	if (pos == null) throw new NullPointerException("nullblock");
+				    	if (pos == null) {
+				    		this.blacklist.add(block);
+				    		return;
+				    	}
 				    	this.asd = block;
 				    	client.pathfinder.setup(pos);
 				    	this.state = raidState.GOING;

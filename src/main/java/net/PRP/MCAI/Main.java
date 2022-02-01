@@ -165,8 +165,8 @@ public class Main {
                 	case "avoid":
                 		typ = Type.AVOID;
                 		break;
-                	case "void":
-                		typ = Type.VOID;
+                	case "air":
+                		typ = Type.AIR;
                 		break;
                 	case "liquid":
                 		typ = Type.LIQUID;

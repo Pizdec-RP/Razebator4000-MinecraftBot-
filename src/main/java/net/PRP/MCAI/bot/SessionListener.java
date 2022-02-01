@@ -34,7 +34,6 @@ public class SessionListener extends SessionAdapter {
     static int exline = -1;
     Position actionentity;
     public List<Entity> entities = new CopyOnWriteArrayList<Entity>();
-    boolean actioning;
 
     public SessionListener(Bot client) {
         this.client = client;
@@ -48,10 +47,11 @@ public class SessionListener extends SessionAdapter {
     public void packetReceived(PacketReceivedEvent receiveEvent) {
         if (receiveEvent.getPacket() instanceof ServerJoinGamePacket) {
         	ThreadU.sleep(100);
-        	client.connected = true;
         	System.out.println("(" + client.getGameProfile().getName() + ") Подлючился");
         	ServerJoinGamePacket p = (ServerJoinGamePacket) receiveEvent.getPacket();
         	client.setId(p.getEntityId());
+        	ThreadU.sleep(3000);
+        	client.connected = true;
         	client.register();
         } else if (receiveEvent.getPacket() instanceof ServerPlayerPositionRotationPacket) {
             ServerPlayerPositionRotationPacket packet = (ServerPlayerPositionRotationPacket) receiveEvent.getPacket();

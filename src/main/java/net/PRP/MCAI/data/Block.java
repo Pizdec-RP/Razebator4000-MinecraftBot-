@@ -45,6 +45,24 @@ public class Block {
 		return client.getWorld().getBlock(new Vector3D(pos.x+x,pos.y+y,pos.z+z));
 	}
 	
+	@Override
+	public int hashCode() {
+		int hash = 7;
+		hash = 31 * hash + this.pos.hashCode();
+		hash = 31 * hash + (int)this.id;
+		hash = 31 * hash + (int)this.state;
+		return hash;
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (!(obj instanceof Block)) {
+			return false;
+		}
+		Block co = (Block) obj;
+		return VectorUtils.equalsInt(co.pos, pos) && co.id == id && co.state == state &&co.type == type;
+	}
+	
 	public List<Block> getNeighbors(Bot client) {
 		List<Block> blocks = new CopyOnWriteArrayList<>();
 		blocks.add(getRelative(1,0,0,client));

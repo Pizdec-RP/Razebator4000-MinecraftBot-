@@ -4,7 +4,6 @@ import java.util.List;
 
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.data.Vector3D;
-import net.PRP.MCAI.utils.ThreadU;
 
 public class Obshak {
 	public static void pickMainhost() {

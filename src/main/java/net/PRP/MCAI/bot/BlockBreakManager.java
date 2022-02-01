@@ -110,13 +110,13 @@ public class BlockBreakManager {
 	public void prepareitem() {
 		BlockData blockdata = Main.getMCData().blockData.get(pos.getBlock(client).id);
 		List<materialsBreakTime> mtm = Main.getMCData().materialToolMultipliers.get(blockdata.material);
-		for (materialsBreakTime item : mtm) {
+		if (mtm != null) {for (materialsBreakTime item : mtm) {
 			//System.out.println(client.getItemInHand().getId()+" != "+item.toolId);
 			if (client.getItemInHand().getId() == item.toolId) return;
 		}
 		for (materialsBreakTime item : mtm) {
 			client.setToSlotInHotbarWithItemId(item.toolId);
-		}
+		}}
 		//System.out.println("hand");
 	}
 
@@ -209,6 +209,7 @@ public class BlockBreakManager {
 	}
 	
 	public double func_12(List<materialsBreakTime> asd) {
+		if (asd == null) return 0;
 		if (client.getItemInHand() == null) return 0;
 		for (materialsBreakTime a : asd) {
 			if (client.getItemInHand().getId() == a.toolId) {

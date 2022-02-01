@@ -12,6 +12,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 
 import net.PRP.MCAI.bot.BlockBreakManager.bbmct;
+import net.PRP.MCAI.data.Block;
 import net.PRP.MCAI.data.Entity;
 import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.utils.*;
@@ -130,7 +131,10 @@ public class ChatListener extends SessionAdapter {
 						if (en == null) return;
 						BotU.chat(client, en.Position.toStringInt());
 					} else if (command.get(0).equalsIgnoreCase("gfb")) {
-						BotU.chat(client, client.vis.GetLookingBlockVector3D(client.getYaw(), client.getPitch()).getBlock(client).pos.toStringInt());
+						for (Block b : client.vis.getVisibleBlocks()) {
+							System.out.print(b.getId()+" ");
+						}
+						System.out.println(" vse");
 					} else if (command.get(0).equalsIgnoreCase("youface")) {
 						BotU.chat(client, "y:"+client.getYaw()+" p:"+client.getPitch());
 					} else if (command.get(0).equalsIgnoreCase("aroundme")) {
@@ -148,6 +152,12 @@ public class ChatListener extends SessionAdapter {
 							if (en == null) return;
 							client.targetpos = en.Position;
 							client.ztp = true;
+						}
+					} else if (command.get(0).equalsIgnoreCase("living")) {
+						if (client.rl.trusted) {
+							client.rl.trusted = false;
+						} else {
+							client.rl.trusted = true;
 						}
 					}
 				}
