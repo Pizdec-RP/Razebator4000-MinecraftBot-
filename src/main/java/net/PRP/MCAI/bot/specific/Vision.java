@@ -1,8 +1,9 @@
-package net.PRP.MCAI.bot;
+package net.PRP.MCAI.bot.specific;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.data.Block;
 import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.data.MinecraftData.Type;
@@ -23,7 +24,7 @@ public class Vision {
 		List<Block> blocks = new CopyOnWriteArrayList<>();
 		for (int y = -width; y <= width; y++) {
 			for (int p = -height; p <= height; p++) {
-				Block a = getLookingBlock(32, y*amplifer, p*amplifer);
+				Block a = getLookingBlock(96, y*amplifer, p*amplifer);
 				if (a != null && !blocks.contains(a) && a.type != Type.VOID) blocks.add(a);
 			}
 		}
@@ -37,6 +38,7 @@ public class Vision {
             loc = loc.add(v);
             Block b = loc.getBlock(client);
             if (b.type != Type.AIR) return b;
+            else if (b.type != Type.AIR) return null;
         }
         return null;
     }

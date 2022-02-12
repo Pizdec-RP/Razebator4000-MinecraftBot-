@@ -310,6 +310,7 @@ public class BotU {
     }
 	
 	public static void LookHead(Bot client, Vector3D p) {
+		if (p == null) return;
 		LookHead(client, new Point3D_F64(p.x,p.y,p.z));
 	}
 	

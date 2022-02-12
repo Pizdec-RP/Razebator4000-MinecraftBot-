@@ -42,15 +42,7 @@ public class Main {
 	public static Proxy proxy = Proxy.NO_PROXY;
 	public static List<String> pasti = new CopyOnWriteArrayList<String>();
 	private static MinecraftData MCData = new MinecraftData();
-	
-	public static void g() {
-		new Thread(()->{
-			while (true) {
-				System.out.println(Thread.activeCount()); 
-				ThreadU.sleep(500);
-			}
-		}).start();
-	}
+	//public static ExecutorService threadPool = Executors.newCachedThreadPool();
 	
     public static void main(String[] args) {
     	try {
@@ -59,62 +51,58 @@ public class Main {
 			e.printStackTrace();
 			System.exit(0);
 		}
-    	//g();
-    	if ((boolean) getsett("window")) new Window();
     	proxies = ProxyScraper.ab();
     	initializeBlockType();
-    	if (debug) {
-    		new Thread(() -> {
-		        Bot client = new Bot(new MinecraftProtocol("tpa282"), "localhost", 25565, Proxy.NO_PROXY);
-		        client.connect();
-		        bots.add(client);
-    		}).start();
+    	//new Thread(()->{while (true) { updatePasti(); ThreadU.sleep(2000);} }).start();
+    	updatePasti();
+    	if ((boolean) getsett("window")) {
+    		new Window();
     	} else {
-    		if ((boolean)getsett("raidmode")) {
-    			new Thread(()->{while (true) { updatePasti(); ThreadU.sleep(2000);} }).start();
-    		}
-	    	String ip = (String)getsett("host");
-	        String host = ip.split(":")[0];
-	        String portstr = ip.split(":")[1];
-	        int port = Integer.parseInt(portstr);
-	    	List<String> nicks = getnicksinit();
-	    	for (int i = 0; i < (int)getsett("bots"); i++) {
-		    	if (++nicksnumb >= nicks.size()) {
-		            nicksnumb = 0;
-		        }
-		        String USERNAME = nicks.get(nicksnumb);
-		        if ((boolean) getsett("useproxy")) {
-                    if (++proxyNumb >= proxies.size()) {
-                        proxyNumb = 0;
-                    }
-                    proxy = proxies.get(proxyNumb);
-                } else {
-                	proxy = Proxy.NO_PROXY;
-                }
-			    new Thread(() -> {
-			        System.out.println("created bot name: "+USERNAME+" proxy: "+proxy.toString());
-					Bot client = new Bot(new MinecraftProtocol(USERNAME), host, port, proxy);
-					client.connect();
-					bots.add(client);
-			    }).start();
-			    ThreadU.sleep((int) getsett("enterrange"));
+	    	if (debug) {
+	    		new Thread(() -> {
+			        Bot client = new Bot(new MinecraftProtocol("tpa282"), "localhost", 25565, Proxy.NO_PROXY);
+			        client.connect();
+			        bots.add(client);
+	    		}).start();
+	    	} else {
+		    	String ip = (String)getsett("host");
+		        String host = ip.split(":")[0];
+		        String portstr = ip.split(":")[1];
+		        int port = Integer.parseInt(portstr);
+		    	for (int i = 0; i < (int)getsett("bots"); i++) {
+			        String USERNAME = nextNick();
+			        nextProxy();
+			        new Thread(() -> {
+				        System.out.println("created bot name: "+USERNAME+" proxy: "+proxy.toString());
+						Bot client = new Bot(new MinecraftProtocol(USERNAME), host, port, proxy);
+						client.connect();
+						bots.add(client);
+				    });
+				    ThreadU.sleep((int) getsett("enterrange"));
+		    	}
+		    	Obshak.pickMainhost();
 	    	}
-	    	Obshak.pickMainhost();
     	}
 	}
     
-    public static Proxy nextProxy() throws FileNotFoundException {
-		if ((boolean) getsett("useproxy")) {
-			if (proxies.size() < 1) {
-				System.exit(0);
-			}
-			Proxy prox = proxies.get(proxyNumb);
-			proxyNumb++;
-			return prox;
-		} else {
-			return Proxy.NO_PROXY;
-		}
-	}
+    public static String nextNick() {
+    	if (++nicksnumb >= getnicksinit().size()) {
+            nicksnumb = 0;
+        }
+        return getnicksinit().get(nicksnumb);
+    }
+    
+    public static Proxy nextProxy() {
+    	if ((boolean) getsett("useproxy")) {
+            if (++proxyNumb >= proxies.size()) {
+                proxyNumb = 0;
+            }
+            proxy = proxies.get(proxyNumb);
+        } else {
+        	proxy = Proxy.NO_PROXY;
+        }
+    	return proxy;
+    }
     
     public static List<String> getnicksinit() {
 		List<String> nicks = new CopyOnWriteArrayList<>();
@@ -139,6 +127,7 @@ public class Main {
     public static void updatePasti() {
     	File file = new File("text_dlya_spama.txt");
         if (file.exists()) {
+        	pasti.clear();
             try (BufferedReader reader = new BufferedReader(new InputStreamReader((InputStream)new FileInputStream(file), "UTF8"));){
                 while (reader.ready()) {
                     pasti.add(reader.readLine());

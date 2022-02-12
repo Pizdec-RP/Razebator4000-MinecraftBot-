@@ -36,7 +36,7 @@ public class EntityListener extends SessionAdapter {
 	            Entity entity = client.getWorld().Entites.get(p.getEntityId());
 	            
 	            if (this.recordpos && client.getWorld().Entites.get(p.getEntityId()).uuid.toString().equalsIgnoreCase(recorduuid.toString())) {
-	        		if (entity.Position == null) entity.Position = entity.Position;
+	        		//if (entity.Position == null) entity.Position = entity.Position;
 	        		double xa = p.getMoveX();
 	        		double ya = p.getMoveY();
 	        		double za = p.getMoveZ();
@@ -66,7 +66,8 @@ public class EntityListener extends SessionAdapter {
             } else if (event.getPacket() instanceof ServerEntityDestroyPacket) {
                 final ServerEntityDestroyPacket p = event.getPacket();
                 for (int i : p.getEntityIds()) {
-                    client.getWorld().Entites.remove(i);
+                    client.getWorld().Entites.remove(i);//.alive = false;
+                    
                 }
             } else if (event.getPacket() instanceof ServerEntityTeleportPacket) {
                 final ServerEntityTeleportPacket p = event.getPacket();
@@ -83,7 +84,7 @@ public class EntityListener extends SessionAdapter {
                 //final ServerEntityRotationPacket p = event.getPacket();
             }
 		} catch (Exception e) {
-			//System.out.println(client.name);
+			//System.out.println("3");
 			//e.printStackTrace();
 		}
 	}

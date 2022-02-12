@@ -11,7 +11,7 @@ import com.github.steveice10.packetlib.packet.Packet;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 
-import net.PRP.MCAI.bot.BlockBreakManager.bbmct;
+import net.PRP.MCAI.bot.specific.BlockBreakManager.bbmct;
 import net.PRP.MCAI.data.Block;
 import net.PRP.MCAI.data.Entity;
 import net.PRP.MCAI.data.Vector3D;
@@ -68,21 +68,8 @@ public class ChatListener extends SessionAdapter {
 						}
 						if (en == null) return;
 						client.pathfinder.setup(client.getPosition(), en.Position);
-					} else if (command.get(0).equalsIgnoreCase("cr")) {
-						UUID uuid = ((ServerChatPacket) receiveEvent.getPacket()).getSenderUuid();
-						Entity en = null;
-						for (Entity entity : client.getWorld().Entites.values()) {
-							if (entity.uuid.toString().equalsIgnoreCase(uuid.toString())) {
-								en=entity;
-								break;
-							}
-						}
-						if (en == null) return;
-						int rad;
-						try {rad = Integer.parseInt(command.get(1));} catch (Exception ignd) {rad = 5;}
-						Vector3D aye = VectorUtils.findSafePointInRadius(en.Position, rad);
-						//System.out.println(aye);
-						client.pathfinder.setup(aye);
+					} else if (command.get(0).equalsIgnoreCase("goto")) {
+						client.pathfinder.setup(new Vector3D(Integer.parseInt(command.get(1)), Integer.parseInt(command.get(2)), Integer.parseInt(command.get(3))));
 					} else if (command.get(0).equalsIgnoreCase("record")) {
 						if (!client.entityListener.isRecordpos()) {
 							System.out.println("-----------------------");
@@ -159,6 +146,32 @@ public class ChatListener extends SessionAdapter {
 						} else {
 							client.rl.trusted = true;
 						}
+					} else if (command.get(0).equalsIgnoreCase("tt")) {
+						Vector3D pos = new Vector3D(Double.parseDouble(command.get(1)),Double.parseDouble(command.get(2)),Double.parseDouble(command.get(3)));
+						if (pos.x < 0) {
+							pos.x = pos.x+1;
+						}
+						if (pos.z < 0) {
+							pos.z = pos.z+1;
+						}
+						int bx = (int)pos.getX() & 15;
+			            int by = (int)pos.getY() & 15;
+			            int bz = (int)pos.getZ() & 15;
+			            int cx = (int)pos.getX() >> 4;
+			            int cy = (int)pos.getY() >> 4;
+			            int cz = (int)pos.getZ() >> 4;
+			            BotU.chat(client, "block: x:"+bx+" y:"+by+" z:"+bz+" / chunk: x:"+cx+" y:"+cy+" z:"+cz);
+					} else if (command.get(0).equalsIgnoreCase("killme")) {
+						UUID uuid = ((ServerChatPacket) receiveEvent.getPacket()).getSenderUuid();
+						Entity en = null;
+						for (Entity entity : client.getWorld().Entites.values()) {
+							if (entity.uuid.toString().equalsIgnoreCase(uuid.toString())) {
+								en=entity;
+								break;
+							}
+						}
+						if (en == null) return;
+						client.rl.enemy = en.EntityID;
 					}
 				}
 			}).start();

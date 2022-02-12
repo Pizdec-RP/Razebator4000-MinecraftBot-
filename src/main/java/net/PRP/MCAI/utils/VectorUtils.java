@@ -11,7 +11,6 @@ import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.data.Block;
 import net.PRP.MCAI.data.MinecraftData.Type;
-import net.minecraft.server.v1_12_R1.Blocks;
 
 public class VectorUtils {
 	
@@ -41,7 +40,7 @@ public class VectorUtils {
 	
 	public static boolean equalsInt(Vector3D one, Vector3D two) {
 		//System.out.println(one.toStringInt() + " <<>> " + two.toStringInt());
-		if ((int)one.getX() == (int)two.getX() && (int)one.getY() == (int)two.getY() && (int)one.getZ() == (int)two.getZ()) return true;
+		if ((int)Math.floor(one.getX()) == (int)Math.floor(two.getX()) && (int)Math.floor(one.getY()) == (int)Math.floor(two.getY()) && (int)Math.floor(one.getZ()) == (int)Math.floor(two.getZ())) return true;
 		return false;
 	}
 	
@@ -138,18 +137,12 @@ public class VectorUtils {
         return minpos;
     }
 	
-	public static Vector3D findSafePointInRadius(Vector3D position, int rad) {
-		Vector3D aye = position.add(MathU.rnd(-rad, rad), 0, MathU.rnd(-rad, rad));
-		//System.out.println(aye);
-		return aye;
-	}
-	
 	public static Vector3D findNearestBlockById(Bot client, int id) {
     	List<Vector3D> positions = new CopyOnWriteArrayList<>();
     	int x = (int)client.getPosX();
     	int y = (int)client.getPosY();
     	int z = (int)client.getPosZ();
-    	int radius = 50;
+    	int radius = 30;
     	Vector3D pos = null;
     	for (int i = 1; i < radius; i++) {
     		int localf = 0;
@@ -199,12 +192,30 @@ public class VectorUtils {
 		return getNearBlock(client.getPosition(), blocks);
 	}
 	
+	public static Vector3D func_32(Bot client, List<String> d2, List<Vector3D> blacklist) {
+		Vector3D tb = findblockByLOS(client, d2, blacklist);
+		if (tb != null) return tb;
+		
+		List<Block> blocks = new CopyOnWriteArrayList<>();
+		blocks.addAll(client.vis.getVisibleBlocks());
+		for (Block a : blocks) {
+			if (a.touchLiquid(client) || !d2.contains(a.getName())) {
+				blocks.remove(a);
+				client.rl.blacklist.add(a.pos);
+			} else if (blacklist.contains(a.pos)) {
+				blocks.remove(a);
+			}
+		}
+		if (blocks.isEmpty()) return null;
+		return getNearBlock(client.getPosition(), blocks);
+	}
+	
 	public static Vector3D findNearestBlockByArrayId(Bot client, List<Integer> ids, List<Vector3D> blacklist) {
     	List<Vector3D> positions = new CopyOnWriteArrayList<>();
     	int x = (int)client.getPosX();
     	int y = (int)client.getPosY();
     	int z = (int)client.getPosZ();
-    	int radius = 50;
+    	int radius = 30;
     	Vector3D pos = null;
     	for (int i = 1; i < radius; i++) {
     		int localf = 0;
@@ -233,6 +244,48 @@ public class VectorUtils {
     			}
     		}
     		if (localf > 0 && !positions.isEmpty()) {
+    			pos = getNear(new Vector3D((int)client.getPosX(),(int)client.getPosY(),(int)client.getPosZ()),positions);
+    	    	return pos;
+    		}
+    	}
+    	pos = getNear(new Vector3D((int)client.getPosX(),(int)client.getPosY(),(int)client.getPosZ()),positions);
+    	return pos;
+    }
+	
+	public static Vector3D findblockByLOS(Bot client, List<String> nms, List<Vector3D> blacklist) {
+    	List<Vector3D> positions = new CopyOnWriteArrayList<>();
+    	int x = (int)client.getPosX();
+    	int y = (int)client.getPosY();
+    	int z = (int)client.getPosZ();
+    	int radius = 30;
+    	Vector3D pos = null;
+    	for (int i = 1; i < radius; i++) {
+    		int xs = x-i;
+    		int ys = y-i;
+    		if (ys < 1) ys = 0;
+    		int yi = y+i;
+    		if (yi > 255) yi = 255;
+    		int zs = z-i;
+    		for (int y1 = ys; y1 < yi; y1++) {
+    			for (int x1 = xs; x1 < x+i; x1++) {
+                    for (int z1 = zs; z1 < z+i; z1++) {
+                    	Vector3D a = new Vector3D(x1,y1,z1);
+                    	nms.forEach((name) -> { 
+                    		if (a.getBlock(client).name.toLowerCase().contains(name)) {
+                    			if (!blacklist.contains(a) && !a.getBlock(client).touchLiquid(client) && !positions.contains(a)) {
+                    				positions.add(a);
+                    			}
+                    		}
+                    	});
+                    }
+                }
+            }
+    		if (positions.size() > 1) {
+    			for (Vector3D poss : positions) {
+    				if (VectorUtils.equalsInt(new Vector3D(poss.x,poss.y+1,poss.z), client.getPosition())) positions.remove(poss);
+    			}
+    		}
+    		if (!positions.isEmpty()) {
     			pos = getNear(new Vector3D((int)client.getPosX(),(int)client.getPosY(),(int)client.getPosZ()),positions);
     	    	return pos;
     		}
@@ -394,6 +447,6 @@ public class VectorUtils {
     		positions.add(new Vector3D(blockPos.getX()+1,blockPos.getY(),blockPos.getZ()));
     		positions.add(new Vector3D(blockPos.getX(),blockPos.getY()-2,blockPos.getZ()));
     	} else {}
-    	return positions.get(MathU.rnd(0, positions.size()));
+    	return positions.get(MathU.rnd(0, positions.size()-1));
     }
 }

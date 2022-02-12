@@ -1,5 +1,8 @@
 package net.PRP.MCAI.data;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
 
 import net.PRP.MCAI.bot.Bot;
@@ -14,6 +17,7 @@ public class Vector3D {
 	public double x;
 	public double y;
 	public double z;
+	public int hasheddata = 0;
 
 	public Vector3D(double x, double y, double z) {
 		this.x = x;

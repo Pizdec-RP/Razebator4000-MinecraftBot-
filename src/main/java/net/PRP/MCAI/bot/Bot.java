@@ -12,6 +12,11 @@ import net.PRP.MCAI.Main;
 import net.PRP.MCAI.utils.ThreadU;
 import net.PRP.MCAI.Inventory.*;
 import net.PRP.MCAI.bot.pathfinder.AStar;
+import net.PRP.MCAI.bot.specific.BlockBreakManager;
+import net.PRP.MCAI.bot.specific.LivingListener;
+import net.PRP.MCAI.bot.specific.PVP;
+import net.PRP.MCAI.bot.specific.PhysicsListener;
+import net.PRP.MCAI.bot.specific.Vision;
 import net.PRP.MCAI.data.ChunkCoordinates;
 import net.PRP.MCAI.data.EntityEffects;
 import net.PRP.MCAI.data.Vector3D;
@@ -23,10 +28,10 @@ import java.util.Map.Entry;
 import java.util.UUID;
 
 public class Bot {
-    private final MinecraftProtocol account;
+    private MinecraftProtocol account;
     
-    private final String host;
-    private final int port;
+    private String host;
+    private int port;
     
     private Session session;
     private Proxy proxy;
@@ -54,6 +59,7 @@ public class Bot {
     public int currentHotbarSlot = 0;
     public boolean raidmode;
     public AStar pathfinder;
+    public PVP pvp;
     public Vision vis = new Vision(this, 120, 80);
     
     public boolean listencaptcha = false;
@@ -72,6 +78,7 @@ public class Bot {
 	public Vector3D targetpos = Vector3D.ORIGIN;
 	public boolean ztp = false;
 	public int targetradius = 10;
+	public Thread tickLoop = null;
     
 
     public Bot(MinecraftProtocol account, String host, int port, Proxy proxy) {
@@ -83,7 +90,7 @@ public class Bot {
         this.effects = new EntityEffects();
         this.raidmode = (boolean)Main.getsett("raidmode");
         this.pathfinder = new AStar(this);
-        new Thread(()->{
+        this.tickLoop = new Thread(()->{
 			int curcomp = 0;
 			while (true) {
 				long timeone = System.currentTimeMillis();
@@ -96,9 +103,60 @@ public class Bot {
 					ThreadU.sleep(curcomp);
 				} else if (raznica == 0){
 					ThreadU.sleep(tickrate);
+				} else {
+					if (Main.debug) System.out.println("passing "+raznica+"ms");
 				}
 			}
-		}).start();
+		});
+        this.tickLoop.start();
+    }
+    
+    public Bot(String name, String ip, Proxy proxy) {
+    	System.out.println(name+" "+ip+" "+proxy);
+    	if (proxy == null)
+    		this.proxy = Proxy.NO_PROXY;
+    	else
+    		this.proxy = proxy;
+    	this.account = new MinecraftProtocol(name);
+    	this.host = ip.split(":")[0];
+    	this.port = Integer.parseInt(ip.split(":")[1]);
+    	this.name = name;
+    	this.effects = new EntityEffects();
+    	this.raidmode = (boolean)Main.getsett("raidmode");
+        this.pathfinder = new AStar(this);
+        this.tickLoop = new Thread(()->{
+        	int curcomp = 0;
+			while (true) {
+				long timeone = System.currentTimeMillis();
+				if (isOnline()) tick();
+				long timetwo = System.currentTimeMillis();
+				int raznica = (int) (timetwo - timeone);
+				if (raznica > 0 && raznica < tickrate) {
+					curcomp = tickrate-raznica;
+					if (Main.debug) System.out.println("comp "+raznica+"ms");
+					ThreadU.sleep(curcomp);
+				} else if (raznica == 0){
+					ThreadU.sleep(tickrate);
+				} else {
+					if (Main.debug) System.out.println("passing "+raznica+"ms");
+				}
+			}
+        });
+        this.tickLoop.start();
+    }
+    
+    @SuppressWarnings("deprecation")
+	public void kill() {
+    	this.tickLoop.stop();
+    	this.session.disconnect("session killed");
+    	this.getWorld().columns.clear();
+    	this.reset();
+    	this.account = null;
+    	this.session = null;
+    	this.proxy = null;
+    	this.rl = null;
+    	this.bbm = null;
+    	this.pathfinder = null;
     }
 
     public void connect() {
@@ -133,14 +191,16 @@ public class Bot {
         	client.addListener(this.entityListener);
         }
         client.addListener(new ChatListener(this));
-        if (raidmode) {
-        	this.rl = new LivingListener(this);
-        	client.addListener(rl);
-        }
+        
+    	this.rl = new LivingListener(this);
+    	client.addListener(rl);
+    	
         this.bbm = new BlockBreakManager(this);
         
         this.pm = new PhysicsListener(this);
         client.addListener(pm);
+        this.pvp = new PVP(this);
+        client.addListener(pvp);
         
         this.session = client;
         this.playerInventory = new PlayerInventory(this);
@@ -157,6 +217,7 @@ public class Bot {
     	this.pathfinder.reset();
     	this.bbm.reset();
     	this.pm.reset();
+    	this.pvp.reset();
     	this.onGround = true;
     }
     
@@ -165,17 +226,23 @@ public class Bot {
     }
     
     public void tick() {
-    	if (!getWorld().columns.containsKey(new ChunkCoordinates((int)posX >> 4, (int)posZ >> 4)) || !this.connected) return;
-    	//System.out.println("inact: "+this.inAction+" mining: "+this.bbm.state+" pos: "+this.bbm.getBlockPos().toStringInt()+" pf:"+this.pathfinder.clientIsOnFinish+" pft:"+this.pathfinder.end.toStringInt());
+    	if (!isOnline()) return;
+    	//System.out.println(" mining: "+this.bbm.state+" pos: "+this.bbm.getBlockPos().toStringInt()+" pf:"+this.pathfinder.state+" pft:"+this.pathfinder.end.toStringInt());
     	//if (this.pathfinder.clientIsOnFinish && this.bbm.state == bbmct.ENDED) setInAction(false);
+    	//System.out.println("ticked");
     	try {
+    		if (!getWorld().columns.containsKey(new ChunkCoordinates((int)posX >> 4, (int)posZ >> 4)) || !this.connected) return;
 	    	this.pathfinder.tick();
+	    	this.pvp.tick();
 	    	this.bbm.tick();
 	    	if (raidmode) {
 	    		this.rl.tick();
 	    	}
 	    	this.pm.tick();
     	} catch (Exception e) {
+    		this.pvp.reset();
+    		this.bbm.reset();
+    		this.pathfinder.reset();
     		e.printStackTrace();
     	}
     }
@@ -299,7 +366,7 @@ public class Bot {
 	}
 	
 	public Vector3D getPositionInt() {
-		return new Vector3D((int)this.posX, (int)this.posY, (int)this.posZ);
+		return new Vector3D((int)Math.floor(this.posX), (int)Math.floor(this.posY), (int)Math.floor(this.posZ));
 	}
 	
 	@Deprecated

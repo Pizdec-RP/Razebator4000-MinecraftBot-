@@ -106,7 +106,7 @@ public class AABB {
 	    return offsetZ;
 	}
 	
-	public boolean intersects(AABB other) {
+	public boolean collide(AABB other) {
 	    return this.minX < other.maxX && this.maxX > other.minX &&
 	           this.minY < other.maxY && this.maxY > other.minY &&
 	           this.minZ < other.maxZ && this.maxZ > other.minZ;

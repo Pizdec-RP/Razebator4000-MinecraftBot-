@@ -6,6 +6,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.bot.Bot;
+import net.PRP.MCAI.bot.specific.BlockBreakManager.bbmct;
 import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.utils.*;
 
@@ -79,9 +80,7 @@ public class AStar {
 	}
 	
 	public boolean testForPath(Vector3D end) {
-		this.start = client.getPositionInt();
-		this.end = end;
-		return buildPath();
+		return testBuildPath(false, client.getPositionInt(), end);
 	}
 	
 	public void smoothPath() {
@@ -99,6 +98,18 @@ public class AStar {
 		}
 	}
 	
+	public void func_3() {
+		if (state == State.WALKING) {
+			for (Vector3D p : toWalk) {
+				if (VectorUtils.equalsInt(p, client.getPositionInt())) {
+					state = State.SEARCHING;
+					return;
+				}
+			}
+		}
+		state = State.FINISHED;
+	}
+	
 	public void tick() {
 		try {
 			if (sleepticks > 0) {
@@ -107,9 +118,10 @@ public class AStar {
 			}
 			if (state == State.FINISHED) return;
 			if (state == State.SEARCHING) {
-				if (buildPath()) {
+				if (buildPath(true)) {
 					pathIsReady = true;
 					state = State.WALKING;
+					if (toWalk.isEmpty()) return;
 					this.to = toWalk.get(0);
 				} else {
 					finish();
@@ -132,14 +144,74 @@ public class AStar {
 		this.start = client.getPositionInt();
 	}
 	
-	public boolean buildPath() {
+	public boolean testBuildPath(boolean addsleepticks, Vector3D starta, Vector3D enda) {
+		List<Vector3D> usd = new CopyOnWriteArrayList<>();
+		List<Vector3D> tw = new CopyOnWriteArrayList<>();
+		Vector3D cursor = starta;
+		int l = 0;
+		while (true) {
+			if (VectorUtils.equalsInt(cursor, enda)) {
+				return true;
+			}
+			l++;
+			if (l > 200) return false;
+			List<Vector3D> neighbors = new CopyOnWriteArrayList<>();
+			neighbors.add(cursor.add(1,1,0));
+			neighbors.add(cursor.add(0,1,1));
+			neighbors.add(cursor.add(-1,1,0));
+			neighbors.add(cursor.add(0,1,-1));
+			neighbors.add(cursor.add(1,-1,0));
+			neighbors.add(cursor.add(0,-1,1));
+			neighbors.add(cursor.add(-1,-1,0));
+			neighbors.add(cursor.add(0,-1,-1));
+			
+			for (Vector3D n : neighbors) {
+				if (func_1(n)) {
+					neighbors.remove(n);
+				}
+			}
+			
+			neighbors.add(cursor.add(1, 0, 0));
+			neighbors.add(cursor.add(0, 0, 1));
+			neighbors.add(cursor.add(-1, 0, 0));
+			neighbors.add(cursor.add(0, 0, -1));
+			for (Vector3D n : neighbors) {
+				if (usd.contains(n) || !VectorUtils.positionIsSafe(n, client)) neighbors.remove(n);
+			}
+			
+			if (neighbors.size() == 0) {
+				return false;
+			}
+			
+			Vector3D currentlyPicked = null;
+			for (Vector3D pos : neighbors) {
+				if (currentlyPicked == null) {
+					currentlyPicked = pos;
+				} else if (VectorUtils.sqrt(pos, enda) < VectorUtils.sqrt(currentlyPicked, enda)) {
+					currentlyPicked = pos;
+				} else if (VectorUtils.sqrt(pos, enda) == VectorUtils.sqrt(currentlyPicked, enda)) {
+					if (MathU.rnd(1, 2) == 1)
+						currentlyPicked = pos;
+				}
+			}
+			cursor = currentlyPicked;
+			
+			usd.add(cursor);
+			//BotU.chat(client, "/setblock "+cursor.forCommnad()+" stone");
+			//ThreadU.sleep(1000);
+			//BotU.chat(client, "/setblock "+cursor.forCommnad()+" air");
+			tw.add(cursor);
+		}
+	}
+	
+	public boolean buildPath(boolean addsleepticks) {
 		toWalk.clear();
 		used.clear();
 		reset();
 		Vector3D cursor = this.start;
 		while (true) {
 			if (VectorUtils.equalsInt(cursor, end)) {
-				sleepticks = 10;
+				if (addsleepticks) sleepticks = 10;
 				return true;
 			}
 			List<Vector3D> neighbors = getNeighbors(cursor);
@@ -179,6 +251,37 @@ public class AStar {
 		for (Vector3D n : neighbors) {
 			if (pointIsUsed(n) || !VectorUtils.positionIsSafe(n, client)) neighbors.remove(n);
 		}
+		if (neighbors.isEmpty()) {
+			Vector3D psy;
+			psy = ps.add(0,-1,0);
+			if (VectorUtils.sqrt(psy, this.end) < VectorUtils.sqrt(client.getPositionInt(), this.end) && VectorUtils.icanstayhere(psy.add(0,-1,0).getBlock(client).type)) {
+				neighbors.add(psy);
+			}
+			
+			psy = ps.add(1,0,0);
+			psy.hasheddata = 1;
+			if (VectorUtils.sqrt(psy, this.end) < VectorUtils.sqrt(client.getPositionInt(), this.end) && VectorUtils.icanstayhere(psy.add(0, -1,0).getBlock(client).type)) {
+				neighbors.add(psy);
+			}
+			
+			psy = ps.add(0,0,1);
+			psy.hasheddata = 1;
+			if (VectorUtils.sqrt(psy, this.end) < VectorUtils.sqrt(client.getPositionInt(), this.end) && VectorUtils.icanstayhere(psy.add(0, -1,0).getBlock(client).type)) {
+				neighbors.add(psy);
+			}
+			
+			psy = ps.add(-1,0,0);
+			psy.hasheddata = 1;
+			if (VectorUtils.sqrt(psy, this.end) < VectorUtils.sqrt(client.getPositionInt(), this.end) && VectorUtils.icanstayhere(psy.add(0, -1,0).getBlock(client).type)) {
+				neighbors.add(psy);
+			}
+			
+			psy = ps.add(0,0,-1);
+			psy.hasheddata = 1;
+			if (VectorUtils.sqrt(psy, this.end) < VectorUtils.sqrt(client.getPositionInt(), this.end) && VectorUtils.icanstayhere(psy.add(0, -1,0).getBlock(client).type)) {
+				neighbors.add(psy);
+			}
+		}
 		return neighbors;
 	}
 	
@@ -191,6 +294,7 @@ public class AStar {
 	}
 	
 	public Vector3D pickCloser(List<Vector3D> list) {
+		if (list.size() == 1) return list.get(0);
 		Vector3D currentlyPicked = null;
 		for (Vector3D pos : list) {
 			if (currentlyPicked == null) {
@@ -220,6 +324,109 @@ public class AStar {
 			client.remZ(iMoveEveryTick);
 			curMoveTick++;
 		}
+		
+		else if (moveType == "-y") {
+			if (curMoveTick == 0) {
+				client.bbm.setup(client.getPositionInt().add(0,-1,0));
+				curMoveTick++;
+			} else if (curMoveTick == 1) {
+				if (client.bbm.state == bbmct.ENDED) {
+					curMoveTick++;
+				} else {
+					
+				}
+			} else if (curMoveTick == 2) {
+				client.remY(0.5);
+				curMoveTick++;
+			} else if (curMoveTick == 3) {
+				client.remY(0.5);
+				curMoveTick++;
+			}
+		}
+		
+		
+		else if (moveType == "xm") {
+			if (curMoveTick == 0) {
+				client.bbm.setup(client.getPositionInt().add(1,0,0));
+				curMoveTick++;
+			} else if (curMoveTick == 1) {
+				if (client.bbm.state == bbmct.ENDED) {
+					curMoveTick++;
+				}
+			} else if (curMoveTick == 2) {
+				client.bbm.setup(client.getPositionInt().add(1,1,0));
+				curMoveTick++;
+			} else if (curMoveTick == 3) {
+				if (client.bbm.state == bbmct.ENDED) {
+					curMoveTick++;
+				}
+			} else {
+				client.addX(iMoveEveryTick);
+				curMoveTick++;
+			}
+		} else if (moveType == "zm") {
+			
+			if (curMoveTick == 0) {
+				client.bbm.setup(client.getPositionInt().add(0,0,1));
+				curMoveTick++;
+			} else if (curMoveTick == 1) {
+				if (client.bbm.state == bbmct.ENDED) {
+					curMoveTick++;
+				}
+			} else if (curMoveTick == 2) {
+				client.bbm.setup(client.getPositionInt().add(0,1,1));
+				curMoveTick++;
+			} else if (curMoveTick == 3) {
+				if (client.bbm.state == bbmct.ENDED) {
+					curMoveTick++;
+				}
+			} else {
+				client.addZ(iMoveEveryTick);
+				curMoveTick++;
+			}
+			
+		} else if (moveType == "-xm") {
+			
+			if (curMoveTick == 0) {
+				client.bbm.setup(client.getPositionInt().add(-1,0,0));
+				curMoveTick++;
+			} else if (curMoveTick == 1) {
+				if (client.bbm.state == bbmct.ENDED) {
+					curMoveTick++;
+				}
+			} else if (curMoveTick == 2) {
+				client.bbm.setup(client.getPositionInt().add(-1,1,0));
+				curMoveTick++;
+			} else if (curMoveTick == 3) {
+				if (client.bbm.state == bbmct.ENDED) {
+					curMoveTick++;
+				}
+			} else {
+				client.remX(iMoveEveryTick);
+				curMoveTick++;
+			}
+			
+		} else if (moveType == "-zm") {
+			if (curMoveTick == 0) {
+				client.bbm.setup(client.getPositionInt().add(0,0,-1));
+				curMoveTick++;
+			} else if (curMoveTick == 1) {
+				if (client.bbm.state == bbmct.ENDED) {
+					curMoveTick++;
+				}
+			} else if (curMoveTick == 2) {
+				client.bbm.setup(client.getPositionInt().add(0,1,-1));
+				curMoveTick++;
+			} else if (curMoveTick == 3) {
+				if (client.bbm.state == bbmct.ENDED) {
+					curMoveTick++;
+				}
+			} else {
+				client.remZ(iMoveEveryTick);
+				curMoveTick++;
+			}
+		}
+		
 		
 		else if (moveType == "xy") {
 			client.addX(iy.get(curMoveTick)[0]);
@@ -308,18 +515,42 @@ public class AStar {
 		if (e(from,to)) {
 			return "";
 		} else if (e(from.add(1,0,0),to)) {
-			MaxMoveTicks = 5;
-			return "x";
+			if (to.hasheddata == 1) {
+				MaxMoveTicks = 9;
+				return "xm";
+			} else {
+				MaxMoveTicks = 5;
+				return "x";
+			}
 		} else if (e(from.add(0,0,1),to)) {
-			MaxMoveTicks = 5;
-			return "z";
+			if (to.hasheddata == 1) {
+				MaxMoveTicks = 9;
+				return "zm";
+			} else {
+				MaxMoveTicks = 5;
+				return "z";
+			}
 		} else if (e(from.add(-1,0,0),to)) {
-			MaxMoveTicks = 5;
-			return "-x";
+			if (to.hasheddata == 1) {
+				MaxMoveTicks = 9;
+				return "-xm";
+			} else {
+				MaxMoveTicks = 5;
+				return "-x";
+			}
 		} else if (e(from.add(0,0,-1),to)) {
-			MaxMoveTicks = 5;
-			return "-z";
+			if (to.hasheddata == 1) {
+				MaxMoveTicks = 9;
+				return "-zm";
+			} else {
+				MaxMoveTicks = 5;
+				return "-z";
+			}
 			
+		
+		} else if (e(from.add(0,-1,0),to)) {
+			MaxMoveTicks = 4;
+			return "-y";
 			
 		} else if (e(from.add(1,1,0),to)) {
 			MaxMoveTicks = iy.size();

@@ -1,4 +1,4 @@
-package net.PRP.MCAI.bot;
+package net.PRP.MCAI.bot.specific;
 
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerPositionPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerPositionRotationPacket;
@@ -9,6 +9,7 @@ import com.github.steveice10.packetlib.event.session.SessionAdapter;
 
 import net.PRP.MCAI.utils.VectorUtils;
 import net.PRP.MCAI.utils.physics;
+import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.bot.pathfinder.AStar.State;
 import net.PRP.MCAI.data.Block;
 import net.PRP.MCAI.data.Vector3D;
@@ -87,7 +88,7 @@ public class PhysicsListener extends SessionAdapter {
         	
         	vel.y = 0;
         	client.onGround = true;
-        	client.setPosY((float)MathU.Truncate(client.posY));
+        	client.setPosY(MathU.Truncate(client.posY));
         }
         
         if (vel.x == 0 && vel.y == 0 && vel.z == 0) return;

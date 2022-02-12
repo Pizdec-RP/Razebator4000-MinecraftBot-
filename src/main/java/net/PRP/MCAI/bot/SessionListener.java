@@ -68,7 +68,11 @@ public class SessionListener extends SessionAdapter {
             client.getSession().send(new ClientRequestPacket(ClientRequest.STATS));
         } else if (receiveEvent.getPacket() instanceof ServerPlayerHealthPacket) {
             final ServerPlayerHealthPacket p = (ServerPlayerHealthPacket) receiveEvent.getPacket();
+            
             if (p.getHealth() <= 0)
+            	client.pvp.reset();
+            	client.bbm.reset();
+            	client.pathfinder.reset();
             	client.getSession().send(new ClientRequestPacket(ClientRequest.RESPAWN));
         
         //server chunks
@@ -81,6 +85,8 @@ public class SessionListener extends SessionAdapter {
 				client.pathfinder.func_2(VectorUtils.convert(data.getPosition()));
 			}
         } else if (receiveEvent.getPacket() instanceof ServerUnloadChunkPacket) {
+        	final ServerUnloadChunkPacket p = (ServerUnloadChunkPacket)receiveEvent.getPacket();
+        	client.getWorld().unloadColumn(new ChunkCoordinates(p.getX(),p.getZ()));
 			
 		} else if (receiveEvent.getPacket() instanceof ServerChunkDataPacket) {
 			
@@ -91,19 +97,13 @@ public class SessionListener extends SessionAdapter {
 			ServerBlockChangePacket packet = (ServerBlockChangePacket) receiveEvent.getPacket();
 			client.getWorld().setBlock(packet.getRecord().getPosition(), packet.getRecord().getBlock());
 			client.pathfinder.func_2(VectorUtils.convert(packet.getRecord().getPosition()));
+			
 		} else if (receiveEvent.getPacket() instanceof LoginSuccessPacket) {
             final LoginSuccessPacket p = (LoginSuccessPacket) receiveEvent.getPacket();
             UUID MyUUID = p.getProfile().getId();
             client.setUUID(MyUUID);
             System.out.println("UUID: " + MyUUID);
-		} /*else if (receiveEvent.getPacket() instanceof ServerBlockBreakAnimPacket) {
-			final ServerBlockBreakAnimPacket p = (ServerBlockBreakAnimPacket) receiveEvent.getPacket();
-			System.out.println(p.getStage());
-			System.out.println(p.getBreakerEntityId()+" "+client.getId());
-			if (p.getBreakerEntityId() == client.getId()) {
-				client.bbm.breakPhase = p.getStage();
-			}
-		}*/
+		}
     }
     
     @Override

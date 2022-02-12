@@ -1,7 +1,8 @@
-package net.PRP.MCAI.bot;
+package net.PRP.MCAI.bot.specific;
 
 import java.util.List;
 
+import com.github.steveice10.mc.protocol.data.game.entity.player.CombatState;
 import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
 import com.github.steveice10.mc.protocol.data.game.entity.player.PlayerAction;
 import com.github.steveice10.mc.protocol.data.game.world.block.BlockFace;
@@ -9,6 +10,7 @@ import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlaye
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerSwingArmPacket;
 
 import net.PRP.MCAI.Main;
+import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.data.BlockData;
 import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.data.materialsBreakTime;
@@ -46,8 +48,9 @@ public class BlockBreakManager {
 	public void tick() {
 		try {
 			if (!readyToBreak) return;
+			if (client.pvp.state != CombatState.END_COMBAT) return;
 			//System.out.println("blockid:"+pos.getBlock(client).id+" bbm pos:"+pos.toStringInt()+" readyToBreak:"+readyToBreak+" ticksToBreak:"+ticksToBreak+" state:"+state);
-			BotU.LookHead(client, pos);
+			if (pos == null) return;
 			if (pos.getBlock(client).id == 0) {
 				//System.out.println("4");
 				client.getSession().send(new ClientPlayerActionPacket(PlayerAction.FINISH_DIGGING, pos.translate(), BlockFace.UP));
@@ -55,6 +58,7 @@ public class BlockBreakManager {
 				readyToBreak = false;
 			}
 			if (state == bbmct.STARTED) {
+				BotU.LookHead(client, pos);
 				prepareitem();
 				client.getSession().send(new ClientPlayerSwingArmPacket(Hand.MAIN_HAND));
 				client.getSession().send(new ClientPlayerActionPacket(PlayerAction.START_DIGGING, pos.translate(), BlockFace.UP));

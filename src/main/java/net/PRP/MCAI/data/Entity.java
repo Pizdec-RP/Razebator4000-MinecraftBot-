@@ -11,6 +11,7 @@ public class Entity {
     public float Yaw;
     public float Pitch;
     public UUID uuid;
+    public boolean alive = true;
 
     public Entity(int entityID, UUID uuid, EntityType type, Vector3D position, float yaw, float pitch) {
         EntityID = entityID;

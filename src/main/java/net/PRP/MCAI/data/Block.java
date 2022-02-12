@@ -15,10 +15,11 @@ public class Block {
 	public Type type;
 	public int state;
 	public List<AABB> shapes;
+	public String name = "";
 	
 	public Block() {
-		this.id = -1;
-		this.subid = -1;
+		this.id = 0;
+		this.subid = 0;
 		this.pos = null;
 		this.type = Type.VOID;
 		//setupShapes();
@@ -26,10 +27,12 @@ public class Block {
 	
 	public Block(int state, int id, Vector3D pos, Type type) {
 		this.id = id;
-		this.subid = -1;
+		this.subid = 0;
 		this.pos = pos;
 		this.type = type;
 		this.state = state;
+		String nm = Main.getMCData().blockData.get(id).name;
+		if (nm != null) this.name = nm;
 		//setupShapes();
 	}
 	
@@ -38,7 +41,15 @@ public class Block {
 		this.state = state;
 		this.id = Main.getMCData().blockStates.get(state).id;
 		this.type = Main.getMCData().bt(this.id);
+		String nm = Main.getMCData().blockData.get(id).name;
+		if (nm != null) this.name = nm;
 		//setupShapes();
+	}
+	
+	public String getName() {
+		String nm = Main.getMCData().blockData.get(id).name;
+		if (nm != null) this.name = nm;
+		return name;
 	}
 	
 	public Block getRelative(int x, int y, int z, Bot client) {
