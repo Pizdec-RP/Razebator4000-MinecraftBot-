@@ -13,11 +13,11 @@ import net.PRP.MCAI.utils.ThreadU;
 import net.PRP.MCAI.Inventory.*;
 import net.PRP.MCAI.bot.pathfinder.AStar;
 import net.PRP.MCAI.bot.specific.BlockBreakManager;
+import net.PRP.MCAI.bot.specific.Crafting;
 import net.PRP.MCAI.bot.specific.LivingListener;
 import net.PRP.MCAI.bot.specific.PVP;
 import net.PRP.MCAI.bot.specific.PhysicsListener;
 import net.PRP.MCAI.bot.specific.Vision;
-import net.PRP.MCAI.data.ChunkCoordinates;
 import net.PRP.MCAI.data.EntityEffects;
 import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.data.World;
@@ -61,13 +61,9 @@ public class Bot {
     public AStar pathfinder;
     public PVP pvp;
     public Vision vis = new Vision(this, 120, 80);
+    public Crafting crafter;
     
     public boolean listencaptcha = false;
-    //public boolean isInWeb = false;
-    
-    //private IInventory openedInventory;
-    //private PlayerInventory playerInventory;
-    private int currentWindowId;
 
 	public String name;
 
@@ -79,6 +75,8 @@ public class Bot {
 	public boolean ztp = false;
 	public int targetradius = 10;
 	public Thread tickLoop = null;
+
+	public boolean reconectAvable = true;
     
 
     public Bot(MinecraftProtocol account, String host, int port, Proxy proxy) {
@@ -90,6 +88,7 @@ public class Bot {
         this.effects = new EntityEffects();
         this.raidmode = (boolean)Main.getsett("raidmode");
         this.pathfinder = new AStar(this);
+        this.crafter = new Crafting(this);
         this.tickLoop = new Thread(()->{
 			int curcomp = 0;
 			while (true) {
@@ -112,7 +111,6 @@ public class Bot {
     }
     
     public Bot(String name, String ip, Proxy proxy) {
-    	System.out.println(name+" "+ip+" "+proxy);
     	if (proxy == null)
     		this.proxy = Proxy.NO_PROXY;
     	else
@@ -124,6 +122,7 @@ public class Bot {
     	this.effects = new EntityEffects();
     	this.raidmode = (boolean)Main.getsett("raidmode");
         this.pathfinder = new AStar(this);
+        this.crafter = new Crafting(this);
         this.tickLoop = new Thread(()->{
         	int curcomp = 0;
 			while (true) {
@@ -145,11 +144,11 @@ public class Bot {
         this.tickLoop.start();
     }
     
-    @SuppressWarnings("deprecation")
 	public void kill() {
-    	this.tickLoop.stop();
+		reconectAvable = false;
+    	this.tickLoop.interrupt();
     	this.session.disconnect("session killed");
-    	this.getWorld().columns.clear();
+    	//this.getWorld().columns.clear();
     	this.reset();
     	this.account = null;
     	this.session = null;
@@ -201,6 +200,7 @@ public class Bot {
         client.addListener(pm);
         this.pvp = new PVP(this);
         client.addListener(pvp);
+        client.addListener(this.crafter);
         
         this.session = client;
         this.playerInventory = new PlayerInventory(this);
@@ -231,14 +231,13 @@ public class Bot {
     	//if (this.pathfinder.clientIsOnFinish && this.bbm.state == bbmct.ENDED) setInAction(false);
     	//System.out.println("ticked");
     	try {
-    		if (!getWorld().columns.containsKey(new ChunkCoordinates((int)posX >> 4, (int)posZ >> 4)) || !this.connected) return;
+    		if (!this.connected) return;
 	    	this.pathfinder.tick();
 	    	this.pvp.tick();
 	    	this.bbm.tick();
-	    	if (raidmode) {
-	    		this.rl.tick();
-	    	}
+	    	this.rl.tick();
 	    	this.pm.tick();
+	    	this.crafter.tick();
     	} catch (Exception e) {
     		this.pvp.reset();
     		this.bbm.reset();
@@ -353,20 +352,12 @@ public class Bot {
 		}
 	}
 	
-	public int getCurrentWindowId() {
-		return currentWindowId;
-	}
-
-	public void setCurrentWindowId(int i) {
-		currentWindowId = i;
-	}
-	
 	public Vector3D getPosition() {
 		return new Vector3D(this.posX, this.posY, this.posZ);
 	}
 	
 	public Vector3D getPositionInt() {
-		return new Vector3D((int)Math.floor(this.posX), (int)Math.floor(this.posY), (int)Math.floor(this.posZ));
+		return new Vector3D((int)Math.floor(this.posX), (int)this.posY, (int)Math.floor(this.posZ));
 	}
 	
 	@Deprecated

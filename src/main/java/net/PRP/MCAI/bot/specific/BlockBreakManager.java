@@ -48,6 +48,10 @@ public class BlockBreakManager {
 	public void tick() {
 		try {
 			if (!readyToBreak) return;
+			if (!client.isOnline()) {
+				reset();
+				return;
+			}
 			if (client.pvp.state != CombatState.END_COMBAT) return;
 			//System.out.println("blockid:"+pos.getBlock(client).id+" bbm pos:"+pos.toStringInt()+" readyToBreak:"+readyToBreak+" ticksToBreak:"+ticksToBreak+" state:"+state);
 			if (pos == null) return;
@@ -70,7 +74,7 @@ public class BlockBreakManager {
 					this.state = bbmct.IN_PROGRESS;
 				}
 			} else if (this.state == bbmct.IN_PROGRESS) {
-				if (VectorUtils.sqrt(pos, client.getPosition()) > 3.8) {
+				if (VectorUtils.sqrt(pos, client.getPosition()) > 5) {
 					endDigging();
 				}
 				d1++;

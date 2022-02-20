@@ -1,15 +1,21 @@
 package net.PRP.MCAI.GUI;
 
-import java.awt.Font;
+import java.awt.Canvas;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.net.Proxy;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.swing.*;
 
-import com.github.steveice10.mc.protocol.MinecraftProtocol;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.bot.Bot;
@@ -24,6 +30,7 @@ public class Window {
 	public int botnum = 0;
 	public List<String> hi = new CopyOnWriteArrayList<>();
 	JLabel stats;
+	public Canvas canvas;
 	public List<String> readyhi = new CopyOnWriteArrayList<>() {
 	private static final long serialVersionUID = 1L; {
 		add("ку");
@@ -40,15 +47,16 @@ public class Window {
 		add("privet");
 		add("приветули");
 	}};
+	public JComboBox<String> servers;
 	
 	public Window() {
 		frame = new JFrame("-------------------------------");
 	    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-	    frame.setSize(600,300);
+	    frame.setSize(600,500);
 	    frame.setLayout(null);
 	    
 	    JTextField b = new JTextField("текст для отправки");
-	    b.setBounds(1,0,400,30);
+	    b.setBounds(0,0,400,30);
 	    frame.add(b);
 	    
 	    this.stats = new JLabel("?noinfo?");
@@ -95,16 +103,22 @@ public class Window {
 	    sendasrandom.setBounds(0,50,270,20);
 	    frame.add(sendasrandom);
 	    
+	    JTextField bb = new JTextField((String) Main.getsett("host"));
+	    bb.setBounds(330,50,200,20);
+	    frame.add(bb);
+	    
 	    JButton connectbot = new JButton("присоединить бота");
 	    connectbot.addActionListener(new ActionListener() {
 
 			@Override
 			public void actionPerformed(ActionEvent event) {
-				//new Thread(() -> {
-		        Bot client = new Bot(Main.nextNick(), (String)Main.getsett("host"), Main.nextProxy());
+				String name = Main.nextNick();
+				Proxy proxy = Main.nextProxy();
+				new Thread(() -> {
+		        Bot client = new Bot(name, bb.getText(), proxy);
 		        client.connect();
 		        Main.bots.add(client);
-	    		//}).start();
+	    		}).start();
 			}
 	    });
 	    connectbot.setBounds(0,110,180,20);
@@ -116,7 +130,7 @@ public class Window {
 			@Override
 			public void actionPerformed(ActionEvent event) {
 				Bot cl = Main.bots.get(0);
-				cl.kill();
+				if (cl.isOnline()) cl.kill();
 				try {Main.bots.remove(cl);} catch(Exception e) {Main.bots.remove(0);}
 			}
 	    });
@@ -139,18 +153,69 @@ public class Window {
 
 			@Override
 			public void actionPerformed(ActionEvent event) {
-				//Main.updatePasti();
-				//System.out.println(Main.pasti.toString());
 				BotU.chat(Main.bots.get(MathU.rnd(0, Main.bots.size()-1)), Main.pasti.get(MathU.rnd(0, Main.pasti.size()-1)));
 			}
 	    });
 	    rndpasta.setBounds(0,170,250,20);
 	    frame.add(rndpasta);
 	    
-	    //JList<String> spisok = new JList<>(listofbots);
+	    JButton updatesett = new JButton("перезагрузить настройки");
+	    updatesett.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent event) {
+				Main.updateSettings();
+			}
+	    });
+	    updatesett.setBounds(0,190,250,20);
+	    frame.add(updatesett);
+	    
+	    
+	    List<String> tmp = getServers();
+	    String[] ips = new String[tmp.size()];
+	    for (int i = 0; i < tmp.size();i++) {
+	    	ips[i] = tmp.get(i);
+	    }
+	    this.servers = new JComboBox<>(ips);
+	    ActionListener actionListener = new ActionListener() {
+            @SuppressWarnings("unchecked")
+			public void actionPerformed(ActionEvent e) {
+                JComboBox<String> box = (JComboBox<String>)e.getSource();
+                String item = (String)box.getSelectedItem();
+                bb.setText(item);
+            }
+        };
+        servers.addActionListener(actionListener);
+	    servers.setBounds(330, 70, 200, 20);
+	    frame.add(servers);
+	    
+	    JButton updateips = new JButton("обновить мониторинг");
+	    updateips.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent event) {
+				List<String> tmp = getServers();
+			    String[] ips = new String[tmp.size()];
+			    for (int i = 0; i < tmp.size();i++) {
+			    	ips[i] = tmp.get(i);
+			    }
+				servers = new JComboBox<>(ips);
+			}
+	    });
+	    updateips.setBounds(0,210,250,20);
+	    frame.add(updateips);
+	    
+	    
+	    this.canvas = new Canvas();
+	    canvas.setSize(200, 200);
+	    canvas.setBounds(0, 250, 200, 200);
+	    frame.add(canvas);
 	    
 	    frame.setVisible(true);
 	    updater();
+	    //ServerChatPacket p = new ServerChatPacket();
+	}
+	
+	public void drawPixel(int x, int y) {
+		//this.canvas.
 	}
 	
 	public void updater() {
@@ -161,4 +226,31 @@ public class Window {
 		}
 		}).start();
 	}
+	
+	public List<String> getServers() {
+		String pattern = "\\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?):\\d{1,5}\\b";
+		List<String> temp = new CopyOnWriteArrayList<>();
+        try {
+            Document document = Jsoup.connect("https://monitoringminecraft.ru/novie-servera-1.16.5").get();
+            Elements elements = document.getElementsByAttributeValue("class", "server");
+
+            for (Element element : elements)
+                temp.addAll(findStringsByRegex(element.text(), Pattern.compile(pattern)));
+
+            temp.removeIf(str -> !str.matches("\\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?):\\d{1,5}\\b"));
+            
+        } catch (Exception ignd) {}
+        temp.add("localhost:25565");
+        return temp;
+	}
+	
+	public static List<String> findStringsByRegex(String text, Pattern regex) {
+        List<String> strings = new ArrayList<>();
+        Matcher match = regex.matcher(text);
+
+        while (match.find())
+            strings.add(text.substring(match.start(), match.end()));
+
+        return strings;
+    }
 }

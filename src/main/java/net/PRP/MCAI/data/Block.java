@@ -67,6 +67,7 @@ public class Block {
 	
 	@Override
 	public boolean equals(Object obj) {
+		if (obj == null) return false;
 		if (!(obj instanceof Block)) {
 			return false;
 		}

@@ -1,5 +1,6 @@
 package net.PRP.MCAI.utils;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -15,7 +16,7 @@ import net.PRP.MCAI.data.MinecraftData.Type;
 public class VectorUtils {
 	
 	public static Vector3D func_31(Bot client, Vector3D pos, int radius) {
-		List<Vector3D> positions = getAllInBox(pos, radius);
+		List<Vector3D> positions = filterByRadius(getAllInBox(pos, radius),pos,radius);
 		List<Vector3D> normal = new CopyOnWriteArrayList<>();
 		for (Vector3D position : positions) {
 			if (!positionIsSafe(position, client)) {
@@ -27,29 +28,39 @@ public class VectorUtils {
 				normal.add(position);
 			}
 		}
-		int i = normal.size()-1;
 		if (normal.isEmpty()) return null;
-		return normal.get(MathU.rnd(0, i));
+		return getNear(pos, normal);
+	}
+	
+	public static List<Vector3D> filterByRadius(List<Vector3D> positions, Vector3D target, int radius) {
+		for (Vector3D position : positions) {
+			if (sqrt(target, position) > radius) positions.remove(position);
+		}
+		return positions;
 	}
 	
 	public static boolean equals(Vector3D one, Vector3D two) {
+		if (one == null || two == null) return false;
 		//System.out.println(one.toString() + " <<>> " + two.toString());
 		if (one.getX() == two.getX() && one.getY() == two.getY() && one.getZ() == two.getZ()) return true;
 		return false;
 	}
 	
 	public static boolean equalsInt(Vector3D one, Vector3D two) {
+		if (one == null || two == null) return false;
 		//System.out.println(one.toStringInt() + " <<>> " + two.toStringInt());
 		if ((int)Math.floor(one.getX()) == (int)Math.floor(two.getX()) && (int)Math.floor(one.getY()) == (int)Math.floor(two.getY()) && (int)Math.floor(one.getZ()) == (int)Math.floor(two.getZ())) return true;
 		return false;
 	}
 	
 	public static boolean equalsIntNoY(Vector3D one, Vector3D two) {
+		if (one == null || two == null) return false;
 		if ((int)one.getX() == (int)two.getX() && (int)one.getZ() == (int)two.getZ()) return true;
 		return false;
 	}
 	
 	public static boolean equalsForPF(Vector3D one, Vector3D two, boolean nonY) {
+		if (one == null || two == null) return false;
 		if (nonY) {
 			if ((int)one.getX() == (int)two.getX() && (int)one.getZ() == (int)two.getZ()) return true;
 			return false;
@@ -64,16 +75,13 @@ public class VectorUtils {
 	}
 	
 	public static boolean positionIsSafe(Vector3D pos, Bot client) {
-		//System.out.println(pos.toStringInt());
-		//System.out.println(BTavoid(client.getWorld().getBlock(pos).type)+" "+client.getWorld().getBlock(pos).state+" "+BTavoid(client.getWorld().getBlock(pos.add(0,1,0)).type)+" "+client.getWorld().getBlock(pos.add(0,1,0)).type+" "+icanstayhere(client.getWorld().getBlock(pos.add(0,-1,0)).type)+" "+client.getWorld().getBlock(pos.add(0,-1,0)).type);
-		return BTavoid(client.getWorld().getBlock(pos).type) && BTavoid(client.getWorld().getBlock(pos.add(0,1,0)).type) && icanstayhere(client.getWorld().getBlock(pos.add(0,-1,0)).type);
+		boolean a = BTavoid(client.getWorld().getBlock(pos).type) && BTavoid(client.getWorld().getBlock(pos.add(0,1,0)).type) && icanstayhere(client.getWorld().getBlock(pos.add(0,-1,0)).type);
+		//System.out.println(pos+" avoid:"+a);
+		return a;
 	}
 	
 	public static boolean BTavoid(Type bt) {
-		if (bt == Type.AIR || bt == Type.AVOID || bt == Type.VOID) {
-			return true;
-		}
-		return false;
+		return bt == Type.AIR || bt == Type.AVOID || bt == Type.VOID;
 	}
 	
 	public static boolean icanstayhere(Type bt) {
@@ -81,10 +89,7 @@ public class VectorUtils {
 	}
 	
 	public static boolean BThard(Type bt) {
-		if (bt == Type.HARD) {
-			return true;
-		}
-		return false;
+		return bt == Type.HARD;
 	}
 	
 	public static double sqrt(Vector3D one, Vector3D two) {
@@ -106,22 +111,30 @@ public class VectorUtils {
 	
 	public static Vector3D getNear(Vector3D target, List<Vector3D> allPos) {
         Vector3D minpos = null;
+        List<Vector3D> temp = new ArrayList<>();
         for (Vector3D position : allPos) {
-        	double distance = Math.sqrt(Math.pow(position.getX() - target.getX(), 2) + Math.pow(position.getY() - target.getY(), 2) + Math.pow(position.getZ() - target.getZ(), 2));
+        	double distance = sqrt(position, target);
         	if (minpos == null) {
         		minpos = position;
         	} else {
-        		double distanceminpos = Math.sqrt(Math.pow(minpos.getX() - target.getX(), 2) + Math.pow(minpos.getY() - target.getY(), 2) + Math.pow(minpos.getZ() - target.getZ(), 2));
+        		double distanceminpos = sqrt(minpos, target);
         		if (distance < distanceminpos) {
         			minpos = position;
         		}
         	}
         }
-        return minpos;
+        temp.add(minpos);
+        for (Vector3D position : allPos) {
+        	if (sqrt(minpos, target) == sqrt(position, target)) {
+        		temp.add(position);
+        	}
+        }
+        return temp.get(MathU.rnd(0, temp.size()-1));
     }
 	
 	public static Vector3D getNearBlock(Vector3D target, List<Block> allPos) {
         Vector3D minpos = null;
+        List<Vector3D> temp = new ArrayList<>();
         for (Block b : allPos) {
         	Vector3D position = b.pos;
         	double distance = Math.sqrt(Math.pow(position.getX() - target.getX(), 2) + Math.pow(position.getY() - target.getY(), 2) + Math.pow(position.getZ() - target.getZ(), 2));
@@ -134,7 +147,14 @@ public class VectorUtils {
         		}
         	}
         }
-        return minpos;
+        temp.add(minpos);
+        for (Block b : allPos) {
+        	Vector3D position = b.pos;
+        	if (sqrt(minpos, target) == sqrt(position, target)) {
+        		temp.add(position);
+        	}
+        }
+        return temp.get(MathU.rnd(0, temp.size()-1));
     }
 	
 	public static Vector3D findNearestBlockById(Bot client, int id) {

@@ -16,6 +16,10 @@ public class Obshak {
 		} catch (Exception e) {}
 	}
 	
+	public static void targetAllBotsToPoint() {
+		
+	}
+	
 	public static int random(int min, int max) {
 		max -= min;
 		return (int) (Math.random() * ++max) + min;

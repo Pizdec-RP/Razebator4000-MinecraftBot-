@@ -11,7 +11,6 @@ import com.github.steveice10.mc.protocol.packet.ingame.server.entity.player.Serv
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerBlockChangePacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerChunkDataPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerMultiBlockChangePacket;
-import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerUnloadChunkPacket;
 import com.github.steveice10.mc.protocol.packet.login.server.LoginSuccessPacket;
 import com.github.steveice10.packetlib.event.session.DisconnectedEvent;
 import com.github.steveice10.packetlib.event.session.PacketReceivedEvent;
@@ -46,7 +45,6 @@ public class SessionListener extends SessionAdapter {
     @Override
     public void packetReceived(PacketReceivedEvent receiveEvent) {
         if (receiveEvent.getPacket() instanceof ServerJoinGamePacket) {
-        	ThreadU.sleep(100);
         	System.out.println("(" + client.getGameProfile().getName() + ") Подлючился");
         	ServerJoinGamePacket p = (ServerJoinGamePacket) receiveEvent.getPacket();
         	client.setId(p.getEntityId());
@@ -78,15 +76,12 @@ public class SessionListener extends SessionAdapter {
         //server chunks
         
         } else if (receiveEvent.getPacket() instanceof ServerMultiBlockChangePacket) {
-        	//log("mbcp");
 			ServerMultiBlockChangePacket packet = (ServerMultiBlockChangePacket) receiveEvent.getPacket();
 			for (BlockChangeRecord data : packet.getRecords()) {
 				client.getWorld().setBlock(data.getPosition(), data.getBlock());
 				client.pathfinder.func_2(VectorUtils.convert(data.getPosition()));
 			}
-        } else if (receiveEvent.getPacket() instanceof ServerUnloadChunkPacket) {
-        	final ServerUnloadChunkPacket p = (ServerUnloadChunkPacket)receiveEvent.getPacket();
-        	client.getWorld().unloadColumn(new ChunkCoordinates(p.getX(),p.getZ()));
+        //} else if (receiveEvent.getPacket() instanceof ServerUnloadChunkPacket) {
 			
 		} else if (receiveEvent.getPacket() instanceof ServerChunkDataPacket) {
 			
@@ -108,9 +103,10 @@ public class SessionListener extends SessionAdapter {
     
     @Override
     public void disconnected(DisconnectedEvent event) {
+    	if (!client.reconectAvable) return;
     	client.connected = false;
     	System.out.println(event.getReason().toString());
-		ThreadU.sleep(6000);
+		ThreadU.sleep(6100);
 		if ((boolean) Main.getsett("reconect")) {
 			client.reset();
 			client.connect();

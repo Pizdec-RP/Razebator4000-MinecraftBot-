@@ -67,7 +67,7 @@ public class ChatListener extends SessionAdapter {
 							}
 						}
 						if (en == null) return;
-						client.pathfinder.setup(client.getPosition(), en.Position);
+						client.pathfinder.setup(en.Position);
 					} else if (command.get(0).equalsIgnoreCase("goto")) {
 						client.pathfinder.setup(new Vector3D(Integer.parseInt(command.get(1)), Integer.parseInt(command.get(2)), Integer.parseInt(command.get(3))));
 					} else if (command.get(0).equalsIgnoreCase("record")) {
@@ -172,6 +172,12 @@ public class ChatListener extends SessionAdapter {
 						}
 						if (en == null) return;
 						client.rl.enemy = en.EntityID;
+					} else if (command.get(0).equalsIgnoreCase("isavoid")) {
+						BotU.chat(client, VectorUtils.BTavoid(new Vector3D(Integer.parseInt(command.get(1)),Integer.parseInt(command.get(2)),Integer.parseInt(command.get(3))).getBlock(client).type)+"");
+					} else if (command.get(0).equalsIgnoreCase("moveinvtest")) {
+						client.crafter.fromSlotToSlot(36,37,0);
+					} else if (command.get(0).equalsIgnoreCase("craft")) {
+						client.crafter.setup(command.get(1), null);
 					}
 				}
 			}).start();

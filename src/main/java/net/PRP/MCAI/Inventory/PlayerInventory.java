@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.ItemStack;
 
+import net.PRP.MCAI.Main;
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.MathU;
@@ -30,8 +31,17 @@ public class PlayerInventory {
 	}
 	
 	public boolean contain(int id, int count) {
-		for(Entry<Integer, ItemStack> entry : slots.entrySet()) {
+		for(Entry<Integer, ItemStack> entry : getAllInventory().entrySet()) {
 			if (entry.getValue().getId() == id && entry.getValue().getAmount() >= count) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public boolean contain(String name, int count) {
+		for(Entry<Integer, ItemStack> entry : getAllInventory().entrySet()) {
+			if (entry.getValue() != null) if (Main.getMCData().items.get(entry.getValue().getId()).name.contains(name) && entry.getValue().getAmount() >= count) {
 				return true;
 			}
 		}
@@ -49,22 +59,36 @@ public class PlayerInventory {
 		return temp.get(MathU.rnd(0, temp.size()-1));
 	}
 	
-	public void oneItemFromSlotToSlot(int fromslot, int toslot) {
-		
-	}
-	
 	public boolean contain(int id) {
-		for(Entry<Integer, ItemStack> entry : slots.entrySet()) {
-			if (entry.getValue().getId() == id) {
+		for(Entry<Integer, ItemStack> entry : getAllInventory().entrySet()) {
+			if (entry.getValue() != null) if (entry.getValue().getId() == id) {
 				return true;
 			}
 		}
 		return false;
 	}
 	
+	public Integer getSlotWithItem(String name) {
+		for(Entry<Integer, ItemStack> entry : getAllInventory().entrySet()) {
+			if (entry.getValue() != null) if (Main.getMCData().items.get(entry.getValue().getId()).name.contains(name)) {
+				return entry.getKey();
+			}
+		}
+		return null;
+	}
+	
+	public Integer getSlotWithItem(String name, int count) {
+		for(Entry<Integer, ItemStack> entry : getAllInventory().entrySet()) {
+			if (entry.getValue() != null) if (Main.getMCData().items.get(entry.getValue().getId()).name.contains(name) && entry.getValue().getAmount() >= count) {
+				return entry.getKey();
+			}
+		}
+		return null;
+	}
+	
 	public Integer getSlotWithItem(int id, int count) {
-		for(Entry<Integer, ItemStack> entry : slots.entrySet()) {
-			if (entry.getValue().getId() == id && entry.getValue().getAmount() >= count) {
+		for(Entry<Integer, ItemStack> entry : getAllInventory().entrySet()) {
+			if (entry.getValue() != null) if (entry.getValue().getId() == id && entry.getValue().getAmount() >= count) {
 				return entry.getKey();
 			}
 		}
@@ -89,5 +113,13 @@ public class PlayerInventory {
 	
 	public void setSlotInHotbar(int slot) {
 		BotU.SetSlot(client, slot - 36);
+	}
+	
+	public Map<Integer, ItemStack> getAllInventory() {
+		Map<Integer, ItemStack> temp = new HashMap<>();
+		for (int i = 9; i <= 44; i++) {
+			temp.put(i, slots.get(i));
+		}
+		return temp;
 	}
 }

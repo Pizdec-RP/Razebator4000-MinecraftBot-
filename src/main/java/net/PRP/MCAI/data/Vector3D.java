@@ -1,8 +1,5 @@
 package net.PRP.MCAI.data;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
 
 import net.PRP.MCAI.bot.Bot;

@@ -29,7 +29,7 @@ public class LivingListener extends SessionAdapter {
 	public Vector3D asd = Vector3D.ORIGIN;
 	public List<Vector3D> blacklist = new CopyOnWriteArrayList<>();
 	public boolean trusted = false;
-	private int sleepticks;
+	private int sleepticks = (int)Main.getsett("walkeverymilseconds") / 50;
 	public Integer enemy = null;
 	
 	public int tickstocheck = 0;
@@ -95,24 +95,32 @@ public class LivingListener extends SessionAdapter {
 	
 	public void tick() {
 		//try {
-			if (!this.trusted) return;
 			if (!firstJoin || !client.isOnline()) return;
-			//System.out.println("pf:"+client.pathfinder.clientIsOnFinish+" bbm:"+client.bbm.state+" action:"+action);
-			if ((int)Main.getsett("walkeverymilseconds") > 0) {
-				this.sleepticks = (int)Main.getsett("walkeverymilseconds") / 50;
-			}
 			if (state == raidState.IDLE) {
+				if (!this.trusted) return;
 				if (client.pathfinder.state == State.WALKING) return;
+				
+				if (client.getPositionInt().getBlock(client).ishard()) {
+					state = raidState.MINING;
+					client.bbm.setup(client.getPositionInt());
+					return;
+				} else if (client.getPositionInt().add(0,1,0).getBlock(client).ishard()) {
+					state = raidState.MINING;
+					client.bbm.setup(client.getPositionInt());
+					return;
+				}
+				
 				if (sleepticks > 0) {
 					sleepticks--;
 					return;
 				}
+				if ((int)Main.getsett("walkeverymilseconds") >= 50) sleepticks = (int)Main.getsett("walkeverymilseconds") / 50;
 				if (client.pvp.state != CombatState.END_COMBAT) {
 					return;
 				}
 				if ((int)Main.getsett("walkeverymilseconds") != 0) sleepticks = (int)Main.getsett("walkeverymilseconds") / 50;
 				
-				tickstocheck++; if (tickstocheck > 15) { tickstocheck = 0;
+				tickstocheck++; if (tickstocheck > 5) { tickstocheck = 0;
 					
 				Map<Integer, Entity> tempentities = client.getWorld().Entites;
 				for(Entry<Integer, Entity> entry : tempentities.entrySet()) {
@@ -142,8 +150,6 @@ public class LivingListener extends SessionAdapter {
 					if (entry.getValue().type == EntityType.PLAYER && entry.getValue().uuid != client.getUUID() && VectorUtils.equalsInt(entry.getValue().Position, client.getPositionInt())) {
 						Vector3D pos = VectorUtils.func_31(client, client.getPositionInt(), 5);
 						client.pathfinder.setup(pos);
-						//asd = null;
-						//this.state = raidState.GOING;
 						return;
 					}
 				}}
@@ -154,44 +160,58 @@ public class LivingListener extends SessionAdapter {
 					client.pathfinder.setup(pos);
 			    	this.state = raidState.GOING;
 				} else {
-					state = raidState.WAIT;
-					if (!((boolean) Main.getsett("mining"))) return;
-					Vector3D block;
-					if ((boolean) Main.getsett("iol")) {
-						@SuppressWarnings("unchecked")
-						List<Integer> d1 = (ArrayList<Integer>)Main.getsett("minertargetid");
-						block = VectorUtils.findNearestBlockByArrayId(client, d1, this.blacklist);
-						if (block == null) block = VectorUtils.func_1488(client, d1, this.blacklist);
-					} else {
-						@SuppressWarnings("unchecked")
-						List<String> d2 = (ArrayList<String>)Main.getsett("minetargetnames");
-						block = VectorUtils.func_32(client, d2, this.blacklist);
+					if ((boolean) Main.getsett("mining")) {
+						state = raidState.WAIT;
+						Vector3D block;
+						if ((boolean) Main.getsett("iol")) {
+							@SuppressWarnings("unchecked")
+							List<Integer> d1 = (ArrayList<Integer>)Main.getsett("minertargetid");
+							block = VectorUtils.findNearestBlockByArrayId(client, d1, this.blacklist);
+							if (block == null) block = VectorUtils.func_1488(client, d1, this.blacklist);
+						} else {
+							@SuppressWarnings("unchecked")
+							List<String> d2 = (ArrayList<String>)Main.getsett("minetargetnames");
+							block = VectorUtils.func_32(client, d2, this.blacklist);
+						}
+						if (block == null) {//no one block founded
+							for (Bot cli : Main.bots) {
+								if (cli.rl.state == raidState.MINING) {
+									if (client.pathfinder.testForPath(cli.getPositionInt())) {
+										client.pathfinder.setup(cli.getPositionInt());
+										this.state = raidState.GOING;
+										this.asd = null;
+										break;
+									} 
+								}
+							}
+							//i dont know what to do
+							Vector3D to = VectorUtils.func_31(client, client.getPositionInt(), 8);
+							this.sleepticks = 100;
+							client.pathfinder.setup(to);
+							asd = null;
+							this.state = raidState.GOING;
+							return;
+						}
+						if (block.getBlock(client).touchLiquid(client)) {
+							this.blacklist.add(block);
+							state = raidState.IDLE;
+							return;
+						}
+						if (VectorUtils.sqrt(client.getPosition(), block) <= 5) {
+							client.bbm.setup(block);
+							this.state = raidState.MINING;
+					    } else {
+					    	Vector3D pos = VectorUtils.func_31(client, block, 5);
+					    	if (pos == null) {
+					    		this.blacklist.add(block);
+					    		state = raidState.IDLE;
+					    		return;
+					    	}
+					    	this.asd = block;
+					    	client.pathfinder.setup(pos);
+					    	this.state = raidState.GOING;
+					    }
 					}
-					if (block == null) {
-						Vector3D to = VectorUtils.func_31(client, client.getPositionInt(), 20);
-						client.pathfinder.setup(to);
-						asd = null;
-						this.state = raidState.GOING;
-					}
-					if (block.getBlock(client).touchLiquid(client)) {
-						this.blacklist.add(block);
-						state = raidState.IDLE;
-						return;
-					}
-					if (VectorUtils.sqrt(client.getPosition(), block) <= 5) {
-						client.bbm.setup(block);
-						this.state = raidState.MINING;
-				    } else {
-				    	Vector3D pos = VectorUtils.func_31(client, block, 5);
-				    	if (pos == null) {
-				    		this.blacklist.add(block);
-				    		state = raidState.IDLE;
-				    		return;
-				    	}
-				    	this.asd = block;
-				    	client.pathfinder.setup(pos);
-				    	this.state = raidState.GOING;
-				    }
 				}
 			} else if (state == raidState.GOING) {
 				if (client.pathfinder.state == State.FINISHED) {
@@ -205,7 +225,15 @@ public class LivingListener extends SessionAdapter {
 				}
 			} else if (state == raidState.MINING) {
 				if (client.bbm.state == bbmct.ENDED) {
+					this.asd = null;
 					this.state = raidState.IDLE;
+				} else {
+					if (client.bbm.ticksToBreak < -200) {
+						this.asd = null;
+						client.bbm.endDigging();
+						this.blacklist.add(client.bbm.getBlockPos());
+						this.state = raidState.IDLE;
+					}
 				}
 			}
 		//} catch (Exception e) {

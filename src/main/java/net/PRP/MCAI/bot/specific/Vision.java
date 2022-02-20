@@ -24,8 +24,10 @@ public class Vision {
 		List<Block> blocks = new CopyOnWriteArrayList<>();
 		for (int y = -width; y <= width; y++) {
 			for (int p = -height; p <= height; p++) {
-				Block a = getLookingBlock(96, y*amplifer, p*amplifer);
-				if (a != null && !blocks.contains(a) && a.type != Type.VOID) blocks.add(a);
+				Block a = getLookingBlock(128, y*amplifer, p*amplifer);
+				if (a != null) {
+					if (!blocks.contains(a) && a.type != Type.VOID) blocks.add(a);
+				}
 			}
 		}
 		return blocks;

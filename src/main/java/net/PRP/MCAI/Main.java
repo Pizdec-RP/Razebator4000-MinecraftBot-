@@ -25,6 +25,7 @@ import com.google.gson.stream.JsonReader;
 import net.PRP.MCAI.GUI.Window;
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.data.BlockData;
+import net.PRP.MCAI.data.ItemData;
 import net.PRP.MCAI.data.MinecraftData;
 import net.PRP.MCAI.data.materialsBreakTime;
 import net.PRP.MCAI.data.MinecraftData.Type;
@@ -34,10 +35,10 @@ public class Main {
 	static int nicksnumb = -1;
 	static FileInputStream inputStream;
 	static Yaml yaml = new Yaml();
-	static Map<?, ?> data;
+	public static Map<?, ?> data;
 	static List<Proxy> proxies;
 	static int proxyNumb = 0;
-	public static boolean debug = false;
+	public static boolean debug = true;
 	public static List<Bot> bots = new ArrayList<Bot>();
 	public static Proxy proxy = Proxy.NO_PROXY;
 	public static List<String> pasti = new CopyOnWriteArrayList<String>();
@@ -53,7 +54,6 @@ public class Main {
 		}
     	proxies = ProxyScraper.ab();
     	initializeBlockType();
-    	//new Thread(()->{while (true) { updatePasti(); ThreadU.sleep(2000);} }).start();
     	updatePasti();
     	if ((boolean) getsett("window")) {
     		new Window();
@@ -84,6 +84,14 @@ public class Main {
 	    	}
     	}
 	}
+    
+    public static void updateSettings() {
+    	try {
+    		data = (Map<?, ?>)yaml.load(new FileInputStream(new File("settings.yml")));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    }
     
     public static String nextNick() {
     	if (++nicksnumb >= getnicksinit().size()) {
@@ -242,6 +250,18 @@ public class Main {
             	}
             	getMCData().materialToolMultipliers.put(d2.getAsJsonObject().get("name").getAsString(), g1);
             }
+            
+            JsonReader reader5 = new JsonReader(new FileReader("data/items.json"));
+            JsonArray obj3 = new JsonParser().parse(reader5).getAsJsonArray();
+            
+            for (JsonElement item : obj3) {
+            	ItemData itemdata = new ItemData();
+            	itemdata.displayName = item.getAsJsonObject().get("displayName").getAsString();
+            	itemdata.name = item.getAsJsonObject().get("name").getAsString();
+            	itemdata.stackSize = item.getAsJsonObject().get("stackSize").getAsInt();
+            	getMCData().items.put(item.getAsJsonObject().get("id").getAsInt(), itemdata);
+            }
+            
             System.out.println("Minecraft-data loaded");
         } catch (FileNotFoundException e) {
             e.printStackTrace();

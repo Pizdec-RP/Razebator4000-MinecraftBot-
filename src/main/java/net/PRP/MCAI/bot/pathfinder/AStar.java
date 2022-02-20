@@ -61,14 +61,14 @@ public class AStar {
 		this.end = new Vector3D(0, 0, 0);
 	}
 	
-	public void setup(Vector3D start, Vector3D end) {
+	/*public void setup(Vector3D start, Vector3D end) {
 		if (state == State.WALKING) return;
 		this.pathIsReady = false;
 		this.start = start;
 		this.end = end;
 		this.from = start;
 		this.state = State.SEARCHING;
-	}
+	}*/
 	
 	public void setup(Vector3D end) {
 		if (state == State.WALKING) return;
@@ -166,7 +166,7 @@ public class AStar {
 			neighbors.add(cursor.add(0,-1,-1));
 			
 			for (Vector3D n : neighbors) {
-				if (func_1(n)) {
+				if (func_1(cursor,n)) {
 					neighbors.remove(n);
 				}
 			}
@@ -178,8 +178,39 @@ public class AStar {
 			for (Vector3D n : neighbors) {
 				if (usd.contains(n) || !VectorUtils.positionIsSafe(n, client)) neighbors.remove(n);
 			}
+			if (neighbors.isEmpty()) {
+				Vector3D psy;
+				psy = cursor.add(0,-1,0);
+				if (VectorUtils.sqrt(psy, enda) < VectorUtils.sqrt(client.getPositionInt(), enda) && VectorUtils.icanstayhere(psy.add(0,-1,0).getBlock(client).type)) {
+					neighbors.add(psy);
+				}
+				
+				psy = cursor.add(1,0,0);
+				psy.hasheddata = 1;
+				if (VectorUtils.sqrt(psy, enda) < VectorUtils.sqrt(client.getPositionInt(), enda) && VectorUtils.icanstayhere(psy.add(0, -1,0).getBlock(client).type)) {
+					neighbors.add(psy);
+				}
+				
+				psy = cursor.add(0,0,1);
+				psy.hasheddata = 1;
+				if (VectorUtils.sqrt(psy, enda) < VectorUtils.sqrt(client.getPositionInt(), enda) && VectorUtils.icanstayhere(psy.add(0, -1,0).getBlock(client).type)) {
+					neighbors.add(psy);
+				}
+				
+				psy = cursor.add(-1,0,0);
+				psy.hasheddata = 1;
+				if (VectorUtils.sqrt(psy, enda) < VectorUtils.sqrt(client.getPositionInt(), enda) && VectorUtils.icanstayhere(psy.add(0, -1,0).getBlock(client).type)) {
+					neighbors.add(psy);
+				}
+				
+				psy = cursor.add(0,0,-1);
+				psy.hasheddata = 1;
+				if (VectorUtils.sqrt(psy, enda) < VectorUtils.sqrt(client.getPositionInt(), enda) && VectorUtils.icanstayhere(psy.add(0, -1,0).getBlock(client).type)) {
+					neighbors.add(psy);
+				}
+			}
 			
-			if (neighbors.size() == 0) {
+			if (neighbors.isEmpty()) {
 				return false;
 			}
 			
@@ -209,7 +240,9 @@ public class AStar {
 		used.clear();
 		reset();
 		Vector3D cursor = this.start;
+		int l = 0;
 		while (true) {
+			l++; if (l>200) return false;
 			if (VectorUtils.equalsInt(cursor, end)) {
 				if (addsleepticks) sleepticks = 10;
 				return true;
@@ -239,7 +272,7 @@ public class AStar {
 		neighbors.add(ps.add(0,-1,-1));
 		
 		for (Vector3D n : neighbors) {
-			if (func_1(n)) {
+			if (func_1(ps,n)) {
 				neighbors.remove(n);
 			}
 		}
@@ -285,8 +318,14 @@ public class AStar {
 		return neighbors;
 	}
 	
-	public boolean func_1(Vector3D pos) {
-		return !VectorUtils.positionIsSafe(pos, client) && !VectorUtils.BTavoid(pos.add(0,2,0).getBlock(client).type);
+	public boolean func_1(Vector3D from, Vector3D to) {
+		boolean a = true;
+		if (from.y < to.y) {
+			a = !VectorUtils.positionIsSafe(to, client) || !VectorUtils.BTavoid(from.add(0,2,0).getBlock(client).type);
+		} else if (from.y > to.y) {
+			a = !VectorUtils.BTavoid(to.add(0,2,0).getBlock(client).type) || !VectorUtils.positionIsSafe(to, client);
+		}
+		return a;
 	}
 	
 	public boolean pointIsUsed(Vector3D wp) {
@@ -500,11 +539,9 @@ public class AStar {
 		err = 0;
 		this.pathIsReady = false;
 		BotU.calibratePosition(client);
+		if (Main.debug) System.out.println("ended from"+this.start+" to:"+this.end);
 		this.start = null;
 		this.end = null;
-		if (Main.debug) {
-			System.out.println("ended");
-		}
 	}
 	
 	public boolean e(Vector3D one, Vector3D two) {
