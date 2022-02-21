@@ -45,7 +45,7 @@ public class Bot {
     private UUID UUID;
     //private boolean inAction;
     private boolean mainhost;
-    public PlayerInventory playerInventory;
+    public GenericInventory playerInventory;
     private int id;
     
     public EntityListener entityListener;
@@ -203,7 +203,7 @@ public class Bot {
         client.addListener(this.crafter);
         
         this.session = client;
-        this.playerInventory = new PlayerInventory(this);
+        this.playerInventory = new GenericInventory(this);
         client.connect();
     }
 

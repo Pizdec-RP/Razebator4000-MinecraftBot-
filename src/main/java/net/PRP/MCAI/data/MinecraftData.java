@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.github.steveice10.mc.protocol.data.game.window.WindowType;
+
 import net.PRP.MCAI.oldMinecraftBlocks;
 
 public class MinecraftData {
@@ -16,6 +18,11 @@ public class MinecraftData {
 	public Map<Integer, BlockData> blockData = new HashMap<>();//key - oldid
 	public Map<String, List<materialsBreakTime>> materialToolMultipliers = new HashMap<>();// key - material
 	public Map<Integer, ItemData> items = new HashMap<>(); // itemid | itemdata
+	public Map<WindowType, Integer> slotMultipiler = new HashMap<>() {
+	private static final long serialVersionUID = 1L;
+	{
+		put(WindowType.CRAFTING, 1);
+	}};
 	
 	public MinecraftData() {
 		

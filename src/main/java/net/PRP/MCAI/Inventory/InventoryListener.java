@@ -1,10 +1,8 @@
 package net.PRP.MCAI.Inventory;
 
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerJoinGamePacket;
-import com.github.steveice10.mc.protocol.packet.ingame.server.window.ServerOpenWindowPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.window.ServerSetSlotPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.window.ServerWindowItemsPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.server.window.ServerWindowPropertyPacket;
 import com.github.steveice10.packetlib.event.session.PacketReceivedEvent;
 import com.github.steveice10.packetlib.event.session.SessionAdapter;
 
@@ -27,22 +25,13 @@ public class InventoryListener extends SessionAdapter {
 			BotU.SetSlot(client, 0);
 		} else if (receiveEvent.getPacket() instanceof ServerWindowItemsPacket) {
 			final ServerWindowItemsPacket p = (ServerWindowItemsPacket) receiveEvent.getPacket();
-			if (p.getWindowId() == 0) {
-				client.playerInventory.setup(p.getItems());
-			}
+			client.playerInventory.setup(p.getItems());
 			
 		} else if (receiveEvent.getPacket() instanceof ServerSetSlotPacket) {
-			
 			final ServerSetSlotPacket p = (ServerSetSlotPacket) receiveEvent.getPacket();
-			//if (p.getItem() != null) System.out.println("sssp slot:"+p.getSlot()+" item:"+p.getItem().getId());
-			if (p.getWindowId() == 0) {
-				client.playerInventory.setSlot(p.getSlot(), p.getItem());
-				//System.out.println(p.getSlot()+" "+p.getItem());
-			}
-		} else if (receiveEvent.getPacket() instanceof ServerOpenWindowPacket) {
-			
-		} else if (receiveEvent.getPacket() instanceof ServerWindowPropertyPacket) {
-			
+			//if (client.crafter.windowType != null) client.playerInventory.setSlot(p.getSlot()-Main.getMCData().slotMultipiler.get(client.crafter.windowType), p.getItem());
+			/*else*/client.playerInventory.setSlot(p.getSlot(), p.getItem());
+			//if (p.getItem() != null) System.out.println("sssp slot:"+p.getSlot()+ " item:"+Main.getMCData().items.get(p.getItem().getId()).name);
 		}
 	}
 }

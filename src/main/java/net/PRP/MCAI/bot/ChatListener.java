@@ -175,7 +175,7 @@ public class ChatListener extends SessionAdapter {
 					} else if (command.get(0).equalsIgnoreCase("isavoid")) {
 						BotU.chat(client, VectorUtils.BTavoid(new Vector3D(Integer.parseInt(command.get(1)),Integer.parseInt(command.get(2)),Integer.parseInt(command.get(3))).getBlock(client).type)+"");
 					} else if (command.get(0).equalsIgnoreCase("moveinvtest")) {
-						client.crafter.fromSlotToSlot(36,37,0);
+						client.crafter.fromSlotToSlot(36,37);
 					} else if (command.get(0).equalsIgnoreCase("craft")) {
 						client.crafter.setup(command.get(1), null);
 					}
