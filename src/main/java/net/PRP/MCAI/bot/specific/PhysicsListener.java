@@ -22,6 +22,7 @@ public class PhysicsListener extends SessionAdapter {
     private float beforePitch;
 	private Bot client;
 	private Vector3D vel = new Vector3D(0,0,0);
+	public int sleepticks = 0;
 	
 	public PhysicsListener(Bot client) {
 		this.client = client;
@@ -34,29 +35,29 @@ public class PhysicsListener extends SessionAdapter {
         } 
 	}
 	
-	/*@Override
-    public void disconnected(DisconnectedEvent event) {
-		this.PhysicsAllowed = false;
-		this.Accepted = false;
-	}*/
-	
 	private void PhysicsUpdate() {
+		if (this.sleepticks > 0) {
+			this.sleepticks--;
+			return;
+		}
 		//System.out.println(client.isOnline()+" "+ (client.pathfinder.state == State.WALKING && client.pathfinder.sleepticks == 0));
         if (!client.isOnline() || (client.pathfinder.state == State.WALKING && client.pathfinder.sleepticks == 0))
             return;
+        
         Block blockUnder = client.getPositionInt().down().getBlock(client);
         int slowFalling = 0;//client.effects.slowFalling
         double gravityMultiplier = (vel.y <= 0 && slowFalling > 0) ? physics.slowFalling : 1;
-        //System.out.println(blockUnder.id);
         if (blockUnder.isAvoid()) {
-        	
 	        	client.onGround = false;
 	        	vel.y -= physics.gravity * gravityMultiplier;
 	        	vel.y *= physics.airdrag;
+	        	if (!client.getPosition().add(vel).getBlock(client).isAvoid()) {
+	        		vel.y = -0.5;
+	        	}
 	        	if (client.getPosX() != ((int)client.getPosX()+0.5) || client.getPosZ() != ((int)client.getPosZ()+0.5)) BotU.calibratePosition(client);
         	
         } else if (client.getPositionInt().getBlock(client).isLiquid()) {
-        	
+
         	if (blockUnder.isLiquid()) {
         		
 		    		//double acceleration = physics.liquidAcceleration;
@@ -79,27 +80,27 @@ public class PhysicsListener extends SessionAdapter {
         	}
         	
         } else if (blockUnder.isLiquid()) {
-        	
 	        	double inertia = client.isInWater() ? physics.waterInertia : physics.lavaInertia;
 	    		vel.y *= inertia;
 	    		vel.y -= (client.isInWater() ? physics.waterGravity : physics.lavaGravity) * gravityMultiplier;
     		
-        } else if (client.posY > MathU.Truncate(client.posY)) {
-        	
-        	vel.y = 0;
-        	client.onGround = true;
-        	client.setPosY(MathU.Truncate(client.posY));
+        } else if (blockUnder.ishard()) {
+        	if (client.posY > MathU.Truncate(client.posY)) {
+        		vel.y = 0;
+            	client.setPosY(MathU.Truncate(client.posY));
+        	} else {
+        		client.onGround = true;
+        	}
         }
-        
+        //System.out.println("pos: "+client.getPosition().toString()+" vel: "+vel.toString()+" onGround:"+client.onGround);
         if (vel.x == 0 && vel.y == 0 && vel.z == 0) return;
         client.setposto(client.getPosition().add(vel));
-        //System.out.println(vel.toString());
     }
 	
 	public void tick() {
 		if (!client.isOnline() || !client.isGameReady()) return;
-		Vector3D nowPos = client.getPosition();
 		PhysicsUpdate();
+		Vector3D nowPos = client.getPosition();
 		float nowYaw = client.getYaw();
 	    float nowPitch = client.getPitch();
 	    if (before == null) return;

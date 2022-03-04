@@ -9,7 +9,9 @@ import com.github.steveice10.mc.protocol.packet.ingame.server.entity.ServerEntit
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.ServerEntityRotationPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.ServerEntityTeleportPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.spawn.ServerSpawnEntityPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.server.entity.spawn.ServerSpawnExpOrbPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.spawn.ServerSpawnLivingEntityPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.server.entity.spawn.ServerSpawnPaintingPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.spawn.ServerSpawnPlayerPacket;
 import com.github.steveice10.packetlib.event.session.PacketReceivedEvent;
 import com.github.steveice10.packetlib.event.session.SessionAdapter;
@@ -63,6 +65,14 @@ public class EntityListener extends SessionAdapter {
                 client.getWorld().Entites.put(p.getEntityId(), new Entity(p.getEntityId(), p.getUuid(), p.getType(), new Vector3D(p.getX(), p.getY(), p.getZ()), p.getYaw(), p.getPitch()));
 
                 // System.out.println("SpawnEntityLIv: " + p.getEntityId());
+            } else if (event.getPacket() instanceof ServerSpawnExpOrbPacket) {
+            	final ServerSpawnExpOrbPacket p = (ServerSpawnExpOrbPacket) event.getPacket();
+            	client.getWorld().Entites.put(p.getEntityId(), new Entity(p.getEntityId(), new UUID(0L, 0L), EntityType.EXPERIENCE_ORB, new Vector3D(p.getX(), p.getY(), p.getZ()), 0, 0));
+            
+            } else if (event.getPacket() instanceof ServerSpawnPaintingPacket) {
+            	final ServerSpawnPaintingPacket p = (ServerSpawnPaintingPacket) event.getPacket();
+            	client.getWorld().Entites.put(p.getEntityId(), new Entity(p.getEntityId(), p.getUuid(), EntityType.PAINTING, new Vector3D(p.getPosition().getX(), p.getPosition().getY(), p.getPosition().getZ()), 0, 0));
+            
             } else if (event.getPacket() instanceof ServerEntityDestroyPacket) {
                 final ServerEntityDestroyPacket p = event.getPacket();
                 for (int i : p.getEntityIds()) {

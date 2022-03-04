@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
+import com.github.steveice10.mc.protocol.data.game.world.block.BlockFace;
+import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerPlaceBlockPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerChatPacket;
 import com.github.steveice10.packetlib.event.session.PacketReceivedEvent;
 import com.github.steveice10.packetlib.event.session.SessionAdapter;
@@ -27,6 +30,7 @@ public class ChatListener extends SessionAdapter {
 		this.client = client;
 	}
 	
+	@SuppressWarnings("deprecation")
 	@Override
     public void packetReceived(PacketReceivedEvent receiveEvent) {
 		if (receiveEvent.getPacket() instanceof ServerChatPacket) {
@@ -99,7 +103,7 @@ public class ChatListener extends SessionAdapter {
 					} else if (command.get(0).equalsIgnoreCase("setslot")) {
 						BotU.SetSlot(client, Integer.parseInt(command.get(1)));
 					} else if (command.get(0).equalsIgnoreCase("youpos")) {
-						BotU.chat(client, client.getPosition().toString());
+						BotU.chat(client, client.getPosition().toString()+" onGround:"+client.onGround);
 					} else if (command.get(0).equalsIgnoreCase("settoitem")) {
 						BotU.chat(client, client.setToSlotInHotbarWithItemId(Integer.parseInt(command.get(1))).toString());
 					} else if (command.get(0).equalsIgnoreCase("calcticks")) {
@@ -178,6 +182,15 @@ public class ChatListener extends SessionAdapter {
 						client.crafter.fromSlotToSlot(36,37);
 					} else if (command.get(0).equalsIgnoreCase("craft")) {
 						client.crafter.setup(command.get(1), null);
+					} else if (command.get(0).equalsIgnoreCase("rndwalk")) {
+						client.pathfinder.setup(VectorUtils.randomPointInRaduis(client, 25));
+					} else if (command.get(0).equalsIgnoreCase("facing")) {
+						BotU.LookHead(client, new Vector3D(Integer.parseInt(command.get(1)),Integer.parseInt(command.get(2)),Integer.parseInt(command.get(3))));
+					} else if (command.get(0).equalsIgnoreCase("placetest")) {
+						Vector3D aa = new Vector3D(Integer.parseInt(command.get(1)),Integer.parseInt(command.get(2)),Integer.parseInt(command.get(3)));
+						client.getSession().send(new ClientPlayerPlaceBlockPacket(aa.translate(), BlockFace.DOWN, Hand.MAIN_HAND, 0,0,0, false));
+					} else if (command.get(0).equalsIgnoreCase("place")) {
+						VectorUtils.placeBlockNear(client, command.get(1));
 					}
 				}
 			}).start();

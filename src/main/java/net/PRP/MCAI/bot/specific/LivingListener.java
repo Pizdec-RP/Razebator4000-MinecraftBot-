@@ -17,6 +17,7 @@ import net.PRP.MCAI.Main;
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.bot.pathfinder.AStar.State;
 import net.PRP.MCAI.bot.specific.BlockBreakManager.bbmct;
+import net.PRP.MCAI.bot.specific.Crafting.crState;
 import net.PRP.MCAI.data.Entity;
 import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.utils.*;
@@ -28,15 +29,14 @@ public class LivingListener extends SessionAdapter {
 	public raidState state = raidState.IDLE;
 	public Vector3D asd = Vector3D.ORIGIN;
 	public List<Vector3D> blacklist = new CopyOnWriteArrayList<>();
-	public boolean trusted = false;
+	public boolean trusted;
 	private int sleepticks = (int)Main.getsett("walkeverymilseconds") / 50;
 	public Integer enemy = null;
 	
 	public int tickstocheck = 0;
+	public short stage = 0;
 	
-	public List<EntityType> badentities = new ArrayList<>() {/**
-		 * 
-		 */
+	public List<EntityType> badentities = new ArrayList<>() {
 		private static final long serialVersionUID = -6373621458088442703L;
 
 	{
@@ -55,6 +55,7 @@ public class LivingListener extends SessionAdapter {
 		add(EntityType.VEX);
 		add(EntityType.VINDICATOR);
 	}};
+	int spamticks = 0;
 
 	public LivingListener(Bot client) {
         this.client = client;
@@ -62,7 +63,7 @@ public class LivingListener extends SessionAdapter {
     }
 	
 	public enum raidState {
-		IDLE, GOING, MINING, WAIT;
+		IDLE, GOING, MINING, CRAFTING, WAIT;
 	}
 	
 	@Override
@@ -71,35 +72,31 @@ public class LivingListener extends SessionAdapter {
         	if (firstJoin) return;
         	ThreadU.sleep((int) Main.getsett("timebeforeraidon"));
         	firstJoin = true;
-        	if ((boolean) Main.getsett("raidspam")) {
-				new Thread(()-> {
-					while (true) {
-						if (client.isOnline() && Main.pasti.size() > 0 && (boolean)Main.getsett("raidspam")) {
-	                        int rand = MathU.rnd(0, Main.pasti.size()-1);
-	                        String pasta = (String)Main.pasti.get(rand);
-	                        BotU.chat(this.client, pasta);
-	                        int sr = 1;
-	                        sr = (int) Main.getsett("spamrange");
-	                        ThreadU.sleep(sr);
-	                    } else {
-	                    	ThreadU.sleep(5000);
-	                    }
-					}
-				}).start();
-				
-			}
+        	spamticks = (int) Main.getsett("spamrange") / 50;
         } else if (receiveEvent.getPacket() instanceof ServerMapDataPacket) {
         	//final ServerMapDataPacket p = (ServerMapDataPacket) receiveEvent.getPacket();
         }
 	}
 	
+	@SuppressWarnings("serial")
 	public void tick() {
 		//try {
 			if (!firstJoin || !client.isOnline()) return;
+			
+			if ((boolean) Main.getsett("raidspam") && Main.pasti.size() > 0) {
+				spamticks--;
+				if (spamticks <= 0) {
+					spamticks =  (int) Main.getsett("spamrange") / 50;
+					int rand = MathU.rnd(0, Main.pasti.size()-1);
+	                String pasta = (String)Main.pasti.get(rand);
+	                BotU.chat(this.client, pasta);
+				}
+			}
+			
 			if (state == raidState.IDLE) {
 				if (!this.trusted) return;
 				if (client.pathfinder.state == State.WALKING) return;
-				
+				if (client.pvp.state != CombatState.END_COMBAT) return;
 				if (client.getPositionInt().getBlock(client).ishard()) {
 					state = raidState.MINING;
 					client.bbm.setup(client.getPositionInt());
@@ -109,19 +106,11 @@ public class LivingListener extends SessionAdapter {
 					client.bbm.setup(client.getPositionInt());
 					return;
 				}
-				
-				if (sleepticks > 0) {
-					sleepticks--;
-					return;
-				}
+				if (sleepticks > 0) {sleepticks--;return;}
 				if ((int)Main.getsett("walkeverymilseconds") >= 50) sleepticks = (int)Main.getsett("walkeverymilseconds") / 50;
-				if (client.pvp.state != CombatState.END_COMBAT) {
-					return;
-				}
+				
 				if ((int)Main.getsett("walkeverymilseconds") != 0) sleepticks = (int)Main.getsett("walkeverymilseconds") / 50;
 				
-				tickstocheck++; if (tickstocheck > 5) { tickstocheck = 0;
-					
 				Map<Integer, Entity> tempentities = client.getWorld().Entites;
 				for(Entry<Integer, Entity> entry : tempentities.entrySet()) {
 					badentities.forEach((entity)->{
@@ -136,23 +125,19 @@ public class LivingListener extends SessionAdapter {
 				}
 				
 				if (enemy != null) {
-					//System.out.println("5 "+tempentities.get(enemy).Position.toStringInt());
 					if (VectorUtils.sqrt(tempentities.get(enemy).Position, client.getPosition()) <= 4 && tempentities.get(enemy).alive == true) {
-					
-					client.pvp.pvp(enemy);
-					enemy = null;
-					return;
-				}}
-				
-				
-				
+						client.pvp.pvp(enemy);
+						enemy = null;
+						return;
+					}
+				}
 				for(Entry<Integer, Entity> entry : tempentities.entrySet()) {
 					if (entry.getValue().type == EntityType.PLAYER && entry.getValue().uuid != client.getUUID() && VectorUtils.equalsInt(entry.getValue().Position, client.getPositionInt())) {
-						Vector3D pos = VectorUtils.func_31(client, client.getPositionInt(), 5);
+						Vector3D pos = VectorUtils.func_31(client, client.getPositionInt(), (int)Main.getsett("maxpostoblock"));
 						client.pathfinder.setup(pos);
 						return;
 					}
-				}}
+				}
 				
 				if (client.ztp && VectorUtils.sqrt(client.getPositionInt(), client.targetpos) < client.targetradius) {
 					Vector3D pos = VectorUtils.func_31(client, client.targetpos, client.targetradius);
@@ -161,17 +146,198 @@ public class LivingListener extends SessionAdapter {
 			    	this.state = raidState.GOING;
 				} else {
 					if ((boolean) Main.getsett("mining")) {
-						state = raidState.WAIT;
-						Vector3D block;
-						if ((boolean) Main.getsett("iol")) {
-							@SuppressWarnings("unchecked")
-							List<Integer> d1 = (ArrayList<Integer>)Main.getsett("minertargetid");
-							block = VectorUtils.findNearestBlockByArrayId(client, d1, this.blacklist);
-							if (block == null) block = VectorUtils.func_1488(client, d1, this.blacklist);
-						} else {
-							@SuppressWarnings("unchecked")
-							List<String> d2 = (ArrayList<String>)Main.getsett("minetargetnames");
-							block = VectorUtils.func_32(client, d2, this.blacklist);
+						Vector3D block = null;
+						
+						if (!client.playerInventory.contain("stone_axe") && (boolean) Main.getsett("dbc")) {
+							System.out.println(1);
+							//BotU.chat(client, "no axe");
+							if (!client.playerInventory.contain("cobblestone", 9)) {
+								System.out.println(2);
+								
+								if (!client.playerInventory.contain("pickaxe")) {
+									System.out.println(3);
+									
+									if (!client.playerInventory.contain("planks", 12)) {
+										System.out.println(4);
+										if (!client.playerInventory.contain("log", 4)) {
+											System.out.println(5);
+											block = VectorUtils.func_32(client, new CopyOnWriteArrayList<>() {{add("log");}}, this.blacklist);
+										} else {
+											System.out.println(6);
+											client.crafter.setup("planks", null);
+											state = raidState.CRAFTING;
+											return;
+										}
+									} else {
+										System.out.println(7);
+										if (!client.playerInventory.contain("stick", 2)) {
+											System.out.println(8);
+											if (!client.playerInventory.contain("planks", 4)) {
+												System.out.println(9);
+												if (!client.playerInventory.contain("log", 3)) {
+													System.out.println(10);
+													block = VectorUtils.func_32(client, new CopyOnWriteArrayList<>() {{add("log");}}, this.blacklist);
+												} else {
+													System.out.println(11);
+													client.crafter.setup("planks", null);
+													state = raidState.CRAFTING;
+													return;
+												}
+											} else {
+												System.out.println(12);
+												client.crafter.setup("sticks", null);
+												state = raidState.CRAFTING;
+												return;
+											}
+										} else {
+											System.out.println(13);
+											//--------------
+											block = VectorUtils.func_32(client, new CopyOnWriteArrayList<>() {{add("crafting");}}, this.blacklist, 5);
+											if (block == null) {
+												System.out.println(14);
+												if (client.playerInventory.contain("crafting_table")) {
+													block = VectorUtils.placeBlockNear(client, "crafting_table").pos;
+													client.crafter.setup("wooden_pickaxe", block);
+													state = raidState.CRAFTING;
+													return;
+												} else {
+													System.out.println(15);
+													if (!client.playerInventory.contain("planks", 8)) {
+														if (!client.playerInventory.contain("log", 4)) {
+															System.out.println(16);
+															block = VectorUtils.func_32(client, new CopyOnWriteArrayList<>() {{add("log");}}, this.blacklist);
+														} else {
+															System.out.println(17);
+															client.crafter.setup("planks", null);
+															state = raidState.CRAFTING;
+															return;
+														}
+													} else {
+														System.out.println(18);
+														client.crafter.setup("bench", null);
+														state = raidState.CRAFTING;
+														return;
+													}
+												}
+											} else {
+												System.out.println(19);
+												if (VectorUtils.sqrt(block, client.getEyeLocation()) <= (int)Main.getsett("maxpostoblock")) {
+													client.crafter.setup("wooden_pickaxe", block);
+													state = raidState.CRAFTING;
+													return;
+												} else {
+													System.out.println(20);
+													Vector3D pos = VectorUtils.func_31(client, block, (int)Main.getsett("maxpostoblock"));
+											    	if (pos == null) {
+											    		this.blacklist.add(block);
+											    		state = raidState.IDLE;
+											    		return;
+											    	}
+											    	this.asd = block;
+											    	if (!client.pathfinder.testForPath(pos)) blacklist.add(block);
+											    	client.pathfinder.setup(pos);
+											    	this.state = raidState.GOING;
+											    	return;
+												}
+											}
+											//--------------
+										}
+										
+									}
+									
+								} else {
+									System.out.println(22);
+									block = VectorUtils.func_32(client, new CopyOnWriteArrayList<>() {{add("stone");}}, this.blacklist);
+									System.out.println(block.toString());
+								}
+								
+								
+							} else if (!client.playerInventory.contain("stick", 8)) {
+								System.out.println(23);
+								//---------------------------------------------------
+								if (!client.playerInventory.contain("planks", 6)) {
+									System.out.println(24);
+									if (!client.playerInventory.contain("log", 5)) {
+										System.out.println(25);
+										block = VectorUtils.func_32(client, new CopyOnWriteArrayList<>() {{add("log");}}, this.blacklist);
+									} else {
+										System.out.println(26);
+										client.crafter.setup("planks", null);
+										state = raidState.CRAFTING;
+										return;
+									}
+								} else {
+									System.out.println(27);
+									client.crafter.setup("sticks", null);
+									state = raidState.CRAFTING;
+									return;
+								}
+								
+							} else {
+								System.out.println(28);
+								block = VectorUtils.func_32(client, new CopyOnWriteArrayList<>() {{add("crafting");}}, this.blacklist);
+								if (block == null) {
+									System.out.println(29);
+									if (!client.playerInventory.contain("crafting")) {
+										block = VectorUtils.placeBlockNear(client, "crafting_table").pos;
+										client.crafter.setup("stone_axe", block);
+										state = raidState.CRAFTING;
+										return;
+									} else {
+										System.out.println(30);
+										if (!client.playerInventory.contain("planks", 8)) {
+											if (!client.playerInventory.contain("log", 3)) {
+												block = VectorUtils.func_32(client, new CopyOnWriteArrayList<>() {{add("log");}}, this.blacklist);
+											} else {
+												System.out.println(31);
+												client.crafter.setup("planks", null);
+												state = raidState.CRAFTING;
+												return;
+											}
+										} else {
+											System.out.println(32);
+											client.crafter.setup("bench", null);
+											state = raidState.CRAFTING;
+											return;
+										}
+									}
+								} else {
+									System.out.println(33);
+									if (VectorUtils.sqrt(block, client.getEyeLocation()) <= (int)Main.getsett("maxpostoblock")) {
+										client.crafter.setup("stone_axe", block);
+										state = raidState.CRAFTING;
+										return;
+									} else {
+										System.out.println(34);
+										Vector3D pos = VectorUtils.func_31(client, block, (int)Main.getsett("maxpostoblock"));
+								    	if (pos == null) {
+								    		System.out.println(35);
+								    		this.blacklist.add(block);
+								    		state = raidState.IDLE;
+								    		return;
+								    	}
+								    	System.out.println(36);
+								    	this.asd = block;
+								    	if (!client.pathfinder.testForPath(pos)) blacklist.add(block);
+								    	client.pathfinder.setup(pos);
+								    	this.state = raidState.GOING;
+								    	return;
+									}
+								}
+							}
+						}
+						
+						if (block == null) {
+							if ((boolean) Main.getsett("iol")) {
+								@SuppressWarnings("unchecked")
+								List<Integer> d1 = (ArrayList<Integer>)Main.getsett("minertargetid");
+								block = VectorUtils.findNearestBlockByArrayId(client, d1, this.blacklist);
+								if (block == null) block = VectorUtils.func_1488(client, d1, this.blacklist);
+							} else {
+								@SuppressWarnings("unchecked")
+								List<String> d2 = (ArrayList<String>)Main.getsett("minetargetnames");
+								block = VectorUtils.func_32(client, d2, this.blacklist);
+							}
 						}
 						if (block == null) {//no one block founded
 							for (Bot cli : Main.bots) {
@@ -185,34 +351,51 @@ public class LivingListener extends SessionAdapter {
 								}
 							}
 							//i dont know what to do
-							Vector3D to = VectorUtils.func_31(client, client.getPositionInt(), 8);
+							Vector3D to = VectorUtils.randomPointInRaduis(client, 25);
+							if (to == null) to = VectorUtils.func_31(client, client.getPositionInt(), 8);
 							this.sleepticks = 100;
-							client.pathfinder.setup(to);
+							if (to != null) client.pathfinder.setup(to);
 							asd = null;
 							this.state = raidState.GOING;
 							return;
 						}
+						System.out.println(40);
 						if (block.getBlock(client).touchLiquid(client)) {
+							System.out.println(41);
 							this.blacklist.add(block);
 							state = raidState.IDLE;
 							return;
 						}
-						if (VectorUtils.sqrt(client.getPosition(), block) <= 5) {
+						if (VectorUtils.sqrt(client.getEyeLocation(), block) <= (int)Main.getsett("maxpostoblock")) {
+							System.out.println(42);
 							client.bbm.setup(block);
 							this.state = raidState.MINING;
+							return;
 					    } else {
-					    	Vector3D pos = VectorUtils.func_31(client, block, 5);
+					    	System.out.println(VectorUtils.sqrt(client.getEyeLocation(), block));
+					    	System.out.println(43);
+					    	Vector3D pos = VectorUtils.func_31(client, block, (int)Main.getsett("maxpostoblock"));
 					    	if (pos == null) {
+					    		System.out.println(44);
 					    		this.blacklist.add(block);
 					    		state = raidState.IDLE;
 					    		return;
 					    	}
+					    	System.out.println(45);
 					    	this.asd = block;
+					    	if (!client.pathfinder.testForPath(pos)) {
+					    		blacklist.add(block);
+					    		System.out.println(46);
+					    	}
 					    	client.pathfinder.setup(pos);
 					    	this.state = raidState.GOING;
+					    	return;
 					    }
 					}
 				}
+				
+				
+				
 			} else if (state == raidState.GOING) {
 				if (client.pathfinder.state == State.FINISHED) {
 					if (asd == null) {
@@ -234,6 +417,11 @@ public class LivingListener extends SessionAdapter {
 						this.blacklist.add(client.bbm.getBlockPos());
 						this.state = raidState.IDLE;
 					}
+				}
+			} else if (state == raidState.CRAFTING) {
+				if (client.crafter.state == crState.ENDED) {
+					this.asd = null;
+					this.state = raidState.IDLE;
 				}
 			}
 		//} catch (Exception e) {

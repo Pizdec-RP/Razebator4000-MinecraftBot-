@@ -11,12 +11,13 @@ import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlaye
 //import com.github.steveice10.mc.protocol.packet.ingame.client.player.
 import georegression.struct.point.Point3D_F64;
 import georegression.struct.point.Vector3D_F64;
+import net.PRP.MCAI.Main;
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.data.Vector3D;
 public class BotU {
 	//private HashMap<ChunkCoordinates, Column> columns = new HashMap<>();
 	public static void log(String f) {
-    	System.out.println("[log] "+f);
+    	if (Main.debug) System.out.println("[log] "+f);
     }
 	public static void chat (Bot client, String text) {
 		client.getSession().send(new ClientChatPacket(text));
@@ -311,21 +312,17 @@ public class BotU {
 	
 	public static void LookHead(Bot client, Vector3D p) {
 		if (p == null) return;
-		LookHead(client, new Point3D_F64(p.x,p.y,p.z));
+		LookHead(client, new Point3D_F64(Math.floor(p.x)+0.5,Math.floor(p.y)+0.5,Math.floor(p.z)+0.5));
 	}
 	
 	public static void LookHead(Bot client, Point3D_F64 position) {
-		int y = (int) (position.getY() - 1);
-		position.setY(y);
-		Point3D_F64 PlayerPosition = new Point3D_F64(client.posX, client.posY, client.posZ);
-        if (!position.equals(PlayerPosition)) {
-            Vector3D_F64 vect = new Vector3D_F64(PlayerPosition, position);
-            vect.normalize();
-            double yaw = Math.toDegrees(Math.atan2(vect.z, vect.x)) - 90;
-            double pitch = Math.toDegrees(Math.asin(-vect.y));
-            client.setYaw((float) yaw);
-            client.setPitch((float) pitch);
-        } else {log("hueta");}
+		Point3D_F64 PlayerPosition = new Point3D_F64(client.getEyeLocation().x, client.getEyeLocation().y, client.getEyeLocation().z);
+        Vector3D_F64 vect = new Vector3D_F64(PlayerPosition, position);
+        vect.normalize();
+        double yaw = Math.toDegrees(Math.atan2(vect.z, vect.x)) - 90;
+        double pitch = Math.toDegrees(Math.asin(-vect.y));
+        client.setYaw((float) yaw);
+        client.setPitch((float) pitch);
     }
 	
 }

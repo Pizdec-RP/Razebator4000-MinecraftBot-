@@ -37,17 +37,21 @@ public class Crafting extends SessionAdapter {
 	public crState state = crState.ENDED;
 	public int currentWindowId = 0;
 	public WindowType windowType = null;
-	public int actionId = 0;
+	public int actionId = 1;
+	public int lastactionid = 0;
 	public Vector3D craftingBlock = null;
 	public craftingRecepie recepie = null;
-	public ItemStack itemOnMouse = null;
 	public Map<String, craftingRecepie> Recepies = new HashMap<>() {
 	private static final long serialVersionUID = -6379467632960849503L;{
 		put("planks", new craftingRecepie("inv", "log-.-.-.", new String[] {"log-1"}));
 		put("bench",  new craftingRecepie("inv", "planks-planks-planks-planks", new String[] {"planks-4"}));
+		put("crafting_table",  new craftingRecepie("inv", "planks-planks-planks-planks", new String[] {"planks-4"}));
+		put("sticks",  new craftingRecepie("inv", "planks-.-planks-.", new String[] {"planks-4"}));
 		put("stick",  new craftingRecepie("inv", "planks-.-planks-.", new String[] {"planks-4"}));
 		put("torch",  new craftingRecepie("inv", "coal-.-stick-.", new String[] {"coal-1","stick-1"}));
 		put("wooden_pickaxe",  new craftingRecepie("ct", "planks-planks-planks-.-stick-.-.-stick-.", new String[] {"planks-3","stick-2"}));
+		put("stone_pickaxe",  new craftingRecepie("ct", "cobblestone-cobblestone-cobblestone-.-stick-.-.-stick-.", new String[] {"cobblestone-3","stick-2"}));
+		put("stone_axe",  new craftingRecepie("ct", ".-cobblestone-cobblestone-.-stick-cobblestone-.-stick-.", new String[] {"cobblestone-3","stick-2"}));
 	}};
 	public int plitstate = 0;
 	public int timeout = 0;
@@ -78,6 +82,9 @@ public class Crafting extends SessionAdapter {
 			//System.out.println("sopw "+p.getType());
 			currentWindowId = p.getWindowId();
 			windowType = p.getType();
+			if (state == crState.ENDED) {
+				client.getSession().send(new ClientCloseWindowPacket(this.currentWindowId));
+			}
 			
 		} else if (receiveEvent.getPacket() instanceof ServerWindowPropertyPacket) {
 			//final ServerWindowPropertyPacket p = (ServerWindowPropertyPacket) receiveEvent.getPacket();
@@ -85,6 +92,8 @@ public class Crafting extends SessionAdapter {
 			
 		} else if (receiveEvent.getPacket() instanceof ServerConfirmTransactionPacket) {
             final ServerConfirmTransactionPacket p = (ServerConfirmTransactionPacket) receiveEvent.getPacket();
+            System.out.println("confirmed: "+p.getActionId()+"/"+actionId);
+            lastactionid = p.getActionId();
             client.getSession().send(new ClientConfirmTransactionPacket(p.getWindowId(), p.getActionId(), true));
 		} else if (receiveEvent.getPacket() instanceof ServerCloseWindowPacket) {
 			final ServerCloseWindowPacket p = (ServerCloseWindowPacket) receiveEvent.getPacket();
@@ -97,9 +106,19 @@ public class Crafting extends SessionAdapter {
 	public void setup(String item, Vector3D cb) {
 		if (state != crState.ENDED) throw new ConcurrentModificationException("craft already running");
 		this.recepie = Recepies.get(item);
-		this.craftingBlock = cb;
+		if (!recepie.isInventoried()) {
+			this.craftingBlock = cb;
+		} else {
+			if (Main.debug) System.out.println("d palette:\n"
+					+ "#####\n"
+					+ "#"+slotstring(1)+"#"+slotstring(2)+"#\n"
+					+ "##### ==> "+slotstring(0)+"\n"
+					+ "#"+slotstring(3)+"#"+slotstring(4)+"#\n"
+					+ "#####"
+					);
+		}
 		this.state = crState.START;
-		if (Main.debug) System.out.println("crafitng started");
+		if (Main.debug) System.out.println("crafitng started: "+item);
 	}
 	
 	public void finish() {
@@ -112,7 +131,18 @@ public class Crafting extends SessionAdapter {
 		timeout = 0;
 	}
 	
+	public void finish(String reason) {
+		if (Main.debug) System.out.println("crafitng finished: "+reason);
+		if (windowType != null) client.getSession().send(new ClientCloseWindowPacket(this.currentWindowId));
+		recepie = null;
+		craftingBlock = null;
+		state = crState.ENDED;
+		plitstate = 0;
+		timeout = 0;
+	}
+	
 	public int nextActionId() {
+		if (actionId >= 100) actionId = 0;
 		return actionId++;
 	}
 	
@@ -157,9 +187,16 @@ public class Crafting extends SessionAdapter {
 		}
 	}
 	
+	public int i(int slot) {
+		if (client.playerInventory.getSlot(slot) == null) {
+			return 0;
+		} else {
+			return client.playerInventory.getSlot(slot).getId();
+		}
+	}
+	
 	public void fromSlotToSlot(int from, int to) {
-		//System.out.println("from:"+from+" to:"+to);
-		//if (client.playerInventory.getSlot(from) == null) System.out.println("pizdec");
+		System.out.println(from+"|"+i(from)+" >>> "+to+"|"+i(to));
 		client.getSession().send(new ClientWindowActionPacket(client.crafter.currentWindowId,
 			nextActionId(),
 			from,
@@ -195,147 +232,164 @@ public class Crafting extends SessionAdapter {
 	
 	@SuppressWarnings("deprecation")
 	public void tick() {
-		if (state == crState.START) {
-			if (recepie == null) {
-				finish();
-				return;
-			} else if (recepie.isInventoried()) {
-				plitstate = 8;
-				for (String item : recepie.needItems) {
-					if (!client.playerInventory.contain(item.split("-")[0], Integer.parseInt(item.split("-")[1]))) {
-						finish();
-						return;
+		try {
+			if (state == crState.START) {
+				if (recepie == null) {
+					finish("nullrecepie");
+					return;
+				} else if (recepie.isInventoried()) {
+					plitstate = 8;
+					for (String item : recepie.needItems) {
+						if (!client.playerInventory.contain(item.split("-")[0], Integer.parseInt(item.split("-")[1]))) {
+							finish("noitems");
+							return;
+						}
 					}
-				}
-				//all OK
-				state = crState.PLACINGITEMS;
-			} else if (recepie.isWorkbenched()) {
-				plitstate = 18;
-				for (String item : recepie.needItems) {
-					if (!client.playerInventory.contain(item.split("-")[0], Integer.parseInt(item.split("-")[1]))) {
-						finish();
-						return;
+					//all OK
+					//ThreadU.sleep(20);
+					state = crState.PLACINGITEMS;
+				} else if (recepie.isWorkbenched()) {
+					plitstate = 18;
+					for (String item : recepie.needItems) {
+						if (!client.playerInventory.contain(item.split("-")[0], Integer.parseInt(item.split("-")[1]))) {
+							finish("noitems");
+							return;
+						}
 					}
+					state = crState.OPENINGINV;
 				}
-				state = crState.OPENINGINV;
-			}
-		} else if (state == crState.OPENINGINV) {
-			if (recepie.isWorkbenched()) {
-				if (craftingBlock == null) {
-					craftingBlock = findblockByName(client,151);
+			} else if (state == crState.OPENINGINV) {
+				if (recepie.isWorkbenched()) {
 					if (craftingBlock == null) {
+						craftingBlock = findblockByName(client,151);
+						if (craftingBlock == null) {
+							finish();
+							return;
+						} else {
+							return;
+						}
+					}
+					if (VectorUtils.sqrt(client.getEyeLocation(), craftingBlock) <= (int)Main.getsett("maxpostoblock")) {
+						BotU.LookHead(client, craftingBlock);
+						client.getSession().send(new ClientPlayerPlaceBlockPacket(craftingBlock.translate(), BlockFace.UP, Hand.MAIN_HAND, 0.5F, 1F, 0.5F, false));
+						client.getSession().send(new ClientPlayerSwingArmPacket(Hand.MAIN_HAND));
+						state = crState.WAITFOROPEN;
+					} else {
+						//System.out.println(craftingBlock+" -5 sqrt:"+VectorUtils.sqrt(client.getPosition(), craftingBlock));
+						finish("craftblock_too_far");
+						return;
+					}
+				}
+				
+			} else if (state == crState.WAITFOROPEN) {
+				if (recepie.isInventoried()) {
+					//dammnnn wtf
+				} if (recepie.isWorkbenched()) {
+					if (windowType == WindowType.CRAFTING) {
+						state = crState.PLACINGITEMS;
+					} else {
+						timeout++;
+						if (timeout > 200) {
+							finish("waitforinventory_timeout");
+						}
+					}
+				}
+				
+			} else if (state == crState.PLACINGITEMS) {
+				
+				if (recepie.isInventoried()) {
+					if (plitstate <= 0) {
+						state = crState.GETTINGCRAFTED;
+						return;
+					}
+					if (plitstate%2 == 1) {
+						plitstate--;
+					} else {
+						int i = plitstate / 2;
+						if (!recepie.recepie.split("-")[i-1].equalsIgnoreCase(".")) fromSlotToSlot(client.playerInventory.getSlotWithItem(recepie.recepie.split("-")[i-1]), i);
+						plitstate--;
+					}
+				} else if (recepie.isWorkbenched()) {
+					if (plitstate <= 0) {
+						state = crState.GETTINGCRAFTED;
+						return;
+					}
+					if (plitstate%2 == 1) {
+						plitstate--;
+					} else {
+						int i = plitstate / 2;
+						System.out.println(client.playerInventory.getSlotWithItem(recepie.recepie.split("-")[i-1]));
+						if (!recepie.recepie.split("-")[i-1].equalsIgnoreCase(".")) fromSlotToSlot(client.playerInventory.getSlotWithItem(recepie.recepie.split("-")[i-1]), i);
+						plitstate--;
+					}
+				}
+				
+			} else if (state == crState.GETTINGCRAFTED) {
+				if (recepie.isInventoried()) {
+					if (client.playerInventory.getSlot(0) != null) {
+						ShiftClick(0);
+						finish("normal");
+						return;
+					} else {
+						timeout++;
+						if (timeout > 200) {
+							finish("getcrafted_timeout, palette:\n"
+									+ "#####\n"
+									+ "#"+slotstring(1)+"#"+slotstring(2)+"#\n"
+									+ "##### ==> "+slotstring(0)+"\n"
+									+ "#"+slotstring(3)+"#"+slotstring(4)+"#\n"
+									+ "#####"
+									);
+							ShiftClick(1);
+							ThreadU.sleep(50);
+							ShiftClick(2);
+							ThreadU.sleep(50);
+							ShiftClick(3);
+							ThreadU.sleep(50);
+							ShiftClick(4);
+						}
+					}
+				} else if (recepie.isWorkbenched()) {
+					if (client.playerInventory.getSlot(0) != null) {
+						ShiftClick(0);
 						finish();
 						return;
 					} else {
-						return;
-					}
-				}
-				System.out.println("4");
-				if (VectorUtils.sqrt(client.getEyeLocation(), craftingBlock) < 5) {
-					BotU.LookHead(client, craftingBlock);
-					client.getSession().send(new ClientPlayerPlaceBlockPacket(craftingBlock.translate(), BlockFace.UP, Hand.MAIN_HAND, 0.5F, 1F, 0.5F, false));
-					client.getSession().send(new ClientPlayerSwingArmPacket(Hand.MAIN_HAND));
-					state = crState.WAITFOROPEN;
-				} else {
-					//System.out.println(craftingBlock+" -5 sqrt:"+VectorUtils.sqrt(client.getPosition(), craftingBlock));
-					finish();
-					return;
-				}
-			}
-			
-		} else if (state == crState.WAITFOROPEN) {
-			if (recepie.isInventoried()) {
-				//dammnnn wtf
-			} if (recepie.isWorkbenched()) {
-				if (windowType == WindowType.CRAFTING) {
-					state = crState.PLACINGITEMS;
-				} else {
-					timeout++;
-					if (timeout > 200) {
-						finish();
+						timeout++;
+						if (timeout > 200) {
+							ShiftClick(1);
+							ThreadU.sleep(20);
+							ShiftClick(2);
+							ThreadU.sleep(20);
+							ShiftClick(3);
+							ThreadU.sleep(20);
+							ShiftClick(4);
+							ThreadU.sleep(20);
+							ShiftClick(5);
+							ThreadU.sleep(20);
+							ShiftClick(6);
+							ThreadU.sleep(20);
+							ShiftClick(7);
+							ThreadU.sleep(20);
+							ShiftClick(8);
+							ThreadU.sleep(20);
+							ShiftClick(9);
+							//if (windowType != null) client.getSession().send(new ClientCloseWindowPacket(this.currentWindowId));
+							finish("getcrafted_timeout");
+						}
 					}
 				}
 			}
-			
-		} else if (state == crState.PLACINGITEMS) {
-			
-			if (recepie.isInventoried()) {
-				if (plitstate <= 0) {
-					state = crState.GETTINGCRAFTED;
-					return;
-				}
-				if (plitstate%2 == 1) {
-					plitstate--;
-				} else {
-					int i = plitstate / 2;
-					if (!recepie.recepie.split("-")[i-1].equalsIgnoreCase(".")) fromSlotToSlot(client.playerInventory.getSlotWithItem(recepie.recepie.split("-")[i-1]), i);
-					plitstate--;
-				}
-			} else if (recepie.isWorkbenched()) {
-				if (plitstate <= 0) {
-					state = crState.GETTINGCRAFTED;
-					return;
-				}
-				if (plitstate%2 == 1) {
-					plitstate--;
-				} else {
-					int i = plitstate / 2;
-					System.out.println(client.playerInventory.getSlotWithItem(recepie.recepie.split("-")[i-1]));
-					if (!recepie.recepie.split("-")[i-1].equalsIgnoreCase(".")) fromSlotToSlot(client.playerInventory.getSlotWithItem(recepie.recepie.split("-")[i-1]), i);
-					plitstate--;
-				}
-			}
-			
-		} else if (state == crState.GETTINGCRAFTED) {
-			if (recepie.isInventoried()) {
-				if (client.playerInventory.getSlot(0) != null) {
-					ShiftClick(0);
-					finish();
-					return;
-				} else {
-					timeout++;
-					if (timeout > 200) {
-						ShiftClick(1);
-						ThreadU.sleep(50);//tak nepravilno no mne pohuy
-						ShiftClick(2);
-						ThreadU.sleep(50);
-						ShiftClick(3);
-						ThreadU.sleep(50);
-						ShiftClick(4);
-						finish();
-					}
-				}
-			} else if (recepie.isWorkbenched()) {
-				if (client.playerInventory.getSlot(0) != null) {
-					ShiftClick(0);
-					finish();
-					return;
-				} else {
-					timeout++;
-					if (timeout > 200) {
-						ShiftClick(1);
-						ThreadU.sleep(20);
-						ShiftClick(2);
-						ThreadU.sleep(20);
-						ShiftClick(3);
-						ThreadU.sleep(20);
-						ShiftClick(4);
-						ThreadU.sleep(20);
-						ShiftClick(5);
-						ThreadU.sleep(20);
-						ShiftClick(6);
-						ThreadU.sleep(20);
-						ShiftClick(7);
-						ThreadU.sleep(20);
-						ShiftClick(8);
-						ThreadU.sleep(20);
-						ShiftClick(9);
-						//if (windowType != null) client.getSession().send(new ClientCloseWindowPacket(this.currentWindowId));
-						finish();
-					}
-				}
-			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			finish("unknownerror");
 		}
+	}
+	
+	public String slotstring(int slot) {
+		ItemStack s = client.playerInventory.getSlot(slot);
+		if (s == null) return ".";
+		return s.getId()+"";
 	}
 	
 	public Vector3D findblockByName(Bot client, int id) {
@@ -357,10 +411,10 @@ public class Crafting extends SessionAdapter {
     		for (int y1 = ys; y1 < yi; y1++) {
     			for (int x1 = xs; x1 < x+i; x1++) {
                     for (int z1 = zs; z1 < z+i; z1++) {
-                    	Vector3D a = new Vector3D(x1,y1,z1);
+                    	pos = new Vector3D(x1,y1,z1);
                     	//System.out.println(a.getBlock(client).id+" != "+id+" pos:"+a.toStringInt());
-                		if (a.getBlock(client) != null && a.getBlock(client).id == id) {
-                			positions.add(a);
+                		if (pos.getBlock(client) != null && pos.getBlock(client).id == id) {
+                			positions.add(pos);
                 		}
                     }
                 }

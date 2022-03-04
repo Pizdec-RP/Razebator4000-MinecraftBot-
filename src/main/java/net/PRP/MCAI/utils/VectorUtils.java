@@ -6,8 +6,13 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
+import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
+import com.github.steveice10.mc.protocol.data.game.world.block.BlockFace;
+import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerPlaceBlockPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerSwingArmPacket;
 import com.google.common.collect.AbstractIterator;
 
+import net.PRP.MCAI.Main;
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.data.Block;
@@ -28,7 +33,9 @@ public class VectorUtils {
 				normal.add(position);
 			}
 		}
-		if (normal.isEmpty()) return null;
+		if (normal.isEmpty()) {
+			normal.addAll(filterByRadius(getAllInBox(pos, radius),pos,radius));
+		}
 		return getNear(pos, normal);
 	}
 	
@@ -76,7 +83,7 @@ public class VectorUtils {
 	
 	public static boolean positionIsSafe(Vector3D pos, Bot client) {
 		boolean a = BTavoid(client.getWorld().getBlock(pos).type) && BTavoid(client.getWorld().getBlock(pos.add(0,1,0)).type) && icanstayhere(client.getWorld().getBlock(pos.add(0,-1,0)).type);
-		//System.out.println(pos+" avoid:"+a);
+		//System.out.println(pos+" is safe:"+a);
 		return a;
 	}
 	
@@ -113,14 +120,16 @@ public class VectorUtils {
         Vector3D minpos = null;
         List<Vector3D> temp = new ArrayList<>();
         for (Vector3D position : allPos) {
-        	double distance = sqrt(position, target);
-        	if (minpos == null) {
-        		minpos = position;
-        	} else {
-        		double distanceminpos = sqrt(minpos, target);
-        		if (distance < distanceminpos) {
-        			minpos = position;
-        		}
+        	if (!equalsInt(position, target)) {
+	        	double distance = sqrt(position, target);
+	        	if (minpos == null) {
+	        		minpos = position;
+	        	} else {
+	        		double distanceminpos = sqrt(minpos, target);
+	        		if (distance < distanceminpos) {
+	        			minpos = position;
+	        		}
+	        	}
         	}
         }
         temp.add(minpos);
@@ -159,9 +168,9 @@ public class VectorUtils {
 	
 	public static Vector3D findNearestBlockById(Bot client, int id) {
     	List<Vector3D> positions = new CopyOnWriteArrayList<>();
-    	int x = (int)client.getPosX();
-    	int y = (int)client.getPosY();
-    	int z = (int)client.getPosZ();
+    	int x = (int)client.getEyeLocation().getPosX();
+    	int y = (int)client.getEyeLocation().getPosY();
+    	int z = (int)client.getEyeLocation().getPosZ();
     	int radius = 30;
     	Vector3D pos = null;
     	for (int i = 1; i < radius; i++) {
@@ -209,11 +218,11 @@ public class VectorUtils {
 			}
 		}
 		if (blocks.isEmpty()) return null;
-		return getNearBlock(client.getPosition(), blocks);
+		return getNearBlock(client.getEyeLocation(), blocks);
 	}
 	
 	public static Vector3D func_32(Bot client, List<String> d2, List<Vector3D> blacklist) {
-		Vector3D tb = findblockByLOS(client, d2, blacklist);
+		Vector3D tb = findblockByLOS(client, d2, blacklist, 30);
 		if (tb != null) return tb;
 		
 		List<Block> blocks = new CopyOnWriteArrayList<>();
@@ -227,14 +236,112 @@ public class VectorUtils {
 			}
 		}
 		if (blocks.isEmpty()) return null;
-		return getNearBlock(client.getPosition(), blocks);
+		return getNearBlock(client.getEyeLocation(), blocks);
 	}
+	
+	public static Vector3D func_32(Bot client, List<String> d2, List<Vector3D> blacklist, int radius) {
+		Vector3D tb = findblockByLOS(client, d2, blacklist, radius);
+		if (tb != null) return tb;
+		
+		List<Block> blocks = new CopyOnWriteArrayList<>();
+		blocks.addAll(client.vis.getVisibleBlocks());
+		for (Block a : blocks) {
+			if (a.touchLiquid(client) || !d2.contains(a.getName())) {
+				blocks.remove(a);
+				client.rl.blacklist.add(a.pos);
+			} else if (blacklist.contains(a.pos)) {
+				blocks.remove(a);
+			}
+		}
+		if (blocks.isEmpty()) return null;
+		return getNearBlock(client.getEyeLocation(), blocks);
+	}
+	
+	public static Vector3D randomPointInRaduis(Bot client, int min) {
+		int tryy = 0;
+		while (true) {
+			tryy++;
+			if (tryy > 20) return null;
+			int max = client.getWorld().renderDistance*16;
+			int x;
+			if (MathU.rnd(0, 1) == 1) 
+				x = MathU.rnd(min, max);
+			else 
+				x = MathU.rnd(-min, -max);
+			int z;
+			if (MathU.rnd(0, 1) == 1) 
+				z = MathU.rnd(min, max);
+			else 
+				z = MathU.rnd(-min, -max);
+			Vector3D pos = new Vector3D(x+client.getPosX(), 256, z+client.getPosZ());
+			while (true) {
+				if (!pos.add(0,-1,0).getBlock(client).isAvoid() && positionIsSafe(pos, client) && client.pathfinder.testForPath(pos)) {
+					return pos;
+				}
+				pos = pos.add(0,-1,0);
+				if (pos.y < 0) break;
+			}
+		}
+	}
+	
+	@SuppressWarnings({ "deprecation", "serial" })
+	public static Block placeBlockNear(Bot client, String block) {
+		Vector3D pos = findPosForPlace(client);
+		if (client.playerInventory.hotbarContain(block, 1)) {
+			Integer slot = client.playerInventory.getHotbarContain(block, 1);
+			if (slot == null) return null;
+			BotU.SetSlot(client, slot-36);
+			client.getSession().send(new ClientPlayerSwingArmPacket(Hand.MAIN_HAND));
+			client.getSession().send(new ClientPlayerPlaceBlockPacket(pos.translate(), BlockFace.DOWN, Hand.MAIN_HAND, 0,0,0, false));
+			return pos.getBlock(client);
+		} else if (client.playerInventory.invContain(block, 1)) {
+			client.playerInventory.fromInventoryToHotbar(new CopyOnWriteArrayList<>() {{add(block);}}, 1);
+			ThreadU.sleep(10);
+			Integer slot = client.playerInventory.getHotbarContain(block, 1);
+			if (slot == null) return null;
+			BotU.SetSlot(client, slot-36);
+			client.getSession().send(new ClientPlayerSwingArmPacket(Hand.MAIN_HAND));
+			client.getSession().send(new ClientPlayerPlaceBlockPacket(pos.translate(), BlockFace.DOWN, Hand.MAIN_HAND, 0,0,0, false));
+			return pos.getBlock(client);
+		}
+		return null;
+	}
+	
+	public static Vector3D findPosForPlace(Bot client) {
+    	List<Vector3D> positions = new CopyOnWriteArrayList<>();
+    	Vector3D ps = client.getEyeLocation();
+    	int x = (int)ps.getPosX();
+    	int y = (int)ps.getPosY();
+    	int z = (int)ps.getPosZ();
+    	int radius = (int)Main.getsett("maxpostoblock");
+    	Vector3D pos = null;
+    	for (int i = 1; i <= radius; i++) {
+    		int xs = x-i;
+    		int ys = y-i;
+    		if (ys < 0) ys = 0;
+    		int yi = y+i;
+    		if (yi > 256) yi = 256;
+    		int zs = z-i;
+    		for (int y1 = ys; y1 < yi; y1++) {
+    			for (int x1 = xs; x1 < x+i; x1++) {
+                    for (int z1 = zs; z1 < z+i; z1++) {
+                    	pos = new Vector3D(x1,y1,z1);
+                		if (pos.getBlock(client) != null && pos.getBlock(client).id == 0 && pos.add(0, -1, 0).getBlock(client).ishard()) {
+                			positions.add(pos);
+                		}
+                    }
+                }
+            }
+    	}
+    	pos = VectorUtils.getNear(client.getPositionInt(),positions);
+    	return pos;
+    }
 	
 	public static Vector3D findNearestBlockByArrayId(Bot client, List<Integer> ids, List<Vector3D> blacklist) {
     	List<Vector3D> positions = new CopyOnWriteArrayList<>();
-    	int x = (int)client.getPosX();
-    	int y = (int)client.getPosY();
-    	int z = (int)client.getPosZ();
+    	int x = (int)client.getEyeLocation().getPosX();
+    	int y = (int)client.getEyeLocation().getPosY();
+    	int z = (int)client.getEyeLocation().getPosZ();
     	int radius = 30;
     	Vector3D pos = null;
     	for (int i = 1; i < radius; i++) {
@@ -272,12 +379,11 @@ public class VectorUtils {
     	return pos;
     }
 	
-	public static Vector3D findblockByLOS(Bot client, List<String> nms, List<Vector3D> blacklist) {
+	public static Vector3D findblockByLOS(Bot client, List<String> nms, List<Vector3D> blacklist, int radius) {
     	List<Vector3D> positions = new CopyOnWriteArrayList<>();
-    	int x = (int)client.getPosX();
-    	int y = (int)client.getPosY();
-    	int z = (int)client.getPosZ();
-    	int radius = 30;
+    	int x = (int)client.getEyeLocation().getPosX();
+    	int y = (int)client.getEyeLocation().getPosY();
+    	int z = (int)client.getEyeLocation().getPosZ();
     	Vector3D pos = null;
     	for (int i = 1; i < radius; i++) {
     		int xs = x-i;
@@ -408,6 +514,9 @@ public class VectorUtils {
         };
     }
 	
+	/**
+	 * абсолютно ненужные и допотопные методы но пусть останутся
+	 */
 	public static Vector3D botCanTouchBlockAt(Bot client, Vector3D blockPos) {
     	List<Vector3D> positions = new CopyOnWriteArrayList<>();
     	if (BTavoid(new Vector3D(blockPos.getX(),blockPos.getY()+1,blockPos.getZ()).getBlock(client).type)) {

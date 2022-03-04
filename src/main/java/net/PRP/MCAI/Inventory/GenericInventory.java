@@ -48,14 +48,52 @@ public class GenericInventory {
 		return false;
 	}
 	
-	public Integer getRandomEmptySlot() {
-		List<Integer> temp = new ArrayList<>();
-		for (int i = 9; i <= 44; i++) {
-			if (slots.get(i) == null || !slots.containsKey(i)) {
-				temp.add(i);
+	public boolean invContain(String name, int count) {
+		for(Entry<Integer, ItemStack> entry : getInventory().entrySet()) {
+			if (entry.getValue() != null) if (Main.getMCData().items.get(entry.getValue().getId()).name.contains(name) && entry.getValue().getAmount() >= count) {
+				return true;
 			}
 		}
-		if (temp.size() == 0) return null;
+		return false;
+	}
+	
+	public boolean hotbarContain(String name, int count) {
+		for(Entry<Integer, ItemStack> entry : getHotbar().entrySet()) {
+			if (entry.getValue() != null) if (Main.getMCData().items.get(entry.getValue().getId()).name.contains(name) && entry.getValue().getAmount() >= count) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public Integer getHotbarContain(String name, int count) {
+		for(Entry<Integer, ItemStack> entry : getHotbar().entrySet()) {
+			if (entry.getValue() != null) if (Main.getMCData().items.get(entry.getValue().getId()).name.contains(name) && entry.getValue().getAmount() >= count) {
+				return entry.getKey();
+			}
+		}
+		return null;
+	}
+	
+	public boolean fromInventoryToHotbar(List<String> names, int count) {
+		Integer slotwithitem = getSlotsWithItem(getInventory(), names, count);
+		if (slotwithitem == null) return false;
+		client.crafter.fromSlotToSlotStack(slotwithitem, getRandomEmptySlot(getHotbar()));
+		return true;
+	}
+	
+	public Integer getRandomEmptySlot(Map<Integer,ItemStack> sts) {
+		List<Integer> temp = new ArrayList<>();
+		for (Entry<Integer, ItemStack> entry : sts.entrySet()) {
+			if (entry.getValue() == null) {
+				temp.add(entry.getKey());
+			}
+		}
+		if (temp.size() == 0) {
+			for (Entry<Integer, ItemStack> entry : sts.entrySet()) {
+				temp.add(entry.getKey());
+			}
+		}
 		return temp.get(MathU.rnd(0, temp.size()-1));
 	}
 	
@@ -77,8 +115,29 @@ public class GenericInventory {
 		return null;
 	}
 	
+	public boolean contain(String name) {
+		for(Entry<Integer, ItemStack> entry : getAllInventory().entrySet()) {
+			if (entry.getValue() != null) if (Main.getMCData().items.get(entry.getValue().getId()).name.contains(name)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public Integer getSlotsWithItem(Map<Integer,ItemStack> sts, List<String> names, int count) {
+		for (String name : names) {
+			for(Entry<Integer, ItemStack> entry : sts.entrySet()) {
+				if (entry.getValue() != null ) {
+				String bname = Main.getMCData().items.get(entry.getValue().getId()).name;
+				if (entry.getValue() != null) if (bname.contains(name) && entry.getValue().getAmount() >= count) {
+					return entry.getKey();
+				}}
+			}
+		}
+		return null;
+	}
+	
 	public Integer getSlotWithItem(String name, int count) {
-		System.out.println("trying to find "+name);
 		for(Entry<Integer, ItemStack> entry : getAllInventory().entrySet()) {
 			if (entry.getValue() != null) if (Main.getMCData().items.get(entry.getValue().getId()).name.contains(name) && entry.getValue().getAmount() >= count) {
 				return entry.getKey();
@@ -100,9 +159,15 @@ public class GenericInventory {
 		return slots.get(id);
 	}
 	
+	public void fromSlotToHotbar() {
+		
+	}
+	
 	public Map<Integer, ItemStack> getHotbar() {
 		Map<Integer, ItemStack> temp = new HashMap<>();
-		for (int i = 36; i <= 44; i++) {
+		int m = 0;
+		if (client.crafter.windowType != null) m = Main.getMCData().slotMultipiler.get(client.crafter.windowType);
+		for (int i = 36+m; i <= 44+m; i++) {
 			temp.put(i, slots.get(i));
 		}
 		return temp;
@@ -114,6 +179,16 @@ public class GenericInventory {
 	
 	public void setSlotInHotbar(int slot) {
 		BotU.SetSlot(client, slot - 36);
+	}
+	
+	public Map<Integer, ItemStack> getInventory() {
+		Map<Integer, ItemStack> temp = new HashMap<>();
+		int m = 0;
+		if (client.crafter.windowType != null) m = Main.getMCData().slotMultipiler.get(client.crafter.windowType);
+		for (int i = 9+m; i <= 35+m; i++) {
+			temp.put(i, slots.get(i));
+		}
+		return temp;
 	}
 	
 	public Map<Integer, ItemStack> getAllInventory() {

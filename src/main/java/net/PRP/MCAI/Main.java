@@ -38,12 +38,12 @@ public class Main {
 	public static Map<?, ?> data;
 	static List<Proxy> proxies;
 	static int proxyNumb = 0;
-	public static boolean debug = true;
+	public static boolean debug = false;
 	public static List<Bot> bots = new ArrayList<Bot>();
 	public static Proxy proxy = Proxy.NO_PROXY;
 	public static List<String> pasti = new CopyOnWriteArrayList<String>();
 	private static MinecraftData MCData = new MinecraftData();
-	//public static ExecutorService threadPool = Executors.newCachedThreadPool();
+	//public static ExecutorService threadPool = ThreadPoolExecutor();
 	
     public static void main(String[] args) {
     	try {
@@ -55,15 +55,14 @@ public class Main {
     	proxies = ProxyScraper.ab();
     	initializeBlockType();
     	updatePasti();
-    	if ((boolean) getsett("window")) {
-    		new Window();
+    	if (debug) {
+	        Bot client = new Bot(new MinecraftProtocol("tpa282"), "localhost", 25565, Proxy.NO_PROXY);
+	        client.connect();
+	        bots.add(client);
+    		new Thread(client).start();
     	} else {
-	    	if (debug) {
-	    		new Thread(() -> {
-			        Bot client = new Bot(new MinecraftProtocol("tpa282"), "localhost", 25565, Proxy.NO_PROXY);
-			        client.connect();
-			        bots.add(client);
-	    		}).start();
+	    	if ((boolean) getsett("window")) {
+	    		new Window();
 	    	} else {
 		    	String ip = (String)getsett("host");
 		        String host = ip.split(":")[0];
@@ -77,7 +76,8 @@ public class Main {
 						Bot client = new Bot(new MinecraftProtocol(USERNAME), host, port, proxy);
 						client.connect();
 						bots.add(client);
-				    });
+						new Thread(client).start();
+			        }).start();
 				    ThreadU.sleep((int) getsett("enterrange"));
 		    	}
 		    	Obshak.pickMainhost();

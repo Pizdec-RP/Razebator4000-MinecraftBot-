@@ -9,6 +9,7 @@ import com.github.steveice10.packetlib.ProxyInfo.Type;
 import com.github.steveice10.packetlib.Session;
 import com.github.steveice10.packetlib.tcp.TcpClientSession;
 import net.PRP.MCAI.Main;
+import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.ThreadU;
 import net.PRP.MCAI.Inventory.*;
 import net.PRP.MCAI.bot.pathfinder.AStar;
@@ -27,7 +28,7 @@ import java.net.SocketAddress;
 import java.util.Map.Entry;
 import java.util.UUID;
 
-public class Bot {
+public class Bot implements Runnable {
     private MinecraftProtocol account;
     
     private String host;
@@ -74,7 +75,6 @@ public class Bot {
 	public Vector3D targetpos = Vector3D.ORIGIN;
 	public boolean ztp = false;
 	public int targetradius = 10;
-	public Thread tickLoop = null;
 
 	public boolean reconectAvable = true;
     
@@ -89,25 +89,6 @@ public class Bot {
         this.raidmode = (boolean)Main.getsett("raidmode");
         this.pathfinder = new AStar(this);
         this.crafter = new Crafting(this);
-        this.tickLoop = new Thread(()->{
-			int curcomp = 0;
-			while (true) {
-				long timeone = System.currentTimeMillis();
-				if (isOnline()) tick();
-				long timetwo = System.currentTimeMillis();
-				int raznica = (int) (timetwo - timeone);
-				if (raznica > 0 && raznica < tickrate) {
-					curcomp = tickrate-raznica;
-					if (Main.debug) System.out.println("comp "+raznica+"ms");
-					ThreadU.sleep(curcomp);
-				} else if (raznica == 0){
-					ThreadU.sleep(tickrate);
-				} else {
-					if (Main.debug) System.out.println("passing "+raznica+"ms");
-				}
-			}
-		});
-        this.tickLoop.start();
     }
     
     public Bot(String name, String ip, Proxy proxy) {
@@ -123,30 +104,30 @@ public class Bot {
     	this.raidmode = (boolean)Main.getsett("raidmode");
         this.pathfinder = new AStar(this);
         this.crafter = new Crafting(this);
-        this.tickLoop = new Thread(()->{
-        	int curcomp = 0;
-			while (true) {
-				long timeone = System.currentTimeMillis();
-				if (isOnline()) tick();
-				long timetwo = System.currentTimeMillis();
-				int raznica = (int) (timetwo - timeone);
-				if (raznica > 0 && raznica < tickrate) {
-					curcomp = tickrate-raznica;
-					if (Main.debug) System.out.println("comp "+raznica+"ms");
-					ThreadU.sleep(curcomp);
-				} else if (raznica == 0){
-					ThreadU.sleep(tickrate);
-				} else {
-					if (Main.debug) System.out.println("passing "+raznica+"ms");
-				}
-			}
-        });
-        this.tickLoop.start();
     }
+    
+    @Override
+	public void run() {
+    	int curcomp = 0;
+		while (true) {
+			long timeone = System.currentTimeMillis();
+			if (isOnline()) tick();
+			long timetwo = System.currentTimeMillis();
+			int raznica = (int) (timetwo - timeone);
+			if (raznica > 0 && raznica < tickrate) {
+				curcomp = tickrate-raznica;
+				if (Main.debug) System.out.println("comp "+raznica+"ms");
+				ThreadU.sleep(curcomp);
+			} else if (raznica == 0){
+				ThreadU.sleep(tickrate);
+			} else {
+				if (Main.debug) System.out.println("passing "+raznica+"ms");
+			}
+		}
+	}
     
 	public void kill() {
 		reconectAvable = false;
-    	this.tickLoop.interrupt();
     	this.session.disconnect("session killed");
     	//this.getWorld().columns.clear();
     	this.reset();
@@ -211,6 +192,8 @@ public class Bot {
         session.send(new ClientChatPacket("/register 112233asdasd 112233asdasd"));
         ThreadU.sleep(100);
         session.send(new ClientChatPacket("/login 112233asdasd"));
+        ThreadU.sleep(300);
+        BotU.chat(this, (String) Main.getsett("loginfrase"));
     }
     
     public void reset() {

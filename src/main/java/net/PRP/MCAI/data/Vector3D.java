@@ -47,6 +47,18 @@ public class Vector3D {
 	public boolean IsOnGround(Bot client) {
 		return VectorUtils.BTavoid(this.add(0,-1,0).getBlock(client).type);
 	}
+	
+	
+	/**
+	 * возвратит true если блок под этой п0зицией идеально подходит для того чтобы стоять на нем
+	 */
+	public boolean isCanStayHere(Bot client) {
+		return VectorUtils.icanstayhere(this.add(0,-1,0).getBlock(client).type);
+	}
+	
+	public boolean isMineable(Bot client) {
+		return getBlock(client).type != Type.UNBREAKABLE || !getBlock(client).isLiquid();
+	}
 
 	public double getX() {
 		return this.x;

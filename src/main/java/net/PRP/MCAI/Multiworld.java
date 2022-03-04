@@ -1,7 +1,7 @@
 package net.PRP.MCAI;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.github.steveice10.mc.protocol.data.game.chunk.Chunk;
 import com.github.steveice10.mc.protocol.data.game.chunk.Column;
@@ -14,8 +14,8 @@ import net.PRP.MCAI.utils.VectorUtils;
 import net.PRP.MCAI.data.MinecraftData.Type;
 
 public class Multiworld {
-	public static Map<Vector3D, Block> blocks = new HashMap<>();
-	public static Map<ChunkCoordinates, Column> columns = new HashMap<>();
+	public static Map<Vector3D, Block> blocks = new ConcurrentHashMap<>();
+	public static Map<ChunkCoordinates, Column> columns = new ConcurrentHashMap<>();
 	
 	public static void addChunkColumn(ChunkCoordinates coords, Column column) {
 		if (columns.containsKey(coords)) {

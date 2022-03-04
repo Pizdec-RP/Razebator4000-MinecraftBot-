@@ -115,10 +115,11 @@ public class Window {
 				String name = Main.nextNick();
 				Proxy proxy = Main.nextProxy();
 				new Thread(() -> {
-		        Bot client = new Bot(name, bb.getText(), proxy);
-		        client.connect();
-		        Main.bots.add(client);
-	    		}).start();
+			        Bot client = new Bot(name, bb.getText(), proxy);
+			        client.connect();
+			        Main.bots.add(client);
+			        new Thread(client).start();
+				}).start();
 			}
 	    });
 	    connectbot.setBounds(0,110,180,20);

@@ -1,7 +1,9 @@
 package net.PRP.MCAI.data;
 
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.github.steveice10.mc.protocol.data.game.chunk.Chunk;
 import com.github.steveice10.mc.protocol.data.game.chunk.Column;
@@ -11,8 +13,10 @@ import net.PRP.MCAI.data.MinecraftData.Type;
 
 
 public class World {
-	public Map<ChunkCoordinates, Column> columns = new HashMap<>();
-	public Map<Integer, Entity> Entites = new HashMap<>();
+	public Map<ChunkCoordinates, Column> columns = new ConcurrentHashMap<>();
+	public Map<Integer, Entity> Entites = new ConcurrentHashMap<>();
+	public List<ServerPlayerObject> ServerTabPanel = new CopyOnWriteArrayList<>();
+	public int renderDistance = 2;
 
 	public void unloadColumn(ChunkCoordinates coords) {
 		//columns.remove(coords);

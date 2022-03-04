@@ -62,6 +62,7 @@ public class BlockBreakManager {
 				readyToBreak = false;
 			}
 			if (state == bbmct.STARTED) {
+				client.pathfinder.ignored.add(pos);
 				BotU.LookHead(client, pos);
 				prepareitem();
 				client.getSession().send(new ClientPlayerSwingArmPacket(Hand.MAIN_HAND));
@@ -74,8 +75,9 @@ public class BlockBreakManager {
 					this.state = bbmct.IN_PROGRESS;
 				}
 			} else if (this.state == bbmct.IN_PROGRESS) {
-				if (VectorUtils.sqrt(pos, client.getPosition()) > 5) {
+				if (!(VectorUtils.sqrt(pos, client.getEyeLocation()) <= (int)Main.getsett("maxpostoblock"))) {
 					endDigging();
+					return;
 				}
 				d1++;
 				if (d1 >= 3) {
@@ -84,13 +86,11 @@ public class BlockBreakManager {
 				}
 				
 				if (pos.getBlock(client).id == 0) {
-					//System.out.println("1");
 					endDigging();
 				}
 				
 				this.ticksToBreak--;
 				if (ticksToBreak <= 0) {
-					//System.out.println("2");
 					endDigging();
 				}
 			} else {
@@ -104,6 +104,7 @@ public class BlockBreakManager {
 	
 	@SuppressWarnings("deprecation")
 	public void endDigging() {
+		if (Main.debug) System.out.println("mining ended");
 		client.getSession().send(new ClientPlayerActionPacket(PlayerAction.FINISH_DIGGING, pos.translate(), BlockFace.UP));
 		this.readyToBreak = false;
 		this.state = bbmct.ENDED;
