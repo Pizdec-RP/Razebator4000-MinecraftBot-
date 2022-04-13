@@ -38,7 +38,7 @@ public class Main {
 	public static Map<?, ?> data;
 	static List<Proxy> proxies;
 	static int proxyNumb = 0;
-	public static boolean debug = false;
+	public static boolean debug = true;
 	public static List<Bot> bots = new ArrayList<Bot>();
 	public static Proxy proxy = Proxy.NO_PROXY;
 	public static List<String> pasti = new CopyOnWriteArrayList<String>();
@@ -184,7 +184,7 @@ public class Main {
                 		typ = Type.GOAWAY;
                 		break;
                 	case "carpet":
-                		typ = Type.GOAWAY;
+                		typ = Type.CARPET;
                 		break;
                 	default:
                 		typ = Type.UNKNOWN;

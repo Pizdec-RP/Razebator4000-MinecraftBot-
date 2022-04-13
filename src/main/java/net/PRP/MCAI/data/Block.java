@@ -14,7 +14,6 @@ public class Block {
 	public Vector3D pos;
 	public Type type;
 	public int state;
-	public List<AABB> shapes;
 	public String name = "";
 	
 	public Block() {
@@ -63,6 +62,25 @@ public class Block {
 		hash = 31 * hash + (int)this.id;
 		hash = 31 * hash + (int)this.state;
 		return hash;
+	}
+	
+	public AABB getHitbox() {
+		//System.out.println(pos.toStringInt());
+		if (type == Type.VOID ||type == Type.AIR || type == Type.AVOID) {
+			//System.out.println(1);
+			return null;
+		} else if (type == Type.DOOR || type == Type.GATE || type == Type.GOAWAY || type == Type.HARD || type == Type.UNBREAKABLE || type == Type.UNKNOWN) {
+			//System.out.println(2);
+			return new AABB(pos.x, pos.y, pos.z, pos.x+1, pos.y+1, pos.z+1);
+		} else if (type == Type.CARPET) {
+			//System.out.println(3);
+			return new AABB(pos.x, pos.y, pos.z, pos.x+1, pos.y+0.0625, pos.z+1);
+		} else if (type == Type.LIQUID) {
+			return new AABB(pos.x, pos.y, pos.z, pos.x+1, pos.y+1, pos.z+1);
+		} else {
+			//System.out.println(4);
+			return new AABB(pos.x, pos.y, pos.z, pos.x+1, pos.y+1, pos.z+1);
+		}
 	}
 	
 	@Override

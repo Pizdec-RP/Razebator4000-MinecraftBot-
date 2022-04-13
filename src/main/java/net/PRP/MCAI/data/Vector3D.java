@@ -108,6 +108,12 @@ public class Vector3D {
 		this.z = z;
 	}
 	
+	public Vector3D floorXZ() {
+		this.x = Math.floor(x);
+		this.z = Math.floor(z);
+		return this;
+	}
+	
 	public Vector3D VecToInt() {
 		return new Vector3D((int)x,(int)y,(int)z);
 	}
@@ -215,5 +221,45 @@ public class Vector3D {
 	public Vector3D clone() {
 		return new Vector3D(x,y,z);
 	}
+	
+	/*public double heuristic(int x, int y, int z) {
+        int xDiff = (int) (x - this.x);
+        int yDiff = (int) (y - this.y);
+        int zDiff = (int) (z - this.z);
+        return calculate(xDiff, yDiff, zDiff);
+    }
+	
+	public static double calculate(double xDiff, int yDiff, double zDiff) {
+        double heuristic = 0;
+        heuristic += gylcalculate(yDiff, 0);
+        heuristic += xzcalculate(xDiff, zDiff);
+        return heuristic;
+    }*/
+	
+	public static double xzcalculate(double xDiff, double zDiff) {
+        double x = Math.abs(xDiff);
+        double z = Math.abs(zDiff);
+        double straight;
+        double diagonal;
+        if (x < z) {
+            straight = z - x;
+            diagonal = x;
+        } else {
+            straight = x - z;
+            diagonal = z;
+        }
+        diagonal *= Math.sqrt(2);
+        return (diagonal + straight) * 3.5D;
+    }
+	
+	/*public static double gylcalculate(int goalY, int currentY) {
+        if (currentY > goalY) {
+            return ActionCosts.FALL_N_BLOCKS_COST[2] / 2 * (currentY - goalY);
+        }
+        if (currentY < goalY) {
+            return (goalY - currentY) * ActionCosts.JUMP_ONE_BLOCK_COST;
+        }
+        return 0;
+    }*/
 
 }

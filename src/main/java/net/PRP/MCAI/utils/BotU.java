@@ -312,13 +312,14 @@ public class BotU {
 	
 	public static void LookHead(Bot client, Vector3D p) {
 		if (p == null) return;
-		LookHead(client, new Point3D_F64(Math.floor(p.x)+0.5,Math.floor(p.y)+0.5,Math.floor(p.z)+0.5));
+		LookHead(client, new Point3D_F64(Math.floor(p.x),Math.floor(p.y),Math.floor(p.z)));
 	}
 	
 	public static void LookHead(Bot client, Point3D_F64 position) {
-		Point3D_F64 PlayerPosition = new Point3D_F64(client.getEyeLocation().x, client.getEyeLocation().y, client.getEyeLocation().z);
+		Point3D_F64 PlayerPosition = new Point3D_F64(client.getPosX()-0.5, client.getPosY()+1.025, client.getPosZ()-0.5);
         Vector3D_F64 vect = new Vector3D_F64(PlayerPosition, position);
         vect.normalize();
+        //System.out.println(position.x +" "+position.y+" "+position.z);
         double yaw = Math.toDegrees(Math.atan2(vect.z, vect.x)) - 90;
         double pitch = Math.toDegrees(Math.asin(-vect.y));
         client.setYaw((float) yaw);

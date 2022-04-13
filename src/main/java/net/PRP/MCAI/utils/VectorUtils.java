@@ -1,5 +1,6 @@
 package net.PRP.MCAI.utils;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -19,7 +20,13 @@ import net.PRP.MCAI.data.Block;
 import net.PRP.MCAI.data.MinecraftData.Type;
 
 public class VectorUtils {
-	
+	/**
+	 * 
+	 * @param client
+	 * @param целевая точка
+	 * @param radius
+	 * @return позицию близжайшую к указаной в заданом радиусе.
+	 */
 	public static Vector3D func_31(Bot client, Vector3D pos, int radius) {
 		List<Vector3D> positions = filterByRadius(getAllInBox(pos, radius),pos,radius);
 		List<Vector3D> normal = new CopyOnWriteArrayList<>();
@@ -38,6 +45,21 @@ public class VectorUtils {
 		}
 		return getNear(pos, normal);
 	}
+	
+	public static Vector3D vector(float Yaw, float Pitch, double speed) {
+        Vector3D vector = Vector3D.ORIGIN;
+        double rotX = Yaw;
+        double rotY = 0;
+
+        //vector.setY(-Math.sin(Math.toRadians(rotY)));
+
+        double xz = Math.cos(Math.toRadians(rotY));
+
+        vector.setX(-xz * Math.sin(Math.toRadians(rotX)));
+        vector.setZ(xz * Math.cos(Math.toRadians(rotX)));
+        vector = vector.multiply(speed);
+        return vector;
+    }
 	
 	public static List<Vector3D> filterByRadius(List<Vector3D> positions, Vector3D target, int radius) {
 		for (Vector3D position : positions) {
@@ -195,11 +217,6 @@ public class VectorUtils {
                     }
                 }
             }
-    		if (positions.size() > 1) {
-    			for (Vector3D poss : positions) {
-    				if (VectorUtils.equalsInt(new Vector3D(poss.x,poss.y+1,poss.z), client.getPosition())) positions.remove(poss);
-    			}
-    		}
     		if (localf > 0 && !positions.isEmpty()) {
     			pos = getNear(new Vector3D((int)client.getPosX(),(int)client.getPosY(),(int)client.getPosZ()),positions);
     	    	return pos;
@@ -365,11 +382,6 @@ public class VectorUtils {
                     }
                 }
             }
-    		if (positions.size() > 1) {
-    			for (Vector3D poss : positions) {
-    				if (VectorUtils.equalsInt(new Vector3D(poss.x,poss.y+1,poss.z), client.getPosition())) positions.remove(poss);
-    			}
-    		}
     		if (localf > 0 && !positions.isEmpty()) {
     			pos = getNear(new Vector3D((int)client.getPosX(),(int)client.getPosY(),(int)client.getPosZ()),positions);
     	    	return pos;
@@ -406,11 +418,6 @@ public class VectorUtils {
                     }
                 }
             }
-    		if (positions.size() > 1) {
-    			for (Vector3D poss : positions) {
-    				if (VectorUtils.equalsInt(new Vector3D(poss.x,poss.y+1,poss.z), client.getPosition())) positions.remove(poss);
-    			}
-    		}
     		if (!positions.isEmpty()) {
     			pos = getNear(new Vector3D((int)client.getPosX(),(int)client.getPosY(),(int)client.getPosZ()),positions);
     	    	return pos;

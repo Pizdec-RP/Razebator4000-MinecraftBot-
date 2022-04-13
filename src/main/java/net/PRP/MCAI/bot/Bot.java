@@ -19,12 +19,15 @@ import net.PRP.MCAI.bot.specific.LivingListener;
 import net.PRP.MCAI.bot.specific.PVP;
 import net.PRP.MCAI.bot.specific.PhysicsListener;
 import net.PRP.MCAI.bot.specific.Vision;
+import net.PRP.MCAI.data.Block;
 import net.PRP.MCAI.data.EntityEffects;
 import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.data.World;
 
 import java.net.Proxy;
 import java.net.SocketAddress;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.UUID;
 
@@ -201,6 +204,7 @@ public class Bot implements Runnable {
     	this.bbm.reset();
     	this.pm.reset();
     	this.pvp.reset();
+    	this.crafter.reset();
     	this.onGround = true;
     }
     
@@ -362,14 +366,6 @@ public class Bot implements Runnable {
 		int id = getWorld().getBlock(getPosition()).id;
 		return id == 27;
 	}
-	
-	/*public void setmovelocked(boolean t) {
-    	this.movelocked = t;
-    }
-    
-    public boolean getmovelocked() {
-    	return movelocked;
-    }*/
 
 	public UUID getUUID() {
 		return UUID;
@@ -378,14 +374,6 @@ public class Bot implements Runnable {
 	public void setUUID(UUID uUID) {
 		UUID = uUID;
 	}
-
-	/*public boolean isInAction() {
-		return inAction;
-	}
-
-	public void setInAction(boolean inAction) {
-		this.inAction = inAction;
-	}*/
 
 	public boolean isMain() {
 		return mainhost;
@@ -443,5 +431,58 @@ public class Bot implements Runnable {
 
 	public Vector3D getEyeLocation() {
 		return getPositionInt().add(0, 1.95, 0);
+	}
+
+	public void reconnect() {
+		session.disconnect("reconnect");
+		reset();
+		ThreadU.sleep(10000);
+		session.connect();
+	}
+	
+	public AABB getHitbox() {
+		return new AABB(posX-0.3, posY, posZ-0.3, posX+0.3, posY+1.8, posZ+0.3);
+	}
+	
+	public List<Block> getNeighborsNOY() {
+		List<Block> n = new ArrayList<>();
+		n.add(getPositionInt().add(1,0,0).getBlock(this));
+		n.add(getPositionInt().add(1,1,0).getBlock(this));
+		
+		n.add(getPositionInt().add(-1,0,0).getBlock(this));
+		n.add(getPositionInt().add(-1,1,0).getBlock(this));
+		
+		n.add(getPositionInt().add(0,0,1).getBlock(this));
+		n.add(getPositionInt().add(0,1,1).getBlock(this));
+		
+		n.add(getPositionInt().add(0,0,-1).getBlock(this));
+		n.add(getPositionInt().add(0,1,-1).getBlock(this));
+		return n;
+	}
+	
+	public List<Block> getNeighborsNOZX() {
+		List<Block> n = new ArrayList<>();
+		n.add(getPositionInt().add(0,-1,0).getBlock(this));
+		n.add(getPositionInt().add(0,2,1).getBlock(this));
+		return n;
+	}
+	
+	public List<Block> getNeighbors() {
+		List<Block> n = new ArrayList<>();
+		n.add(getPositionInt().add(1,0,0).getBlock(this));
+		n.add(getPositionInt().add(1,1,0).getBlock(this));
+		
+		n.add(getPositionInt().add(-1,0,0).getBlock(this));
+		n.add(getPositionInt().add(-1,1,0).getBlock(this));
+		
+		n.add(getPositionInt().add(0,0,1).getBlock(this));
+		n.add(getPositionInt().add(0,1,1).getBlock(this));
+		
+		n.add(getPositionInt().add(0,0,-1).getBlock(this));
+		n.add(getPositionInt().add(0,1,-1).getBlock(this));
+
+		n.add(getPositionInt().add(0,-1,0).getBlock(this));
+		n.add(getPositionInt().add(0,2,1).getBlock(this));
+		return n;
 	}
 }

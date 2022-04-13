@@ -191,6 +191,24 @@ public class ChatListener extends SessionAdapter {
 						client.getSession().send(new ClientPlayerPlaceBlockPacket(aa.translate(), BlockFace.DOWN, Hand.MAIN_HAND, 0,0,0, false));
 					} else if (command.get(0).equalsIgnoreCase("place")) {
 						VectorUtils.placeBlockNear(client, command.get(1));
+					} else if (command.get(0).equalsIgnoreCase("forward")) {
+						double d = 1;
+						client.setposto(client.getPosition().add(VectorUtils.vector(client.getYaw(), client.getPitch(), d)));
+						ThreadU.sleep(200);
+						client.setposto(client.getPosition().add(VectorUtils.vector(client.getYaw(), client.getPitch(), d)));
+						ThreadU.sleep(200);
+						client.setposto(client.getPosition().add(VectorUtils.vector(client.getYaw(), client.getPitch(), d)));
+						ThreadU.sleep(200);
+						client.setposto(client.getPosition().add(VectorUtils.vector(client.getYaw(), client.getPitch(), d)));
+						ThreadU.sleep(200);
+						client.setposto(client.getPosition().add(VectorUtils.vector(client.getYaw(), client.getPitch(), d)));
+						ThreadU.sleep(200);
+						
+					} else if (command.get(0).equalsIgnoreCase("jump")) {
+						client.pm.jump();
+					} else if (command.get(0).equalsIgnoreCase("isliquid")) {
+						Vector3D aa = new Vector3D(Integer.parseInt(command.get(1)),Integer.parseInt(command.get(2)),Integer.parseInt(command.get(3)));
+						BotU.chat(client, ">"+aa.getBlock(client).isLiquid());
 					}
 				}
 			}).start();

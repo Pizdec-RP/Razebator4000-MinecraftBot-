@@ -55,6 +55,7 @@ public class Crafting extends SessionAdapter {
 	}};
 	public int plitstate = 0;
 	public int timeout = 0;
+	public int totaltimeouterrors = 0;
 	
 	
 	public class craftingRecepie {
@@ -146,6 +147,16 @@ public class Crafting extends SessionAdapter {
 		return actionId++;
 	}
 	
+	public void reset() {
+		if (windowType != null) client.getSession().send(new ClientCloseWindowPacket(this.currentWindowId));
+		recepie = null;
+		craftingBlock = null;
+		state = crState.ENDED;
+		plitstate = 0;
+		totaltimeouterrors = 0;
+		timeout = 0;
+	}
+	
 	public void fromSlotToSlotStack(int from, int to) {
 		if (client.playerInventory.getSlot(to) != null) {
 			client.getSession().send(new ClientWindowActionPacket(client.crafter.currentWindowId,
@@ -232,6 +243,9 @@ public class Crafting extends SessionAdapter {
 	
 	@SuppressWarnings("deprecation")
 	public void tick() {
+		if (totaltimeouterrors >= 2) {
+			client.reconnect();
+		}
 		try {
 			if (state == crState.START) {
 				if (recepie == null) {
@@ -333,6 +347,7 @@ public class Crafting extends SessionAdapter {
 					} else {
 						timeout++;
 						if (timeout > 200) {
+							totaltimeouterrors++;
 							finish("getcrafted_timeout, palette:\n"
 									+ "#####\n"
 									+ "#"+slotstring(1)+"#"+slotstring(2)+"#\n"
@@ -357,6 +372,7 @@ public class Crafting extends SessionAdapter {
 					} else {
 						timeout++;
 						if (timeout > 200) {
+							totaltimeouterrors++;
 							ShiftClick(1);
 							ThreadU.sleep(20);
 							ShiftClick(2);

@@ -82,7 +82,7 @@ public class LivingListener extends SessionAdapter {
 	public void tick() {
 		//try {
 			if (!firstJoin || !client.isOnline()) return;
-			
+			//System.out.println(state+" "+trusted);
 			if ((boolean) Main.getsett("raidspam") && Main.pasti.size() > 0) {
 				spamticks--;
 				if (spamticks <= 0) {
@@ -110,6 +110,15 @@ public class LivingListener extends SessionAdapter {
 				if ((int)Main.getsett("walkeverymilseconds") >= 50) sleepticks = (int)Main.getsett("walkeverymilseconds") / 50;
 				
 				if ((int)Main.getsett("walkeverymilseconds") != 0) sleepticks = (int)Main.getsett("walkeverymilseconds") / 50;
+				
+				if (MathU.rnd(1, 10) == 1) {
+					Vector3D to = VectorUtils.func_31(client, client.getPositionInt(), 8);
+					this.sleepticks = 20;
+					if (to != null) client.pathfinder.setupNoBreak(to);
+					asd = null;
+					this.state = raidState.GOING;
+					return;
+				}
 				
 				Map<Integer, Entity> tempentities = client.getWorld().Entites;
 				for(Entry<Integer, Entity> entry : tempentities.entrySet()) {
@@ -147,8 +156,8 @@ public class LivingListener extends SessionAdapter {
 				} else {
 					if ((boolean) Main.getsett("mining")) {
 						Vector3D block = null;
-						
-						if (!client.playerInventory.contain("stone_axe") && (boolean) Main.getsett("dbc")) {
+						if ((boolean) Main.getsett("dbc")) {
+						if (!client.playerInventory.contain("stone_axe")) {
 							System.out.println(1);
 							//BotU.chat(client, "no axe");
 							if (!client.playerInventory.contain("cobblestone", 9)) {
@@ -325,7 +334,150 @@ public class LivingListener extends SessionAdapter {
 									}
 								}
 							}
+						} else if (!client.playerInventory.contain("stone_pickaxe")) {
+							//BotU.chat(client, "no axe");
+							if (!client.playerInventory.contain("cobblestone", 9)) {
+								
+								if (!client.playerInventory.contain("pickaxe")) {
+									
+									if (!client.playerInventory.contain("planks", 12)) {
+										if (!client.playerInventory.contain("log", 4)) {
+											block = VectorUtils.func_32(client, new CopyOnWriteArrayList<>() {{add("log");}}, this.blacklist);
+										} else {
+											client.crafter.setup("planks", null);
+											state = raidState.CRAFTING;
+											return;
+										}
+									} else {
+										if (!client.playerInventory.contain("stick", 2)) {
+											if (!client.playerInventory.contain("planks", 4)) {
+												if (!client.playerInventory.contain("log", 3)) {
+													block = VectorUtils.func_32(client, new CopyOnWriteArrayList<>() {{add("log");}}, this.blacklist);
+												} else {
+													client.crafter.setup("planks", null);
+													state = raidState.CRAFTING;
+													return;
+												}
+											} else {
+												client.crafter.setup("sticks", null);
+												state = raidState.CRAFTING;
+												return;
+											}
+										} else {
+											//--------------
+											block = VectorUtils.func_32(client, new CopyOnWriteArrayList<>() {{add("crafting");}}, this.blacklist, 5);
+											if (block == null) {
+												if (client.playerInventory.contain("crafting_table")) {
+													block = VectorUtils.placeBlockNear(client, "crafting_table").pos;
+													client.crafter.setup("wooden_pickaxe", block);
+													state = raidState.CRAFTING;
+													return;
+												} else {
+													if (!client.playerInventory.contain("planks", 8)) {
+														if (!client.playerInventory.contain("log", 4)) {
+															block = VectorUtils.func_32(client, new CopyOnWriteArrayList<>() {{add("log");}}, this.blacklist);
+														} else {
+															client.crafter.setup("planks", null);
+															state = raidState.CRAFTING;
+															return;
+														}
+													} else {
+														client.crafter.setup("bench", null);
+														state = raidState.CRAFTING;
+														return;
+													}
+												}
+											} else {
+												if (VectorUtils.sqrt(block, client.getEyeLocation()) <= (int)Main.getsett("maxpostoblock")) {
+													client.crafter.setup("wooden_pickaxe", block);
+													state = raidState.CRAFTING;
+													return;
+												} else {
+													Vector3D pos = VectorUtils.func_31(client, block, (int)Main.getsett("maxpostoblock"));
+											    	if (pos == null) {
+											    		this.blacklist.add(block);
+											    		state = raidState.IDLE;
+											    		return;
+											    	}
+											    	this.asd = block;
+											    	if (!client.pathfinder.testForPath(pos)) blacklist.add(block);
+											    	client.pathfinder.setup(pos);
+											    	this.state = raidState.GOING;
+											    	return;
+												}
+											}
+											//--------------
+										}
+										
+									}
+									
+								} else {
+									block = VectorUtils.func_32(client, new CopyOnWriteArrayList<>() {{add("stone");}}, this.blacklist);
+									System.out.println(block.toString());
+								}
+								
+								
+							} else if (!client.playerInventory.contain("stick", 8)) {
+								//---------------------------------------------------
+								if (!client.playerInventory.contain("planks", 6)) {
+									if (!client.playerInventory.contain("log", 5)) {
+										block = VectorUtils.func_32(client, new CopyOnWriteArrayList<>() {{add("log");}}, this.blacklist);
+									} else {
+										client.crafter.setup("planks", null);
+										state = raidState.CRAFTING;
+										return;
+									}
+								} else {
+									client.crafter.setup("sticks", null);
+									state = raidState.CRAFTING;
+									return;
+								}
+								
+							} else {
+								block = VectorUtils.func_32(client, new CopyOnWriteArrayList<>() {{add("crafting");}}, this.blacklist);
+								if (block == null) {
+									if (!client.playerInventory.contain("crafting")) {
+										block = VectorUtils.placeBlockNear(client, "crafting_table").pos;
+										client.crafter.setup("stone_pickaxe", block);
+										state = raidState.CRAFTING;
+										return;
+									} else {
+										if (!client.playerInventory.contain("planks", 8)) {
+											if (!client.playerInventory.contain("log", 3)) {
+												block = VectorUtils.func_32(client, new CopyOnWriteArrayList<>() {{add("log");}}, this.blacklist);
+											} else {
+												client.crafter.setup("planks", null);
+												state = raidState.CRAFTING;
+												return;
+											}
+										} else {
+											client.crafter.setup("bench", null);
+											state = raidState.CRAFTING;
+											return;
+										}
+									}
+								} else {
+									if (VectorUtils.sqrt(block, client.getEyeLocation()) <= (int)Main.getsett("maxpostoblock")) {
+										client.crafter.setup("stone_pickaxe", block);
+										state = raidState.CRAFTING;
+										return;
+									} else {
+										Vector3D pos = VectorUtils.func_31(client, block, (int)Main.getsett("maxpostoblock"));
+								    	if (pos == null) {
+								    		this.blacklist.add(block);
+								    		state = raidState.IDLE;
+								    		return;
+								    	}
+								    	this.asd = block;
+								    	if (!client.pathfinder.testForPath(pos)) blacklist.add(block);
+								    	client.pathfinder.setup(pos);
+								    	this.state = raidState.GOING;
+								    	return;
+									}
+								}
+							}
 						}
+						}//-------------------dbc-------------------------
 						
 						if (block == null) {
 							if ((boolean) Main.getsett("iol")) {
@@ -407,6 +559,7 @@ public class LivingListener extends SessionAdapter {
 					}
 				}
 			} else if (state == raidState.MINING) {
+				//System.out.println(client.bbm.getBlockPos());
 				if (client.bbm.state == bbmct.ENDED) {
 					this.asd = null;
 					this.state = raidState.IDLE;

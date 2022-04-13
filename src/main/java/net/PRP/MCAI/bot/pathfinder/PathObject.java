@@ -40,6 +40,10 @@ public class PathObject {
 		return a;
 	}
 	
+	public boolean bm1(boolean addsleepticks) {
+		return buildPathMethod1(addsleepticks);
+	}
+	
 	public boolean buildPathMethod1(boolean addsleepticks) {
 		int maxpath = (client.getWorld().renderDistance * 16) * 2;
 		toWalk.clear();
@@ -144,7 +148,7 @@ public class PathObject {
 			return neighbors;
 		}
 		
-		if (neighbors.isEmpty() || method == 2) {
+		if (neighbors.isEmpty() && method == 2) {
 			Vector3D psy;
 			psy = ps.add(0,-1,0);
 			if (VectorUtils.icanstayhere(psy.add(0,-1,0).getBlock(client).type)) {

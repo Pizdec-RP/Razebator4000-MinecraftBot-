@@ -1,5 +1,10 @@
 package net.PRP.MCAI.bot;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import net.PRP.MCAI.data.Vector3D;
+
 public class AABB {
 	public double minX;
 	public double minY;
@@ -41,6 +46,12 @@ public class AABB {
 	    else this.maxZ += dz;
 
 	    return this;
+	}
+	
+	public List<Vector3D> getTouchedNeighbors() {
+		List<Vector3D> n = new ArrayList<>();
+		Vector3D center = new Vector3D(maxX-minX, 0, maxZ-minZ);
+		return n;
 	}
 	
 	public AABB contract(double x, double y, double z) {

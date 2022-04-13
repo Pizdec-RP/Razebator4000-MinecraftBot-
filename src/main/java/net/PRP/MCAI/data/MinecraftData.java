@@ -10,7 +10,7 @@ import net.PRP.MCAI.oldMinecraftBlocks;
 
 public class MinecraftData {
 	public enum Type {
-		HARD, VOID, AVOID, AIR, LIQUID, DOOR, GATE, DOOR_GATE, UNKNOWN, LADDER, GOAWAY, UNBREAKABLE;
+		HARD, VOID, AVOID, AIR, LIQUID, DOOR, GATE, DOOR_GATE, UNKNOWN, LADDER, GOAWAY, UNBREAKABLE, CARPET;
 	}
 	
 	public Map<Integer, Type> bts = new HashMap<>();

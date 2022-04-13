@@ -9,6 +9,7 @@ import com.github.steveice10.packetlib.event.session.SessionAdapter;
 
 import net.PRP.MCAI.utils.VectorUtils;
 import net.PRP.MCAI.utils.physics;
+import net.PRP.MCAI.bot.AABB;
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.bot.pathfinder.AStar.State;
 import net.PRP.MCAI.data.Block;
@@ -21,7 +22,7 @@ public class PhysicsListener extends SessionAdapter {
 	private float beforeYaw;
     private float beforePitch;
 	private Bot client;
-	private Vector3D vel = new Vector3D(0,0,0);
+	public Vector3D vel = new Vector3D(0,0,0);
 	public int sleepticks = 0;
 	
 	public PhysicsListener(Bot client) {
@@ -35,64 +36,98 @@ public class PhysicsListener extends SessionAdapter {
         } 
 	}
 	
+	public void airfall() {
+		int slowFalling = 0;//client.effects.slowFalling
+        double gravityMultiplier = (vel.y <= 0 && slowFalling > 0) ? physics.slowFalling : 1;
+		client.onGround = false;
+    	vel.y -= physics.gravity * gravityMultiplier;
+    	vel.y *= physics.airdrag;
+	}
+	
+	public double calcnextairfall() {
+        double gravityMultiplier = 1;
+    	double y = vel.y;
+		y -= physics.gravity * gravityMultiplier;
+    	y *= physics.airdrag;
+    	return y;
+	}
+	
+	public Block calcnexttickblock() {
+		return client.getWorld().getBlock(client.getPosition().floorXZ().add(0, calcnextairfall(), 0));
+	}
+	
+	public void waterfall() {
+		int slowFalling = 0;//client.effects.slowFalling
+        double gravityMultiplier = (vel.y <= 0 && slowFalling > 0) ? physics.slowFalling : 1;
+		vel.y *= client.isInWater() ? physics.waterInertia : physics.lavaInertia;
+		vel.y -= (client.isInWater() ? physics.waterGravity : physics.lavaGravity) * gravityMultiplier;
+	}
+	
+	public AABB nexttickZXc() {//zxc dead inside sshhiit
+		return client.getHitbox().offset(vel.x, 0, vel.z);
+	}
+	
+	public AABB nexttickY() {
+		return client.getHitbox().offset(0, vel.y, 0);
+	}
+	
+	public void jump() {
+		if (client.onGround) {
+			client.onGround = false;
+			vel.y = 0.52;
+			System.out.println("jump pos: "+client.getPositionInt()+" vel: "+vel.toString()+" onGround:"+client.onGround);
+		}
+	}
+	
 	private void PhysicsUpdate() {
 		if (this.sleepticks > 0) {
 			this.sleepticks--;
 			return;
 		}
 		//System.out.println(client.isOnline()+" "+ (client.pathfinder.state == State.WALKING && client.pathfinder.sleepticks == 0));
-        if (!client.isOnline() || (client.pathfinder.state == State.WALKING && client.pathfinder.sleepticks == 0))
+        if (!client.isOnline())
             return;
         
-        Block blockUnder = client.getPositionInt().down().getBlock(client);
-        int slowFalling = 0;//client.effects.slowFalling
-        double gravityMultiplier = (vel.y <= 0 && slowFalling > 0) ? physics.slowFalling : 1;
-        if (blockUnder.isAvoid()) {
-	        	client.onGround = false;
-	        	vel.y -= physics.gravity * gravityMultiplier;
-	        	vel.y *= physics.airdrag;
-	        	if (!client.getPosition().add(vel).getBlock(client).isAvoid()) {
-	        		vel.y = -0.5;
-	        	}
-	        	if (client.getPosX() != ((int)client.getPosX()+0.5) || client.getPosZ() != ((int)client.getPosZ()+0.5)) BotU.calibratePosition(client);
-        	
-        } else if (client.getPositionInt().getBlock(client).isLiquid()) {
-
-        	if (blockUnder.isLiquid()) {
-        		
-		    		//double acceleration = physics.liquidAcceleration;
-		    		double inertia = client.isInWater() ? physics.waterInertia : physics.lavaInertia;
-		    		vel.y *= inertia;
-		    		vel.y -= (client.isInWater() ? physics.waterGravity : physics.lavaGravity) * gravityMultiplier;
-	    		
-        	} else if (blockUnder.ishard()) {
-        		
-	        		vel.y = 0;
-	            	client.onGround = true;
-	            	client.setPosY((float)MathU.Truncate(client.posY));
-            	
-        	} else if (blockUnder.isAvoid()) {
-        		
-	        		double inertia = client.isInWater() ? physics.waterInertia : physics.lavaInertia;
-		    		vel.y *= inertia;
-		    		vel.y -= (client.isInWater() ? physics.waterGravity : physics.lavaGravity) * gravityMultiplier;
-	    		
-        	}
-        	
-        } else if (blockUnder.isLiquid()) {
-	        	double inertia = client.isInWater() ? physics.waterInertia : physics.lavaInertia;
-	    		vel.y *= inertia;
-	    		vel.y -= (client.isInWater() ? physics.waterGravity : physics.lavaGravity) * gravityMultiplier;
-    		
-        } else if (blockUnder.ishard()) {
+        if (calcnexttickblock().isAvoid()) {
+        	airfall();
+        	if (client.getPosX() != ((int)client.getPosX()+0.5) || client.getPosZ() != ((int)client.getPosZ()+0.5)) BotU.calibratePosition(client);
+        	System.out.println("airfall pos: "+client.getPositionInt()+" vel: "+vel.toString()+" onGround:"+client.onGround);
+        } else if (calcnexttickblock().isLiquid()) {
+        	waterfall();
+        	System.out.println("waterfall pos: "+client.getPositionInt()+" vel: "+vel.toString()+" onGround:"+client.onGround);
+        } else {
         	if (client.posY > MathU.Truncate(client.posY)) {
         		vel.y = 0;
             	client.setPosY(MathU.Truncate(client.posY));
+            	client.onGround = true;
+            	System.out.println("prestep pos: "+client.getPositionInt()+" vel: "+vel.toString()+" onGround:"+client.onGround);
         	} else {
+        		vel.y = 0;
         		client.onGround = true;
         	}
         }
-        //System.out.println("pos: "+client.getPosition().toString()+" vel: "+vel.toString()+" onGround:"+client.onGround);
+        
+        if (vel.x != 0 || vel.z != 0) {
+        	for (Block n : client.getNeighborsNOY()) {
+        		if (n.getHitbox() != null && !n.isLiquid()) {
+        			if (n.getHitbox().collide(nexttickZXc())) {
+        				vel.x = 0;
+        				vel.z = 0;
+        			}
+        		}
+        	}
+        }
+        
+        if (vel.y != 0) {
+        	for (Block n : client.getNeighborsNOZX()) {
+        		if (n.getHitbox() != null && !n.isLiquid()) {
+        			if (n.getHitbox().collide(nexttickY())) {
+        				vel.y = 0;
+        			}
+        		}
+        	}
+        }
+        
         if (vel.x == 0 && vel.y == 0 && vel.z == 0) return;
         client.setposto(client.getPosition().add(vel));
     }

@@ -53,7 +53,7 @@ public class BlockBreakManager {
 				return;
 			}
 			if (client.pvp.state != CombatState.END_COMBAT) return;
-			//System.out.println("blockid:"+pos.getBlock(client).id+" bbm pos:"+pos.toStringInt()+" readyToBreak:"+readyToBreak+" ticksToBreak:"+ticksToBreak+" state:"+state);
+			//if (pos != null) System.out.println("blockid:"+pos.getBlock(client).id+" bbm pos:"+pos.toStringInt()+" readyToBreak:"+readyToBreak+" ticksToBreak:"+ticksToBreak+" state:"+state);
 			if (pos == null) return;
 			if (pos.getBlock(client).id == 0) {
 				//System.out.println("4");
@@ -62,6 +62,7 @@ public class BlockBreakManager {
 				readyToBreak = false;
 			}
 			if (state == bbmct.STARTED) {
+				if (pos == null) endDigging();
 				client.pathfinder.ignored.add(pos);
 				BotU.LookHead(client, pos);
 				prepareitem();
@@ -75,6 +76,7 @@ public class BlockBreakManager {
 					this.state = bbmct.IN_PROGRESS;
 				}
 			} else if (this.state == bbmct.IN_PROGRESS) {
+				if (pos == null) endDigging();
 				if (!(VectorUtils.sqrt(pos, client.getEyeLocation()) <= (int)Main.getsett("maxpostoblock"))) {
 					endDigging();
 					return;
