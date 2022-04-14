@@ -444,30 +444,52 @@ public class Bot implements Runnable {
 		return new AABB(posX-0.3, posY, posZ-0.3, posX+0.3, posY+1.8, posZ+0.3);
 	}
 	
-	public List<Block> getNeighborsNOY() {
+	public AABB getHitbox(Vector3D a) {
+		return new AABB(posX+a.x-0.3, posY+a.y, posZ+a.z-0.3, posX+a.x+0.3, posY+a.y+1.8, posZ+a.z+0.3);
+	}
+	
+	public List<Block> getNeighborsX() {
 		List<Block> n = new ArrayList<>();
 		n.add(getPositionInt().add(1,0,0).getBlock(this));
-		n.add(getPositionInt().add(1,1,0).getBlock(this));
+		n.add(getPositionInt().add(1,0,1).getBlock(this));
+		n.add(getPositionInt().add(1,0,-1).getBlock(this));
 		
 		n.add(getPositionInt().add(-1,0,0).getBlock(this));
+		n.add(getPositionInt().add(-1,0,1).getBlock(this));
+		n.add(getPositionInt().add(-1,0,-1).getBlock(this));
+		
+		n.add(getPositionInt().add(1,1,0).getBlock(this));
+		n.add(getPositionInt().add(1,1,1).getBlock(this));
+		n.add(getPositionInt().add(1,1,-1).getBlock(this));
+		
 		n.add(getPositionInt().add(-1,1,0).getBlock(this));
-		
-		n.add(getPositionInt().add(0,0,1).getBlock(this));
-		n.add(getPositionInt().add(0,1,1).getBlock(this));
-		
-		n.add(getPositionInt().add(0,0,-1).getBlock(this));
-		n.add(getPositionInt().add(0,1,-1).getBlock(this));
+		n.add(getPositionInt().add(-1,1,1).getBlock(this));
+		n.add(getPositionInt().add(-1,1,-1).getBlock(this));
 		return n;
 	}
 	
-	public List<Block> getNeighborsNOZX() {
+	public List<Block> getNeighborsZ() {
 		List<Block> n = new ArrayList<>();
-		n.add(getPositionInt().add(0,-1,0).getBlock(this));
-		n.add(getPositionInt().add(0,2,1).getBlock(this));
+		n.add(getPositionInt().add(1,0,0).getBlock(this));
+		n.add(getPositionInt().add(1,0,1).getBlock(this));
+		n.add(getPositionInt().add(1,0,-1).getBlock(this));
+		
+		n.add(getPositionInt().add(-1,0,0).getBlock(this));
+		n.add(getPositionInt().add(-1,0,1).getBlock(this));
+		n.add(getPositionInt().add(-1,0,-1).getBlock(this));
+		
+		n.add(getPositionInt().add(1,1,0).getBlock(this));
+		n.add(getPositionInt().add(1,1,1).getBlock(this));
+		n.add(getPositionInt().add(1,1,-1).getBlock(this));
+		
+		n.add(getPositionInt().add(-1,1,0).getBlock(this));
+		n.add(getPositionInt().add(-1,1,1).getBlock(this));
+		n.add(getPositionInt().add(-1,1,-1).getBlock(this));
 		return n;
 	}
 	
-	public List<Block> getNeighbors() {
+	
+	public List<Block> getNeighborsB() {
 		List<Block> n = new ArrayList<>();
 		n.add(getPositionInt().add(1,0,0).getBlock(this));
 		n.add(getPositionInt().add(1,1,0).getBlock(this));

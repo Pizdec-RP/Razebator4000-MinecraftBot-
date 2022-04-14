@@ -68,13 +68,13 @@ public class PhysicsListener extends SessionAdapter {
 	}
 	
 	public AABB nexttickY() {
-		return client.getHitbox().offset(0, vel.y, 0);
+		return client.getHitbox().offset(vel.x, vel.y, vel.z);
 	}
 	
 	public void jump() {
 		if (client.onGround) {
 			client.onGround = false;
-			vel.y = 0.52;
+			vel.y = 0.6;
 			System.out.println("jump pos: "+client.getPositionInt()+" vel: "+vel.toString()+" onGround:"+client.onGround);
 		}
 	}
@@ -91,16 +91,13 @@ public class PhysicsListener extends SessionAdapter {
         if (calcnexttickblock().isAvoid()) {
         	airfall();
         	if (client.getPosX() != ((int)client.getPosX()+0.5) || client.getPosZ() != ((int)client.getPosZ()+0.5)) BotU.calibratePosition(client);
-        	System.out.println("airfall pos: "+client.getPositionInt()+" vel: "+vel.toString()+" onGround:"+client.onGround);
         } else if (calcnexttickblock().isLiquid()) {
         	waterfall();
-        	System.out.println("waterfall pos: "+client.getPositionInt()+" vel: "+vel.toString()+" onGround:"+client.onGround);
         } else {
         	if (client.posY > MathU.Truncate(client.posY)) {
         		vel.y = 0;
             	client.setPosY(MathU.Truncate(client.posY));
             	client.onGround = true;
-            	System.out.println("prestep pos: "+client.getPositionInt()+" vel: "+vel.toString()+" onGround:"+client.onGround);
         	} else {
         		vel.y = 0;
         		client.onGround = true;
@@ -108,11 +105,19 @@ public class PhysicsListener extends SessionAdapter {
         }
         
         if (vel.x != 0 || vel.z != 0) {
-        	for (Block n : client.getNeighborsNOY()) {
-        		if (n.getHitbox() != null && !n.isLiquid()) {
-        			if (n.getHitbox().collide(nexttickZXc())) {
+        	for (Block n : client.getNeighborsLL()) {
+        		if (n.getHitbox() != null) {
+        			if (n.getHitbox().collide(client.getHitbox(vel))) {
         				vel.x = 0;
         				vel.z = 0;
+        			}
+        			
+        			if (n.getHitbox().collide(nexttickZXc())) {
+        				if (n.pos.up().getBlock(client).isAvoid()) {
+	        				jump();
+	        				System.out.println("autojump");
+	        				break;
+        				}
         			}
         		}
         	}
@@ -120,15 +125,16 @@ public class PhysicsListener extends SessionAdapter {
         
         if (vel.y != 0) {
         	for (Block n : client.getNeighborsNOZX()) {
-        		if (n.getHitbox() != null && !n.isLiquid()) {
-        			if (n.getHitbox().collide(nexttickY())) {
+        		if (n.getHitbox() != null) {//&& !n.isLiquid()
+        			if (n.getHitbox().collide(client.getHitbox(vel))) {
         				vel.y = 0;
+        				System.out.println("y reset");
         			}
-        		}
+        		} 
         	}
         }
-        
         if (vel.x == 0 && vel.y == 0 && vel.z == 0) return;
+        System.out.println("pos: "+client.getPosition()+" vel: "+vel.toString()+" onGround:"+client.onGround);
         client.setposto(client.getPosition().add(vel));
     }
 	

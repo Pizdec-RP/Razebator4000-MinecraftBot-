@@ -44,6 +44,10 @@ public class Vector3D {
 		return new Vector3D(x,y-1,z);
 	}
 	
+	public Vector3D up() {
+		return new Vector3D(x,y+1,z);
+	}
+	
 	public boolean IsOnGround(Bot client) {
 		return VectorUtils.BTavoid(this.add(0,-1,0).getBlock(client).type);
 	}
