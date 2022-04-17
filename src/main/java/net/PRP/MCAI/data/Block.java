@@ -71,15 +71,15 @@ public class Block {
 			return null;
 		} else if (type == Type.DOOR || type == Type.GATE || type == Type.GOAWAY || type == Type.HARD || type == Type.UNBREAKABLE || type == Type.UNKNOWN) {
 			//System.out.println(2);
-			return new AABB(pos.x, pos.y, pos.z, pos.x+1, pos.y+1, pos.z+1);
+			return new AABB(pos.x, pos.y, pos.z, pos.x+1, pos.y+1, pos.z+1).floor();
 		} else if (type == Type.CARPET) {
 			//System.out.println(3);
-			return new AABB(pos.x, pos.y, pos.z, pos.x+1, pos.y+0.0625, pos.z+1);
+			return new AABB(pos.x, pos.y, pos.z, pos.x+1, pos.y+0.0625, pos.z+1).floor();
 		} else if (type == Type.LIQUID) {
-			return new AABB(pos.x, pos.y, pos.z, pos.x+1, pos.y+1, pos.z+1);
+			return new AABB(pos.x, pos.y, pos.z, pos.x+1, pos.y+1, pos.z+1).floor();
 		} else {
 			//System.out.println(4);
-			return new AABB(pos.x, pos.y, pos.z, pos.x+1, pos.y+1, pos.z+1);
+			return new AABB(pos.x, pos.y, pos.z, pos.x+1, pos.y+1, pos.z+1).floor();
 		}
 	}
 	

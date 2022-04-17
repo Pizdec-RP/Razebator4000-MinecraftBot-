@@ -73,6 +73,7 @@ public class SessionListener extends SessionAdapter {
             log("pos packet received x:"+packet.getX()+" y:"+packet.getY()+" z:"+packet.getZ()+" yaw:"+packet.getYaw()+" pitch:"+packet.getPitch());
             client.getSession().send(new ClientPlayerPositionRotationPacket(client.onGround,packet.getX(),packet.getY(),packet.getZ(), client.getYaw(), client.getPitch()));
             client.getSession().send(new ClientRequestPacket(ClientRequest.STATS));
+            client.pm.vel = Vector3D.ORIGIN;
         } else if (receiveEvent.getPacket() instanceof ServerPlayerHealthPacket) {
             final ServerPlayerHealthPacket p = (ServerPlayerHealthPacket) receiveEvent.getPacket();
             

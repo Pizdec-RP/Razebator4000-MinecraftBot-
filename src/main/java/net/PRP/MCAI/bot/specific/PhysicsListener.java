@@ -11,10 +11,8 @@ import net.PRP.MCAI.utils.VectorUtils;
 import net.PRP.MCAI.utils.physics;
 import net.PRP.MCAI.bot.AABB;
 import net.PRP.MCAI.bot.Bot;
-import net.PRP.MCAI.bot.pathfinder.AStar.State;
 import net.PRP.MCAI.data.Block;
 import net.PRP.MCAI.data.Vector3D;
-import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.MathU;
 
 public class PhysicsListener extends SessionAdapter {
@@ -24,6 +22,7 @@ public class PhysicsListener extends SessionAdapter {
 	private Bot client;
 	public Vector3D vel = new Vector3D(0,0,0);
 	public int sleepticks = 0;
+	public int autojumpcooldown = 0;
 	
 	public PhysicsListener(Bot client) {
 		this.client = client;
@@ -37,17 +36,17 @@ public class PhysicsListener extends SessionAdapter {
 	}
 	
 	public void airfall() {
-		int slowFalling = 0;//client.effects.slowFalling
-        double gravityMultiplier = (vel.y <= 0 && slowFalling > 0) ? physics.slowFalling : 1;
+		//int slowFalling = 0;//client.effects.slowFalling
+        //double gravityMultiplier = (vel.y <= 0 && slowFalling > 0) ? physics.slowFalling : 1;
 		client.onGround = false;
-    	vel.y -= physics.gravity * gravityMultiplier;
+    	vel.y -= physics.gravity;// * gravityMultiplier;
     	vel.y *= physics.airdrag;
 	}
 	
 	public double calcnextairfall() {
-        double gravityMultiplier = 1;
+        //double gravityMultiplier = 1;
     	double y = vel.y;
-		y -= physics.gravity * gravityMultiplier;
+		y -= physics.gravity;// * gravityMultiplier;
     	y *= physics.airdrag;
     	return y;
 	}
@@ -57,25 +56,31 @@ public class PhysicsListener extends SessionAdapter {
 	}
 	
 	public void waterfall() {
-		int slowFalling = 0;//client.effects.slowFalling
-        double gravityMultiplier = (vel.y <= 0 && slowFalling > 0) ? physics.slowFalling : 1;
+		client.onGround = false;
+		//int slowFalling = 0;//client.effects.slowFalling
+        //double gravityMultiplier = (vel.y <= 0 && slowFalling > 0) ? physics.slowFalling : 1;
 		vel.y *= client.isInWater() ? physics.waterInertia : physics.lavaInertia;
-		vel.y -= (client.isInWater() ? physics.waterGravity : physics.lavaGravity) * gravityMultiplier;
+		vel.y -= (client.isInWater() ? physics.waterGravity : physics.lavaGravity);// * gravityMultiplier;
 	}
 	
-	public AABB nexttickZXc() {//zxc dead inside sshhiit
-		return client.getHitbox().offset(vel.x, 0, vel.z);
+	public AABB nexttickX() {
+		return client.getHitbox().offset(vel.x, 0, 0);
+	}
+	
+	public AABB nexttickZ() {
+		return client.getHitbox().offset(0, 0, vel.z);
 	}
 	
 	public AABB nexttickY() {
-		return client.getHitbox().offset(vel.x, vel.y, vel.z);
+		return client.getHitbox().offset(0, vel.y, 0);
 	}
 	
 	public void jump() {
-		if (client.onGround) {
+		if (client.onGround && autojumpcooldown <= 0) {
+			autojumpcooldown = 10;
 			client.onGround = false;
-			vel.y = 0.6;
-			System.out.println("jump pos: "+client.getPositionInt()+" vel: "+vel.toString()+" onGround:"+client.onGround);
+			vel.y = 0.52;
+			//System.out.println("jump pos: "+client.getPositionInt()+" vel: "+vel.toString()+" onGround:"+client.onGround);
 		}
 	}
 	
@@ -90,7 +95,7 @@ public class PhysicsListener extends SessionAdapter {
         
         if (calcnexttickblock().isAvoid()) {
         	airfall();
-        	if (client.getPosX() != ((int)client.getPosX()+0.5) || client.getPosZ() != ((int)client.getPosZ()+0.5)) BotU.calibratePosition(client);
+        	//if (client.getPosX() != ((int)client.getPosX()+0.5) || client.getPosZ() != ((int)client.getPosZ()+0.5)) BotU.calibratePosition(client);
         } else if (calcnexttickblock().isLiquid()) {
         	waterfall();
         } else {
@@ -104,42 +109,59 @@ public class PhysicsListener extends SessionAdapter {
         	}
         }
         
-        if (vel.x != 0 || vel.z != 0) {
-        	for (Block n : client.getNeighborsLL()) {
+        if (vel.y != 0) {
+        	for (Vector3D a : client.getHitbox(0,vel.y,0).getCorners()) {
+        		Block n = a.getBlock(client);
         		if (n.getHitbox() != null) {
-        			if (n.getHitbox().collide(client.getHitbox(vel))) {
-        				vel.x = 0;
-        				vel.z = 0;
+        			if (n.getHitbox().collide(nexttickY()) && !n.isLiquid()) {
+        				if (vel.y > 0) {
+        					vel.y = Math.floor(n.pos.y)-(client.posY+1.8);
+        					//System.out.println("vel.y++");
+        				} else {
+	        				vel.y = 0;
+	        				//System.out.println("y reset");
+        				}
         			}
-        			
-        			if (n.getHitbox().collide(nexttickZXc())) {
-        				if (n.pos.up().getBlock(client).isAvoid()) {
-	        				jump();
-	        				System.out.println("autojump");
-	        				break;
+        		} 
+        	}
+        }
+        
+        if (vel.x != 0) {
+        	for (Vector3D a : client.getHitbox(vel.x,0,0).getCorners()) {
+        		Block n = a.getBlock(client);
+        		if (n.getHitbox() != null) {
+        			if (n.getHitbox().collide(nexttickX())) {
+        				vel.x = 0;
+        				if (a.up().getBlock(client).isAvoid() && Math.floor(a.y) == Math.floor(client.posY)) {
+        					jump();
         				}
         			}
         		}
         	}
         }
         
-        if (vel.y != 0) {
-        	for (Block n : client.getNeighborsNOZX()) {
-        		if (n.getHitbox() != null) {//&& !n.isLiquid()
-        			if (n.getHitbox().collide(client.getHitbox(vel))) {
-        				vel.y = 0;
-        				System.out.println("y reset");
+        if (vel.z != 0) {
+        	for (Vector3D a : client.getHitbox(0,0,vel.z).getCorners()) {
+        		Block n = a.getBlock(client);
+        		if (n.getHitbox() != null) {
+        			if (n.getHitbox().collide(nexttickZ())) {
+        				vel.z = 0;
+        				if (a.up().getBlock(client).isAvoid() && Math.floor(a.y) == Math.floor(client.posY)) {
+        					jump();
+        				}
         			}
-        		} 
+        		}
         	}
         }
+        
         if (vel.x == 0 && vel.y == 0 && vel.z == 0) return;
-        System.out.println("pos: "+client.getPosition()+" vel: "+vel.toString()+" onGround:"+client.onGround);
+        //System.out.println("pos: "+client.getPosition()+" vel: "+vel.toString()+" onGround:"+client.onGround+" ajc"+autojumpcooldown);
         client.setposto(client.getPosition().add(vel));
     }
 	
 	public void tick() {
 		if (!client.isOnline() || !client.isGameReady()) return;
+		if (autojumpcooldown > 0) autojumpcooldown--;
 		PhysicsUpdate();
 		Vector3D nowPos = client.getPosition();
 		float nowYaw = client.getYaw();

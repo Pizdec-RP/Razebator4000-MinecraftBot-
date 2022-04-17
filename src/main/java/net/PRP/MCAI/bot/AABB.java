@@ -26,13 +26,29 @@ public class AABB {
 	    return new AABB(this.minX, this.minY, this.minZ, this.maxX, this.maxY, this.maxZ);
 	}
 	
-	public void floor () {
+	public AABB floor() {
 	    this.minX = Math.floor(this.minX);
 	    this.minY = Math.floor(this.minY);
 	    this.minZ = Math.floor(this.minZ);
 	    this.maxX = Math.floor(this.maxX);
 	    this.maxY = Math.floor(this.maxY);
 	    this.maxZ = Math.floor(this.maxZ);
+	    return this;
+	}
+	
+	public List<Vector3D> getCorners() {
+		List<Vector3D> c = new ArrayList<>();
+		
+		c.add(new Vector3D(minX,minY,minZ));
+		c.add(new Vector3D(minX,maxY,minZ));
+		c.add(new Vector3D(minX,minY,maxZ));
+		c.add(new Vector3D(minX,maxY,maxZ));
+		
+		c.add(new Vector3D(maxX,minY,minZ));
+		c.add(new Vector3D(maxX,maxY,minZ));
+		c.add(new Vector3D(maxX,minY,maxZ));
+		c.add(new Vector3D(maxX,maxY,maxZ));
+		return c;
 	}
 	
 	public AABB extend(double dx, double dy, double dz) {
@@ -48,10 +64,14 @@ public class AABB {
 	    return this;
 	}
 	
-	public List<Vector3D> getTouchedNeighbors() {
-		List<Vector3D> n = new ArrayList<>();
-		Vector3D center = new Vector3D(maxX-minX, 0, maxZ-minZ);
-		return n;
+	public AABB offset(Vector3D a) {
+		this.minX += a.x;
+	    this.minY += a.y;
+	    this.minZ += a.z;
+	    this.maxX += a.x;
+	    this.maxY += a.y;
+	    this.maxZ += a.z;
+	    return this;
 	}
 	
 	public AABB contract(double x, double y, double z) {

@@ -59,6 +59,32 @@ public class World {
 		}
 	}
 	
+	public Block getBlock(double x, double y, double z) {
+		if ((boolean) Main.getsett("multiworld")) {
+			return Multiworld.getBlock(x,y,z);
+		} else {
+			if (y < 0 || y > 256) {
+				return new Block(0 , 0, new Vector3D(x,y,z), Type.VOID);
+			}
+			try {
+				int bx = (int)x & 15;
+	            int by = (int)y & 15;
+	            int bz = (int)z & 15;
+	            int chunkX = (int)Math.floor(x) >> 4;
+	            int chunkY = (int)Math.floor(y) >> 4;
+	            int chunkZ = (int)Math.floor(z) >> 4;
+				Chunk cc = columns.get(new ChunkCoordinates(chunkX, chunkZ)).getChunks()[chunkY];
+	            if (cc == null) return new Block();
+	            int state = cc.get(bx, by, bz);
+	            int id = Main.getMCData().blockStates.get(state).id;
+				return new Block(state, id, new Vector3D(x,y,z), Main.getMCData().bt(id));
+	    	} catch (Exception e) {
+	    		if (Main.debug) e.printStackTrace();
+				return new Block();
+			}
+		}
+	}
+	
 	public Block getBlock(Vector3D pos) {
 		if ((boolean) Main.getsett("multiworld")) {
 			return Multiworld.getBlock(pos);

@@ -192,10 +192,6 @@ public class AStar {
 		BotU.LookHead(client, to.add(0.5, 1, 0.5));
 		Vector3D nextvel = VectorUtils.vector(client.getYaw(), client.getPitch(), playerSpeed);
 		
-		if (to.y > from.y) {
-			
-		}
-		
 		client.pm.vel.setX(nextvel.x);
 		client.pm.vel.setZ(nextvel.z);
 		//System.out.println(playerSpeed +" | "+ to.toString() +" | "+ client.getPosition());

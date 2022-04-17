@@ -209,6 +209,10 @@ public class ChatListener extends SessionAdapter {
 					} else if (command.get(0).equalsIgnoreCase("isliquid")) {
 						Vector3D aa = new Vector3D(Integer.parseInt(command.get(1)),Integer.parseInt(command.get(2)),Integer.parseInt(command.get(3)));
 						BotU.chat(client, ">"+aa.getBlock(client).isLiquid());
+					} else if (command.get(0).equalsIgnoreCase("hbc")) {
+						for (Vector3D n : client.getHitbox().getCorners()) {
+							BotU.chat(client, n.toString());
+						}
 					}
 				}
 			}).start();

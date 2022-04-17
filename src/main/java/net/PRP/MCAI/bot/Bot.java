@@ -448,63 +448,58 @@ public class Bot implements Runnable {
 		return new AABB(posX+a.x-0.3, posY+a.y, posZ+a.z-0.3, posX+a.x+0.3, posY+a.y+1.8, posZ+a.z+0.3);
 	}
 	
+	public AABB getHitbox(double x, double y, double z) {
+		return new AABB(posX+x-0.3, posY+y, posZ+z-0.3, posX+x+0.3, posY+y+1.8, posZ+z+0.3);
+	}
+	
 	public List<Block> getNeighborsX() {
 		List<Block> n = new ArrayList<>();
-		n.add(getPositionInt().add(1,0,0).getBlock(this));
-		n.add(getPositionInt().add(1,0,1).getBlock(this));
-		n.add(getPositionInt().add(1,0,-1).getBlock(this));
-		
-		n.add(getPositionInt().add(-1,0,0).getBlock(this));
-		n.add(getPositionInt().add(-1,0,1).getBlock(this));
-		n.add(getPositionInt().add(-1,0,-1).getBlock(this));
-		
-		n.add(getPositionInt().add(1,1,0).getBlock(this));
-		n.add(getPositionInt().add(1,1,1).getBlock(this));
-		n.add(getPositionInt().add(1,1,-1).getBlock(this));
-		
-		n.add(getPositionInt().add(-1,1,0).getBlock(this));
-		n.add(getPositionInt().add(-1,1,1).getBlock(this));
-		n.add(getPositionInt().add(-1,1,-1).getBlock(this));
+		double x;
+		x = getHitbox().minX-1;
+		for (int z = -1; z <= 1; z++) {
+			for (int y = 0; y <= 3; y++) {
+				n.add(world.getBlock(x, posY+y, posZ+z));
+			}
+		}
+		x = getHitbox().maxX+1;
+		for (int z = -1; z <= 1; z++) {
+			for (int y = 0; y <= 3; y++) {
+				n.add(world.getBlock(x, posY+y, posZ+z));
+			}
+		}
 		return n;
 	}
 	
 	public List<Block> getNeighborsZ() {
 		List<Block> n = new ArrayList<>();
-		n.add(getPositionInt().add(1,0,0).getBlock(this));
-		n.add(getPositionInt().add(1,0,1).getBlock(this));
-		n.add(getPositionInt().add(1,0,-1).getBlock(this));
-		
-		n.add(getPositionInt().add(-1,0,0).getBlock(this));
-		n.add(getPositionInt().add(-1,0,1).getBlock(this));
-		n.add(getPositionInt().add(-1,0,-1).getBlock(this));
-		
-		n.add(getPositionInt().add(1,1,0).getBlock(this));
-		n.add(getPositionInt().add(1,1,1).getBlock(this));
-		n.add(getPositionInt().add(1,1,-1).getBlock(this));
-		
-		n.add(getPositionInt().add(-1,1,0).getBlock(this));
-		n.add(getPositionInt().add(-1,1,1).getBlock(this));
-		n.add(getPositionInt().add(-1,1,-1).getBlock(this));
+		double z;
+		z = getHitbox().minX-1;
+		for (int x = -1; x <= 1; x++) {
+			for (int y = 0; y <= 3; y++) {
+				n.add(world.getBlock(posX+x, posY+y, z));
+			}
+		}
+		z = getHitbox().maxX+1;
+		for (int x = -1; x <= 1; x++) {
+			for (int y = 0; y <= 3; y++) {
+				n.add(world.getBlock(posX+x, posY+y, z));
+			}
+		}
 		return n;
 	}
 	
-	
-	public List<Block> getNeighborsB() {
+	public List<Block> getNeighborsY() {
 		List<Block> n = new ArrayList<>();
-		n.add(getPositionInt().add(1,0,0).getBlock(this));
-		n.add(getPositionInt().add(1,1,0).getBlock(this));
-		
-		n.add(getPositionInt().add(-1,0,0).getBlock(this));
-		n.add(getPositionInt().add(-1,1,0).getBlock(this));
-		
-		n.add(getPositionInt().add(0,0,1).getBlock(this));
-		n.add(getPositionInt().add(0,1,1).getBlock(this));
-		
-		n.add(getPositionInt().add(0,0,-1).getBlock(this));
-		n.add(getPositionInt().add(0,1,-1).getBlock(this));
-
-		n.add(getPositionInt().add(0,-1,0).getBlock(this));
-		n.add(getPositionInt().add(0,2,1).getBlock(this));
+		for (int x = -1; x <= 1; x++) {
+			for (int z = -1; z <= 1; z++) {
+				n.add(getPositionInt().add(x, -1, z).getBlock(this));
+			}
+		}
+		for (int x = -1; x <= 1; x++) {
+			for (int z = -1; z <= 1; z++) {
+				n.add(getPositionInt().add(x, 2, z).getBlock(this));
+			}
+		}
 		return n;
 	}
 }
