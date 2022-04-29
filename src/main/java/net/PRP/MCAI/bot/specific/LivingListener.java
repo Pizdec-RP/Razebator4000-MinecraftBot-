@@ -16,8 +16,10 @@ import com.github.steveice10.packetlib.event.session.SessionAdapter;
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.bot.pathfinder.AStar.State;
+import net.PRP.MCAI.bot.pathfinder.PathObject;
 import net.PRP.MCAI.bot.specific.BlockBreakManager.bbmct;
 import net.PRP.MCAI.bot.specific.Crafting.crState;
+import net.PRP.MCAI.data.Block;
 import net.PRP.MCAI.data.Entity;
 import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.utils.*;
@@ -27,7 +29,7 @@ public class LivingListener extends SessionAdapter {
 	private Bot client;
 	private boolean firstJoin = false;
 	public raidState state = raidState.IDLE;
-	public Vector3D asd = Vector3D.ORIGIN;
+	public Vector3D mineAfterWalk = null;
 	public List<Vector3D> blacklist = new CopyOnWriteArrayList<>();
 	public boolean trusted;
 	private int sleepticks = (int)Main.getsett("walkeverymilseconds") / 50;
@@ -35,6 +37,8 @@ public class LivingListener extends SessionAdapter {
 	
 	public int tickstocheck = 0;
 	public short stage = 0;
+	public List<String> tasklist = new ArrayList<>();
+	
 	
 	public List<EntityType> badentities = new ArrayList<>() {
 		private static final long serialVersionUID = -6373621458088442703L;
@@ -63,7 +67,7 @@ public class LivingListener extends SessionAdapter {
     }
 	
 	public enum raidState {
-		IDLE, GOING, MINING, CRAFTING, WAIT;
+		IDLE, GOING, MINING, CRAFTING;
 	}
 	
 	@Override
@@ -78,7 +82,6 @@ public class LivingListener extends SessionAdapter {
         }
 	}
 	
-	@SuppressWarnings("serial")
 	public void tick() {
 		//try {
 			if (!firstJoin || !client.isOnline()) return;
@@ -95,19 +98,112 @@ public class LivingListener extends SessionAdapter {
 			
 			if (state == raidState.IDLE) {
 				if (!this.trusted) return;
-				if (client.pathfinder.state == State.WALKING) return;
-				if (client.pvp.state != CombatState.END_COMBAT) return;
-				if (client.getPositionInt().getBlock(client).ishard()) {
-					state = raidState.MINING;
-					client.bbm.setup(client.getPositionInt());
-					return;
-				} else if (client.getPositionInt().add(0,1,0).getBlock(client).ishard()) {
-					state = raidState.MINING;
-					client.bbm.setup(client.getPositionInt());
-					return;
-				}
 				if (sleepticks > 0) {sleepticks--;return;}
-				if ((int)Main.getsett("walkeverymilseconds") >= 50) sleepticks = (int)Main.getsett("walkeverymilseconds") / 50;
+				
+				if (!tasklist.isEmpty()) {
+					if (tasklist.get(0).toLowerCase().startsWith("mine")) {
+						Vector3D block;
+						block = VectorUtils.findBlockByName(client, tasklist.get(0).split(" ")[1], blacklist);
+						if (block == null) {//подходящий блок небыл найден
+							tasklist.remove(0);
+						} else {
+							if (block.getBlock(client).touchLiquid(client)) {//блок касается жидкости
+								this.blacklist.add(block); 
+								return;
+							}
+							if (VectorUtils.sqrt(client.getEyeLocation(), block) <= (int)Main.getsett("maxpostoblock")) {//блок довольно близко
+								
+								if (VectorUtils.sqrt(client.getEyeLocation(), block) <= 2.2) {
+									client.bbm.setup(block);
+									this.state = raidState.MINING;
+									tasklist.remove(0);
+									return;
+								}
+								Vector3D pos = VectorUtils.func_31(client, block, (int)Main.getsett("maxpostoblock"));
+								if (pos != null) {//к нему можно приблизиться
+									client.pathfinder.setup(pos);
+							    	this.state = raidState.GOING;
+							    	this.mineAfterWalk = block;
+							    	tasklist.remove(0);
+								} else {
+									client.bbm.setup(block);
+									this.state = raidState.MINING;
+									tasklist.remove(0);
+								}
+								return;
+						    } else {
+						    	Vector3D pos = VectorUtils.func_31(client, block, (int)Main.getsett("maxpostoblock"));
+						    	if (pos == null) {
+						    		this.blacklist.add(block);
+						    		return;
+						    	}
+						    	if (!client.pathfinder.testForPath(pos)) {
+						    		blacklist.add(block);
+						    		return;
+						    	}
+						    	client.pathfinder.setup(pos);
+						    	this.state = raidState.GOING;
+						    	this.mineAfterWalk = block;
+						    	tasklist.remove(0);
+						    	return;
+						    }
+						}
+					}
+				}
+				//now ruled by gui or commands
+				//task ex: mine wood 5
+				//craft sticks 2
+				
+			} else if (state == raidState.GOING) {
+				if (client.pathfinder.state == State.FINISHED) {
+					if (mineAfterWalk != null) {
+						state = raidState.MINING;
+						client.bbm.setup(mineAfterWalk);
+						mineAfterWalk = null;
+						return;
+					}
+					state = raidState.IDLE;
+				}
+			} else if (state == raidState.MINING) {
+				if (client.bbm.state == bbmct.ENDED) {
+					this.state = raidState.IDLE;
+					this.sleepticks = 10;
+				} else {
+					if (client.bbm.ticksToBreak < -200) {
+						client.bbm.endDigging();
+						this.blacklist.add(client.bbm.getBlockPos());
+						this.state = raidState.IDLE;
+						this.sleepticks = 10;
+					}
+				}
+				return;
+			} else if (state == raidState.CRAFTING) {
+				if (client.crafter.state == crState.ENDED) this.state = raidState.IDLE;
+			}
+		//} catch (Exception e) {
+			//e.printStackTrace();
+			//System.out.println("1");
+		//}
+	}
+	
+	public void go(Vector3D to) {
+		state = raidState.GOING;
+		client.pathfinder.setup(to);
+	}
+	
+	/*if (!client.playerInventory.contain("sticks", 4)) {
+		if (!client.playerInventory.contain("planks", 2)) {
+			if (!client.playerInventory.contain("log", 1)) {
+				Vector3D block = VectorUtils.findBlockByName(client, "log", this.blacklist);
+				if (client.distance(block) > (int)Main.getsett("maxpostoblock")) {
+					
+				}
+			}
+		}
+	}
+	
+	/*
+	 * if ((int)Main.getsett("walkeverymilseconds") >= 50) sleepticks = (int)Main.getsett("walkeverymilseconds") / 50;
 				
 				if ((int)Main.getsett("walkeverymilseconds") != 0) sleepticks = (int)Main.getsett("walkeverymilseconds") / 50;
 				
@@ -543,43 +639,7 @@ public class LivingListener extends SessionAdapter {
 					    	this.state = raidState.GOING;
 					    	return;
 					    }
-					}
+				 	}
 				}
-				
-				
-				
-			} else if (state == raidState.GOING) {
-				if (client.pathfinder.state == State.FINISHED) {
-					if (asd == null) {
-						this.state = raidState.MINING;
-						client.bbm.setup(asd);
-						asd = null;
-					} else {
-						state = raidState.IDLE;
-					}
-				}
-			} else if (state == raidState.MINING) {
-				//System.out.println(client.bbm.getBlockPos());
-				if (client.bbm.state == bbmct.ENDED) {
-					this.asd = null;
-					this.state = raidState.IDLE;
-				} else {
-					if (client.bbm.ticksToBreak < -200) {
-						this.asd = null;
-						client.bbm.endDigging();
-						this.blacklist.add(client.bbm.getBlockPos());
-						this.state = raidState.IDLE;
-					}
-				}
-			} else if (state == raidState.CRAFTING) {
-				if (client.crafter.state == crState.ENDED) {
-					this.asd = null;
-					this.state = raidState.IDLE;
-				}
-			}
-		//} catch (Exception e) {
-			//e.printStackTrace();
-			//System.out.println("1");
-		//}
-	}
+	 */
 }

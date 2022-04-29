@@ -99,7 +99,6 @@ public class ChatListener extends SessionAdapter {
 						Vector3D pos12 = new Vector3D(Integer.parseInt(command.get(1)),Integer.parseInt(command.get(2)),Integer.parseInt(command.get(3)));
 						client.bbm.setBlockPos(pos12);
 						client.bbm.state = bbmct.STARTED;
-						client.bbm.setReadyToBreak(true);
 					} else if (command.get(0).equalsIgnoreCase("setslot")) {
 						BotU.SetSlot(client, Integer.parseInt(command.get(1)));
 					} else if (command.get(0).equalsIgnoreCase("youpos")) {

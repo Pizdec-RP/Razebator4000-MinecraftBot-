@@ -22,7 +22,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
 
-import net.PRP.MCAI.GUI.Window;
+import net.PRP.MCAI.GUI.SteeringWheel;
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.data.BlockData;
 import net.PRP.MCAI.data.ItemData;
@@ -38,7 +38,7 @@ public class Main {
 	public static Map<?, ?> data;
 	static List<Proxy> proxies;
 	static int proxyNumb = 0;
-	public static boolean debug = true;
+	public static boolean debug = false;
 	public static List<Bot> bots = new ArrayList<Bot>();
 	public static Proxy proxy = Proxy.NO_PROXY;
 	public static List<String> pasti = new CopyOnWriteArrayList<String>();
@@ -61,9 +61,9 @@ public class Main {
 	        bots.add(client);
     		new Thread(client).start();
     	} else {
-	    	if ((boolean) getsett("window")) {
-	    		new Window();
-	    	} else {
+	    	//if ((boolean) getsett("window")) {
+	    	new SteeringWheel();
+	    	/*} else {
 		    	String ip = (String)getsett("host");
 		        String host = ip.split(":")[0];
 		        String portstr = ip.split(":")[1];
@@ -81,7 +81,7 @@ public class Main {
 				    ThreadU.sleep((int) getsett("enterrange"));
 		    	}
 		    	Obshak.pickMainhost();
-	    	}
+	    	}*/
     	}
 	}
     

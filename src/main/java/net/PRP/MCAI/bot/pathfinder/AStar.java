@@ -5,7 +5,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.bot.Bot;
+import net.PRP.MCAI.bot.specific.BlockBreakManager.bbmct;
 import net.PRP.MCAI.data.Vector3D;
+import net.PRP.MCAI.data.physics;
 import net.PRP.MCAI.utils.*;
 
 public class AStar {
@@ -188,12 +190,56 @@ public class AStar {
 			BotU.calibratePosition(client);
 		}
 		
+		if (to.hasheddata > 0) {
+			if (client.bbm.state != bbmct.ENDED) return;
+			playerSpeed = 0;
+			if (to.hasheddata == 1) {
+				if (!to.getBlock(client).isAvoid()) {
+					client.bbm.setup(to);
+					return;
+				} else if (!to.add(0,1,0).getBlock(client).isAvoid()) {
+					client.bbm.setup(to.add(0,1,0));
+					return;
+				}
+			} else if (to.hasheddata == 2) {
+				if (!from.add(0,2,0).getBlock(client).isAvoid()) {
+					client.bbm.setup(client.getPositionInt().add(0,2,0));
+					return;
+				} else if (!to.getBlock(client).isAvoid()) {
+					client.bbm.setup(to);
+					return;
+				} else if (!to.add(0,1,0).getBlock(client).isAvoid()) {
+					client.bbm.setup(to.add(0,1,0));
+					return;
+				}
+			} else if (to.hasheddata == 3) {
+				if (!to.add(0,2,0).getBlock(client).isAvoid()) {
+					client.bbm.setup(to.add(0,2,0));
+					return;
+				} else if (!to.add(0,1,0).getBlock(client).isAvoid()) {
+					client.bbm.setup(to.add(0,1,0));
+					return;
+				} else if (!to.getBlock(client).isAvoid()) {
+					client.bbm.setup(to);
+					return;
+				}
+			} else if (to.hasheddata == 4) {
+				if (!to.getBlock(client).isAvoid()) {
+					client.bbm.setup(to);
+					return;
+				}
+			}
+		}
+		
 		if (playerSpeed <= 0) playerSpeed = physics.playerSpeed;
 		BotU.LookHead(client, to.add(0.5, 1, 0.5));
 		Vector3D nextvel = VectorUtils.vector(client.getYaw(), client.getPitch(), playerSpeed);
 		
 		client.pm.vel.setX(nextvel.x);
 		client.pm.vel.setZ(nextvel.z);
+		if (client.getPitch() < -85) {
+			client.pm.jump();
+		}
 		//System.out.println(playerSpeed +" | "+ to.toString() +" | "+ client.getPosition());
 		playerSpeed += 0.098;
 		playerSpeed *= 0.7;

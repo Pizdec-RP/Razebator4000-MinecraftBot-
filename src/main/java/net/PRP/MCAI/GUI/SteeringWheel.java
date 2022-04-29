@@ -23,10 +23,11 @@ import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.MathU;
 import net.PRP.MCAI.utils.ThreadU;
 
-public class Window {
+public class SteeringWheel {
 	
 	JFrame frame;
-	public DefaultListModel<String> listofbots = new DefaultListModel<>();
+	JFrame taskmanager;
+	//public DefaultListModel<String> listofbots = new DefaultListModel<>();
 	public int botnum = 0;
 	public List<String> hi = new CopyOnWriteArrayList<>();
 	JLabel stats;
@@ -49,11 +50,13 @@ public class Window {
 	}};
 	public JComboBox<String> servers;
 	
-	public Window() {
+	public SteeringWheel() {
 		frame = new JFrame("-------------------------------");
 	    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	    frame.setSize(600,500);
 	    frame.setLayout(null);
+	    
+	    SetupTM();
 	    
 	    JTextField b = new JTextField("текст для отправки");
 	    b.setBounds(0,0,400,30);
@@ -209,10 +212,49 @@ public class Window {
 	    canvas.setSize(200, 200);
 	    canvas.setBounds(0, 250, 200, 200);
 	    frame.add(canvas);
-	    
 	    frame.setVisible(true);
 	    updater();
 	    //ServerChatPacket p = new ServerChatPacket();
+	}
+	
+	@SuppressWarnings("deprecation")
+	public void SetupTM() {
+		new Thread(()->{
+			taskmanager = new JFrame("создаватель тасков)");
+			taskmanager.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+			taskmanager.setSize(500,200);
+			taskmanager.setLayout(null);
+			taskmanager.move(600, 0);
+			
+			JLabel mining = new JLabel("копать блок");
+			mining.setBounds(0,0,80,20);
+			taskmanager.add(mining);
+			
+			JTextField bname = new JTextField("назв. блока");
+		    bname.setBounds(85,0,105,20);
+		    taskmanager.add(bname);
+		    
+		    JTextField bcount = new JTextField("количество");
+		    bcount.setBounds(195,0,70,20);
+		    taskmanager.add(bcount);
+			
+			JButton rndpasta = new JButton("button.settask.name");
+		    rndpasta.addActionListener(new ActionListener() {
+
+				@Override
+				public void actionPerformed(ActionEvent event) {
+					for (Bot bot : Main.bots) {
+						for (int i = 0; i<Integer.parseInt(bcount.getText());i++) {
+							bot.rl.tasklist.add("mine "+bname.getText());
+						}
+					}
+				}
+		    });
+		    rndpasta.setBounds(0,40,250,20);
+		    taskmanager.add(rndpasta);
+		    
+		    taskmanager.setVisible(true);
+		}).start();
 	}
 	
 	public void drawPixel(int x, int y) {

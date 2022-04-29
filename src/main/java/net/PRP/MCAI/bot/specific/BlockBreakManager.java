@@ -12,6 +12,7 @@ import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlaye
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.data.BlockData;
+import net.PRP.MCAI.data.MinecraftData.Type;
 import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.data.materialsBreakTime;
 import net.PRP.MCAI.utils.BotU;
@@ -21,19 +22,17 @@ public class BlockBreakManager {
 	
 	public Bot client;
 	private Vector3D pos;
-	public boolean readyToBreak = false;
-	//public BlockBreakStage breakPhase;
 	public bbmct state = bbmct.ENDED;
 	public int d1 = 0;
 	public int ticksToBreak = 0;
 	
 	public BlockBreakManager(Bot client) {
-		setBlockPos(new Vector3D(0,-1,0));
+		setBlockPos(Vector3D.ORIGIN);
 		this.client = client;
 	}
 	
 	public enum bbmct {
-		STARTED, IN_PROGRESS, ENDED, ABORT;
+		STARTED, IN_PROGRESS, ENDED;
 	}
 	
 	public void reset() {
@@ -41,28 +40,21 @@ public class BlockBreakManager {
 		this.d1 = 0;
 		this.ticksToBreak = 0;
 		this.state = bbmct.ENDED;
-		this.readyToBreak = false;
 	}
 	
 	@SuppressWarnings("deprecation")
 	public void tick() {
 		try {
-			if (!readyToBreak) return;
-			if (!client.isOnline()) {
+			if (state == bbmct.ENDED) return;
+			if (!client.isOnline() || client.pvp.state != CombatState.END_COMBAT || pos == null) {
 				reset();
 				return;
 			}
-			if (client.pvp.state != CombatState.END_COMBAT) return;
-			//if (pos != null) System.out.println("blockid:"+pos.getBlock(client).id+" bbm pos:"+pos.toStringInt()+" readyToBreak:"+readyToBreak+" ticksToBreak:"+ticksToBreak+" state:"+state);
-			if (pos == null) return;
-			if (pos.getBlock(client).id == 0) {
-				//System.out.println("4");
+			if (pos.getBlock(client).type == Type.AIR) {
 				client.getSession().send(new ClientPlayerActionPacket(PlayerAction.FINISH_DIGGING, pos.translate(), BlockFace.UP));
 				state = bbmct.ENDED;
-				readyToBreak = false;
 			}
 			if (state == bbmct.STARTED) {
-				if (pos == null) endDigging();
 				client.pathfinder.ignored.add(pos);
 				BotU.LookHead(client, pos);
 				prepareitem();
@@ -70,7 +62,6 @@ public class BlockBreakManager {
 				client.getSession().send(new ClientPlayerActionPacket(PlayerAction.START_DIGGING, pos.translate(), BlockFace.UP));
 				this.ticksToBreak = (int) Math.floor(calculateBreakTime());
 				if (ticksToBreak == 1.0) {
-					//System.out.println("3");
 					endDigging();
 				} else {
 					this.state = bbmct.IN_PROGRESS;
@@ -87,7 +78,7 @@ public class BlockBreakManager {
 					d1 = 0;
 				}
 				
-				if (pos.getBlock(client).id == 0) {
+				if (pos.getBlock(client).type == Type.AIR) {
 					endDigging();
 				}
 				
@@ -95,8 +86,6 @@ public class BlockBreakManager {
 				if (ticksToBreak <= 0) {
 					endDigging();
 				}
-			} else {
-				
 			}
 		} catch (Exception e) {
 			if (e instanceof NullPointerException) reset();
@@ -108,14 +97,13 @@ public class BlockBreakManager {
 	public void endDigging() {
 		if (Main.debug) System.out.println("mining ended");
 		client.getSession().send(new ClientPlayerActionPacket(PlayerAction.FINISH_DIGGING, pos.translate(), BlockFace.UP));
-		this.readyToBreak = false;
+		
 		this.state = bbmct.ENDED;
 	}
 	
 	public void setup(Vector3D block) {
 		client.bbm.setBlockPos(block);
 		client.bbm.state = bbmct.STARTED;
-		client.bbm.setReadyToBreak(true);
 	}
 	
 	public void prepareitem() {
@@ -137,13 +125,6 @@ public class BlockBreakManager {
 
 	public void setBlockPos(Vector3D blockPos) {
 		this.pos = blockPos;
-	}
-
-	public boolean isReadyToBreak() {
-		return readyToBreak;
-	}
-	public void setReadyToBreak(boolean readyToBreak) {
-		this.readyToBreak = readyToBreak;
 	}
 	
 	public Double calculateBreakTime() {

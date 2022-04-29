@@ -53,18 +53,18 @@ public class PathObject {
 		int l = 0;
 		while (true) {
 			l++; if (l>maxpath) {
-				if (Main.debug) System.out.println("maxpath");
+				//if (Main.debug) System.out.println("maxpath");
 				return false;
 			}
 			if (VectorUtils.equalsInt(cursor, end)) {
 				if (addsleepticks) sleepticks = 10;
-				if (Main.debug) System.out.println(cursor.toStringInt()+" == "+end.toStringInt());
+				//if (Main.debug) System.out.println(cursor.toStringInt()+" == "+end.toStringInt());
 				return true;
 			}
 			List<Vector3D> neighbors;
 			neighbors = getNeighbors(cursor,1);
 			if (neighbors.isEmpty()) {
-				if (Main.debug) System.out.println("pizdec");
+				//if (Main.debug) System.out.println("pizdec");
 				return false;
 			}
 			cursor = pickCloser(neighbors);
@@ -85,7 +85,7 @@ public class PathObject {
 		int l = 0;
 		while (true) {
 			l++; if (l>maxpath) {
-				if (Main.debug) System.out.println("maxpath");
+				//if (Main.debug) System.out.println("maxpath");
 				return false;
 			}
 			if (VectorUtils.equalsInt(cursor, end)) {
@@ -95,7 +95,7 @@ public class PathObject {
 			List<Vector3D> neighbors;
 			neighbors = getNeighbors(cursor,2);
 			if (neighbors.isEmpty()) {
-				if (Main.debug) System.out.println("pizdec");
+				//if (Main.debug) System.out.println("pizdec");
 				return false;
 			}
 			cursor = pickCloser(neighbors);
@@ -151,6 +151,7 @@ public class PathObject {
 		if (neighbors.isEmpty() && method == 2) {
 			Vector3D psy;
 			psy = ps.add(0,-1,0);
+			psy.hasheddata = 4;
 			if (VectorUtils.icanstayhere(psy.add(0,-1,0).getBlock(client).type)) {
 				neighbors.add(psy);
 			}
@@ -183,18 +184,19 @@ public class PathObject {
 			temp.add(ps.add(0,-1,-1));
 			
 			temp.forEach((poss) -> {
-				poss.hasheddata = 1;
 				if (poss.isCanStayHere(client)) {
 					if (ps.y - poss.y == -1) {
+						poss.hasheddata = 2;
 						if (poss.isMineable(client) && poss.add(0,1,0).isMineable(client) && poss.add(0,2,0).isMineable(client)) {
 							neighbors.add(poss);
 						}
 					} else if (ps.y - poss.y == 1) {
+						poss.hasheddata = 3;
 						if (poss.isMineable(client) && poss.add(0,1,0).isMineable(client) && ps.add(0,2,0).isMineable(client)) {
 							neighbors.add(poss);
 						}
 					} else {
-						System.out.println(". "+poss.y);
+						System.out.println("godddamn man");
 					}
 				}
 			});

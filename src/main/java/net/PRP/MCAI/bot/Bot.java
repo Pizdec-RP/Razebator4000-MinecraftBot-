@@ -11,6 +11,7 @@ import com.github.steveice10.packetlib.tcp.TcpClientSession;
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.ThreadU;
+import net.PRP.MCAI.utils.VectorUtils;
 import net.PRP.MCAI.Inventory.*;
 import net.PRP.MCAI.bot.pathfinder.AStar;
 import net.PRP.MCAI.bot.specific.BlockBreakManager;
@@ -452,54 +453,7 @@ public class Bot implements Runnable {
 		return new AABB(posX+x-0.3, posY+y, posZ+z-0.3, posX+x+0.3, posY+y+1.8, posZ+z+0.3);
 	}
 	
-	public List<Block> getNeighborsX() {
-		List<Block> n = new ArrayList<>();
-		double x;
-		x = getHitbox().minX-1;
-		for (int z = -1; z <= 1; z++) {
-			for (int y = 0; y <= 3; y++) {
-				n.add(world.getBlock(x, posY+y, posZ+z));
-			}
-		}
-		x = getHitbox().maxX+1;
-		for (int z = -1; z <= 1; z++) {
-			for (int y = 0; y <= 3; y++) {
-				n.add(world.getBlock(x, posY+y, posZ+z));
-			}
-		}
-		return n;
-	}
-	
-	public List<Block> getNeighborsZ() {
-		List<Block> n = new ArrayList<>();
-		double z;
-		z = getHitbox().minX-1;
-		for (int x = -1; x <= 1; x++) {
-			for (int y = 0; y <= 3; y++) {
-				n.add(world.getBlock(posX+x, posY+y, z));
-			}
-		}
-		z = getHitbox().maxX+1;
-		for (int x = -1; x <= 1; x++) {
-			for (int y = 0; y <= 3; y++) {
-				n.add(world.getBlock(posX+x, posY+y, z));
-			}
-		}
-		return n;
-	}
-	
-	public List<Block> getNeighborsY() {
-		List<Block> n = new ArrayList<>();
-		for (int x = -1; x <= 1; x++) {
-			for (int z = -1; z <= 1; z++) {
-				n.add(getPositionInt().add(x, -1, z).getBlock(this));
-			}
-		}
-		for (int x = -1; x <= 1; x++) {
-			for (int z = -1; z <= 1; z++) {
-				n.add(getPositionInt().add(x, 2, z).getBlock(this));
-			}
-		}
-		return n;
+	public double distance(Vector3D r) {
+		return VectorUtils.sqrt(getPosition(), r);
 	}
 }

@@ -61,7 +61,7 @@ public class Vector3D {
 	}
 	
 	public boolean isMineable(Bot client) {
-		return getBlock(client).type != Type.UNBREAKABLE || !getBlock(client).isLiquid();
+		return getBlock(client).type != Type.UNBREAKABLE || getBlock(client).type != Type.LIQUID || !getBlock(client).isLiquid();
 	}
 
 	public double getX() {
@@ -118,8 +118,19 @@ public class Vector3D {
 		return this;
 	}
 	
+	public Vector3D func_vf() {
+		this.x = Math.floor(x);
+		this.y = Math.floor(y);
+		this.z = Math.floor(z);
+		return this;
+	}
+	
+	public Vector3D floor() {
+		return this.clone().func_vf();
+	}
+	
 	public Vector3D VecToInt() {
-		return new Vector3D((int)x,(int)y,(int)z);
+		return new Vector3D((int)Math.floor(x),(int)Math.floor(y),(int)Math.floor(z));
 	}
 	
 	@Deprecated
@@ -129,7 +140,7 @@ public class Vector3D {
 	
 	@Deprecated
 	public Position translate() {
-		return new Position((int)x,(int)y,(int)z);
+		return new Position((int)Math.floor(x),(int)Math.floor(y),(int)Math.floor(z));
 	}
 
 	public Vector3D add(Vector3D other) {
@@ -201,7 +212,7 @@ public class Vector3D {
 			b = new Block();
 			b.id = 0;
 			b.type = Type.UNKNOWN;
-			b.pos = this;
+			b.pos = this.floor();
 		}
 		return b;
 	}

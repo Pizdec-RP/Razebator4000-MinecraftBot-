@@ -14,6 +14,7 @@ import com.github.steveice10.mc.protocol.packet.ingame.server.entity.player.Serv
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerBlockChangePacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerChunkDataPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerMultiBlockChangePacket;
+import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerUnloadChunkPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerPlayerListEntryPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerPlayerListDataPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerResourcePackSendPacket;
@@ -91,8 +92,11 @@ public class SessionListener extends SessionAdapter {
 				client.getWorld().setBlock(data.getPosition(), data.getBlock());
 				if (!client.pathfinder.ignored.contains(VectorUtils.convert(data.getPosition()))) client.pathfinder.func_2(VectorUtils.convert(data.getPosition()));
 			}
-        //} else if (receiveEvent.getPacket() instanceof ServerUnloadChunkPacket) {
-			
+        } else if (receiveEvent.getPacket() instanceof ServerUnloadChunkPacket) {
+			if ((boolean) Main.getsett("multiworld")) {
+				ServerUnloadChunkPacket a = ((ServerUnloadChunkPacket)receiveEvent.getPacket());
+				client.getWorld().unloadColumn(new ChunkCoordinates(a.getX(), a.getZ()));
+			}
 		} else if (receiveEvent.getPacket() instanceof ServerChunkDataPacket) {
 			
 			ServerChunkDataPacket data = (ServerChunkDataPacket) receiveEvent.getPacket();
@@ -120,7 +124,6 @@ public class SessionListener extends SessionAdapter {
 			//final ServerResourcePackSendPacket p = (ServerResourcePackSendPacket) receiveEvent.getPacket();
 			ThreadU.sleep(50);
 			client.getSession().send(new ClientResourcePackStatusPacket(ResourcePackStatus.ACCEPTED));
-			ThreadU.sleep(100);
 			client.getSession().send(new ClientResourcePackStatusPacket(ResourcePackStatus.SUCCESSFULLY_LOADED));
 		}
     }

@@ -54,7 +54,7 @@ public class Multiworld {
 	
 	public static Block getBlock(Vector3D pos) {
 		if (pos.y < 0 || pos.y > 256) {
-			return new Block(0 , 0, pos, Type.VOID);
+			return new Block(0 , 0, pos.floor(), Type.VOID);
 		}
 		try {
 			int bx = (int)pos.getX() & 15;
@@ -67,7 +67,7 @@ public class Multiworld {
             if (cc == null) return new Block();
             int state = cc.get(bx, by, bz);
             int id = Main.getMCData().blockStates.get(state).id;
-			return new Block(state, id, pos, Main.getMCData().bt(id));
+			return new Block(state, id, pos.floor(), Main.getMCData().bt(id));
     	} catch (Exception e) {
     		if (blocks.get(pos) != null) return blocks.get(pos);
 			return new Block();
@@ -76,7 +76,7 @@ public class Multiworld {
 	
 	public static Block getBlock(double x, double y, double z) {
 		if (y < 0 || y > 256) {
-			return new Block(0 , 0, new Vector3D(x,y,z), Type.VOID);
+			return new Block(0 , 0, new Vector3D(x,y,z).func_vf(), Type.VOID);
 		}
 		try {
 			int bx = (int)x & 15;
@@ -89,7 +89,7 @@ public class Multiworld {
             if (cc == null) return new Block();
             int state = cc.get(bx, by, bz);
             int id = Main.getMCData().blockStates.get(state).id;
-			return new Block(state, id, new Vector3D(x,y,z), Main.getMCData().bt(id));
+			return new Block(state, id, new Vector3D(x,y,z).func_vf(), Main.getMCData().bt(id));
     	} catch (Exception e) {
     		if (blocks.get(new Vector3D(x,y,z)) != null) return blocks.get(new Vector3D(x,y,z));
 			return new Block();

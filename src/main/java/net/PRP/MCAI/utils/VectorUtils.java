@@ -49,7 +49,7 @@ public class VectorUtils {
 	public static Vector3D vector(float Yaw, float Pitch, double speed) {
         Vector3D vector = Vector3D.ORIGIN;
         double rotX = Yaw;
-        double rotY = 0;
+        double rotY = 0;//pitch
 
         //vector.setY(-Math.sin(Math.toRadians(rotY)));
 
@@ -238,14 +238,38 @@ public class VectorUtils {
 		return getNearBlock(client.getEyeLocation(), blocks);
 	}
 	
-	public static Vector3D func_32(Bot client, List<String> d2, List<Vector3D> blacklist) {
-		Vector3D tb = findblockByLOS(client, d2, blacklist, 30);
+	/*
+	 * ищет блок по названию
+	 */
+	public static Vector3D findBlockByName(Bot client, String name, List<Vector3D> blacklist) {
+		Vector3D tb = findblockByString(client, name, blacklist, 30);
 		if (tb != null) return tb;
 		
 		List<Block> blocks = new CopyOnWriteArrayList<>();
 		blocks.addAll(client.vis.getVisibleBlocks());
 		for (Block a : blocks) {
-			if (a.touchLiquid(client) || !d2.contains(a.getName())) {
+			if (a.touchLiquid(client) || !name.contains(a.getName())) {
+				blocks.remove(a);
+				client.rl.blacklist.add(a.pos);
+			} else if (blacklist.contains(a.pos)) {
+				blocks.remove(a);
+			}
+		}
+		if (blocks.isEmpty()) return null;
+		return getNearBlock(client.getEyeLocation(), blocks);
+	}
+	
+	/*
+	 * ищет блок по списку из названий
+	 */
+	public static Vector3D func_32(Bot client, List<String> namelist, List<Vector3D> blacklist) {
+		Vector3D tb = findblockByLOS(client, namelist, blacklist, 30);
+		if (tb != null) return tb;
+		
+		List<Block> blocks = new CopyOnWriteArrayList<>();
+		blocks.addAll(client.vis.getVisibleBlocks());
+		for (Block a : blocks) {
+			if (a.touchLiquid(client) || !namelist.contains(a.getName())) {
 				blocks.remove(a);
 				client.rl.blacklist.add(a.pos);
 			} else if (blacklist.contains(a.pos)) {
@@ -383,6 +407,40 @@ public class VectorUtils {
                 }
             }
     		if (localf > 0 && !positions.isEmpty()) {
+    			pos = getNear(new Vector3D((int)client.getPosX(),(int)client.getPosY(),(int)client.getPosZ()),positions);
+    	    	return pos;
+    		}
+    	}
+    	pos = getNear(new Vector3D((int)client.getPosX(),(int)client.getPosY(),(int)client.getPosZ()),positions);
+    	return pos;
+    }
+	
+	public static Vector3D findblockByString(Bot client, String nm, List<Vector3D> blacklist, int radius) {
+    	List<Vector3D> positions = new CopyOnWriteArrayList<>();
+    	int x = (int)client.getEyeLocation().getPosX();
+    	int y = (int)client.getEyeLocation().getPosY();
+    	int z = (int)client.getEyeLocation().getPosZ();
+    	Vector3D pos = null;
+    	for (int i = 1; i < radius; i++) {
+    		int xs = x-i;
+    		int ys = y-i;
+    		if (ys < 1) ys = 0;
+    		int yi = y+i;
+    		if (yi > 255) yi = 255;
+    		int zs = z-i;
+    		for (int y1 = ys; y1 < yi; y1++) {
+    			for (int x1 = xs; x1 < x+i; x1++) {
+                    for (int z1 = zs; z1 < z+i; z1++) {
+                    	Vector3D a = new Vector3D(x1,y1,z1);
+                		if (a.getBlock(client).name.toLowerCase().contains(nm)) {
+                			if (!blacklist.contains(a) && !a.getBlock(client).touchLiquid(client) && !positions.contains(a)) {
+                				positions.add(a);
+                			}
+                		}
+                    }
+                }
+            }
+    		if (!positions.isEmpty()) {
     			pos = getNear(new Vector3D((int)client.getPosX(),(int)client.getPosY(),(int)client.getPosZ()),positions);
     	    	return pos;
     		}
