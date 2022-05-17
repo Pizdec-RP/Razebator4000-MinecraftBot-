@@ -1,6 +1,7 @@
 # хуйня
 
 ![unknow1n](https://user-images.githubusercontent.com/70069310/148758365-3a623ff3-da34-42e9-9b40-72a899b837d9.png)
+![DoND84chr8s](https://user-images.githubusercontent.com/70069310/168780325-467874ae-6488-400d-9804-f7392bc50952.jpg)
 
 ### шо к чему
  * только для версии 1.16.5.
