@@ -26,7 +26,7 @@ public class PVP extends SessionAdapter {
 	public int cooldownticks = 0;
 	public int pvpticks = 0;
 	public CombatState state = CombatState.END_COMBAT;
-	public List<Integer> swords = new ArrayList<>() {
+	public List<Integer> swords = new ArrayList<Integer>() {
 		private static final long serialVersionUID = 5529429801037940521L;
 
 	{

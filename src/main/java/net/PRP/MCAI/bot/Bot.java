@@ -92,7 +92,7 @@ public class Bot implements Runnable {
     		this.proxy = Proxy.NO_PROXY;
     	else
     		this.proxy = proxy;
-    	this.automaticMode  = automaticMode;
+    	this.automaticMode = automaticMode;
     	this.account = new MinecraftProtocol(name);
     	this.host = ip.split(":")[0];
     	this.port = Integer.parseInt(ip.split(":")[1]);
@@ -189,6 +189,14 @@ public class Bot implements Runnable {
         this.session = client;
         this.playerInventory = new GenericInventory(this);
     }
+    
+    public void reconnect() {
+		session.disconnect("reconnect");
+		reset();
+		ThreadU.sleep(6000);
+		build();
+		session.connect();
+	}
 
     public void register() {
         session.send(new ClientChatPacket("/register 112233asdasd 112233asdasd"));
@@ -423,13 +431,6 @@ public class Bot implements Runnable {
 
 	public Vector3D getEyeLocation() {
 		return getPositionInt().add(0, 1.95, 0);
-	}
-
-	public void reconnect() {
-		session.disconnect("reconnect");
-		reset();
-		ThreadU.sleep(6000);
-		session.connect();
 	}
 	
 	public AABB getHitbox() {

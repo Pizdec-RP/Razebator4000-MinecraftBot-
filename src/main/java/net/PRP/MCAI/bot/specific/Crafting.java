@@ -41,7 +41,7 @@ public class Crafting extends SessionAdapter {
 	public int lastactionid = 0;
 	public Vector3D craftingBlock = null;
 	public craftingRecepie recepie = null;
-	public final Map<String, craftingRecepie> Recepies = new HashMap<>() {
+	public final Map<String, craftingRecepie> Recepies = new HashMap<String, craftingRecepie>() {
 	private static final long serialVersionUID = -6379467632960849503L;{
 		put("planks", new craftingRecepie("inv", "log-.-.-.", new String[] {"log-1"}));
 		put("bench",  new craftingRecepie("inv", "planks-planks-planks-planks", new String[] {"planks-4"}));

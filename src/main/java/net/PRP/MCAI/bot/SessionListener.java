@@ -134,10 +134,8 @@ public class SessionListener extends SessionAdapter {
     	if (!client.reconectAvable) return;
     	client.connected = false;
     	BotU.log(event.getReason().toString());
-		ThreadU.sleep(6100);
 		if ((boolean) Main.getsett("reconect")) {
-			client.reset();
-			client.getSession().connect();
+			client.reconnect();
 		}
 		//event.getCause().printStackTrace();
     }

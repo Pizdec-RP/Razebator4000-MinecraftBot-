@@ -38,7 +38,7 @@ public class Living extends SessionAdapter {
 	public List<String> tasklist = new ArrayList<>();
 	
 	
-	public List<EntityType> badentities = new ArrayList<>() {
+	public List<EntityType> badentities = new ArrayList<EntityType>() {
 		private static final long serialVersionUID = -6373621458088442703L;
 
 	{
@@ -106,8 +106,7 @@ public class Living extends SessionAdapter {
             		while (pasta.contains("=rrl=")) {
             			pasta = pasta.replaceFirst("=rrl=", StringUtils.RndRuLetter());
             		}
-            		
-	                BotU.chat(this.client, pasta);
+            		BotU.chat(this.client, pasta);
 				}
 			}
 			

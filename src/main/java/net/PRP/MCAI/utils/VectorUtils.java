@@ -359,7 +359,7 @@ public class VectorUtils {
 			client.getSession().send(new ClientPlayerPlaceBlockPacket(pos.translate(), BlockFace.DOWN, Hand.MAIN_HAND, 0,0,0, false));
 			return pos.getBlock(client);
 		} else if (client.playerInventory.invContain(block, 1)) {
-			client.playerInventory.fromInventoryToHotbar(new CopyOnWriteArrayList<>() {{add(block);}}, 1);
+			client.playerInventory.fromInventoryToHotbar(new CopyOnWriteArrayList<String>() {{add(block);}}, 1);
 			ThreadU.sleep(10);
 			Integer slot = client.playerInventory.getHotbarContain(block, 1);
 			if (slot == null) return null;

@@ -42,7 +42,7 @@ public class SteeringWheel {
 	public List<String> hi = new CopyOnWriteArrayList<>();
 	JLabel stats;
 	public Canvas canvas;
-	public List<String> readyhi = new CopyOnWriteArrayList<>() {
+	public List<String> readyhi = new CopyOnWriteArrayList<String>() {
 	private static final long serialVersionUID = 1L; {
 		add("ку");
 		add("хай");

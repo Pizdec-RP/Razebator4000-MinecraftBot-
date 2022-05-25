@@ -11,6 +11,7 @@ import java.net.Proxy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.yaml.snakeyaml.Yaml;
@@ -46,12 +47,7 @@ public class Main {
 	//public static ExecutorService threadPool = ThreadPoolExecutor();
 	
     public static void main(String[] args) {
-    	try {
-    		data = (Map<?, ?>)yaml.load(new FileInputStream(new File("settings.yml")));
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-			System.exit(0);
-		}
+    	updateSettings();
     	proxies = ProxyScraper.ab();
     	initializeBlockType();
     	updatePasti();
@@ -71,6 +67,7 @@ public class Main {
 	    				System.out.println("suc:"+suc+" bad:"+bad+" all:"+bots.size());
 	    				suc = 0;
 		    			bad = 0;
+		    			updateSettings();
 		    			ThreadU.sleep(1000);
 	    			}
 	    		}).start();
@@ -138,12 +135,25 @@ public class Main {
     }
     
     public static void updatePasti() {
+    	String pasta;
     	File file = new File("text_dlya_spama.txt");
         if (file.exists()) {
         	pasti.clear();
             try (BufferedReader reader = new BufferedReader(new InputStreamReader((InputStream)new FileInputStream(file), "UTF8"));){
                 while (reader.ready()) {
-                    pasti.add(reader.readLine());
+                	pasta = reader.readLine();
+                	String temp = pasta;
+                	while (temp.contains("=rel=")) {
+                		temp = temp.replaceFirst("=rel=", "a");
+            		}
+            		while (temp.contains("=rrl=")) {
+            			temp = temp.replaceFirst("=rrl=", "b");
+            		}
+                	if (temp.length() > 256) {
+                		System.out.println(pasta+"\n ^^^^^^^^^^\nthis shit is too long for minecraft chat packet ("+temp.length()+">256)");
+                		System.exit(0);
+                	}
+                    pasti.add(pasta);
                 }
             }
             catch (Exception pohuy) {
