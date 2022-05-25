@@ -5,7 +5,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.bot.Bot;
-import net.PRP.MCAI.bot.specific.BlockBreakManager.bbmct;
+import net.PRP.MCAI.bot.specific.Miner.bbmct;
 import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.data.physics;
 import net.PRP.MCAI.utils.*;
@@ -27,10 +27,10 @@ public class AStar {
 	
 	private int curMoveTick = 0;
 	private final int MaxMoveTicks = 500;
-	private double playerSpeed = 0;
 	
 	public PathObject path = null;
 	private int err;
+	int pticks = 0;
 	
 	public AStar(Bot client) {
 		this.client = client;
@@ -39,6 +39,10 @@ public class AStar {
 	
 	public void setup(Vector3D end) {
 		if (state == State.WALKING) return;
+		if (end == null) {
+			if (Main.debug) System.out.println("null target");
+			return;
+		}
 		this.start = client.getPositionInt();
 		this.end = end;
 		this.from = start;
@@ -47,6 +51,23 @@ public class AStar {
 	}
 	
 	public void setupNoBreak(Vector3D end) {
+		if (state == State.WALKING) return;
+		this.start = client.getPositionInt();
+		this.end = end;
+		this.from = start;
+		this.state = State.WALKING;
+		if (Main.debug) System.out.println("pf: "+end.forCommnad());
+		this.path = new PathObject(client, this.end);
+		if (path.buildPath(true)) {
+			if (path.toWalk.isEmpty()) return;
+			this.sleepticks = path.sleepticks;
+			this.to = path.toWalk.get(0);
+		} else {
+			finish();
+		}
+	}
+	
+	public void setupOnlyBreak(Vector3D end) {
 		if (state == State.WALKING) return;
 		this.start = client.getPositionInt();
 		this.end = end;
@@ -127,28 +148,26 @@ public class AStar {
 	public void finish() {
 		this.state = State.FINISHED;
 		curMoveTick = 0;
-		playerSpeed = 0;
+		pticks = 0;
 		err = 0;
-		BotU.calibratePosition(client);
 		if (Main.debug) System.out.println("ended from"+this.start+" to:"+this.end);
 		this.start = null;
 		this.end = null;
 		ignored.clear();
-		client.pm.vel.setX(0);
-		client.pm.vel.setZ(0);
+		client.pm.setVelX(0);
+		client.pm.setVelZ(0);
 	}
 	
 	public void reset() {
-		playerSpeed = 0;
 		this.state = State.FINISHED;
 		path = null;
 		curMoveTick = 0;
+		pticks = 0;
 		err = 0;
-		BotU.calibratePosition(client);
 		this.start = client.getPositionInt();
 		ignored.clear();
-		client.pm.vel.setX(0);
-		client.pm.vel.setZ(0);
+		client.pm.setVelX(0);
+		client.pm.setVelZ(0);
 	}
 	
 	public boolean testBuildPath(boolean addsleepticks, Vector3D starta, Vector3D enda) {
@@ -170,6 +189,7 @@ public class AStar {
 		
 		if (botinpos(to)) {
 			client.onGround = true;
+			pticks = 0;
 			if (!e(to, client.getPositionInt())) {
 				err++;
 				if (err > 8) {
@@ -187,12 +207,15 @@ public class AStar {
 			}
 			from = to;
 			to = path.toWalk.get(0);
-			BotU.calibratePosition(client);
+		} else {
+			pticks++;
+			if (pticks > 100) {
+				this.reset();
+			}
 		}
 		
 		if (to.hasheddata > 0) {
 			if (client.bbm.state != bbmct.ENDED) return;
-			playerSpeed = 0;
 			if (to.hasheddata == 1) {
 				if (!to.getBlock(client).isAvoid()) {
 					client.bbm.setup(to);
@@ -231,18 +254,12 @@ public class AStar {
 			}
 		}
 		
-		if (playerSpeed <= 0) playerSpeed = physics.playerSpeed;
 		BotU.LookHead(client, to.add(0.5, 1, 0.5));
-		Vector3D nextvel = VectorUtils.vector(client.getYaw(), client.getPitch(), playerSpeed);
-		
-		client.pm.vel.setX(nextvel.x);
-		client.pm.vel.setZ(nextvel.z);
+		client.pm.Walk();
 		if (client.getPitch() < -85) {
 			client.pm.jump();
 		}
 		//System.out.println(playerSpeed +" | "+ to.toString() +" | "+ client.getPosition());
-		playerSpeed += 0.098;
-		playerSpeed *= 0.7;
 		
 		
 		curMoveTick++;

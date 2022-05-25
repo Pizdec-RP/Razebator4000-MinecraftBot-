@@ -15,7 +15,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.yaml.snakeyaml.Yaml;
 
-import com.github.steveice10.mc.protocol.MinecraftProtocol;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -29,6 +28,7 @@ import net.PRP.MCAI.data.ItemData;
 import net.PRP.MCAI.data.MinecraftData;
 import net.PRP.MCAI.data.materialsBreakTime;
 import net.PRP.MCAI.data.MinecraftData.Type;
+import net.PRP.MCAI.utils.StringUtils;
 import net.PRP.MCAI.utils.ThreadU;
 
 public class Main {
@@ -39,7 +39,7 @@ public class Main {
 	static List<Proxy> proxies;
 	static int proxyNumb = 0;
 	public static boolean debug = false;
-	public static List<Bot> bots = new ArrayList<Bot>();
+	public static List<Bot> bots = new CopyOnWriteArrayList<Bot>();
 	public static Proxy proxy = Proxy.NO_PROXY;
 	public static List<String> pasti = new CopyOnWriteArrayList<String>();
 	private static MinecraftData MCData = new MinecraftData();
@@ -56,32 +56,37 @@ public class Main {
     	initializeBlockType();
     	updatePasti();
     	if (debug) {
-	        Bot client = new Bot(new MinecraftProtocol("tpa282"), "localhost", 25565, Proxy.NO_PROXY);
-	        client.connect();
-	        bots.add(client);
-    		new Thread(client).start();
+    		new Thread(new Bot("tpa282", "localhost:25565", Proxy.NO_PROXY,true)).start();
     	} else {
-	    	//if ((boolean) getsett("window")) {
+	    	if ((boolean) getsett("window")) {
 	    	new SteeringWheel();
-	    	/*} else {
+	    	} else {
+	    		new Thread(()->{
+	    			int suc = 0;
+	    			int bad = 0;
+	    			while (true) {
+	    				for (Bot bot:bots) {
+	    					if (bot.connected) ++suc; else ++bad;
+	    				}
+	    				System.out.println("suc:"+suc+" bad:"+bad+" all:"+bots.size());
+	    				suc = 0;
+		    			bad = 0;
+		    			ThreadU.sleep(1000);
+	    			}
+	    		}).start();
 		    	String ip = (String)getsett("host");
-		        String host = ip.split(":")[0];
-		        String portstr = ip.split(":")[1];
-		        int port = Integer.parseInt(portstr);
 		    	for (int i = 0; i < (int)getsett("bots"); i++) {
 			        String USERNAME = nextNick();
 			        nextProxy();
 			        new Thread(() -> {
-				        System.out.println("created bot name: "+USERNAME+" proxy: "+proxy.toString());
-						Bot client = new Bot(new MinecraftProtocol(USERNAME), host, port, proxy);
-						client.connect();
+				        //System.out.println("created bot name: "+USERNAME+" proxy: "+proxy.toString());
+						Bot client = new Bot(USERNAME, ip, proxy,true);
 						bots.add(client);
 						new Thread(client).start();
 			        }).start();
 				    ThreadU.sleep((int) getsett("enterrange"));
 		    	}
-		    	Obshak.pickMainhost();
-	    	}*/
+	    	}
     	}
 	}
     

@@ -6,7 +6,7 @@ import com.github.steveice10.packetlib.event.session.PacketReceivedEvent;
 import com.github.steveice10.packetlib.event.session.SessionAdapter;
 import net.PRP.MCAI.Main;
 
-public class PingPacketsManager extends SessionAdapter {
+public class Shit extends SessionAdapter {
 
 	@Override
     public void packetReceived(PacketReceivedEvent event) {

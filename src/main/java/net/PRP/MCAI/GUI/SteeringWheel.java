@@ -3,9 +3,17 @@ package net.PRP.MCAI.GUI;
 import java.awt.Canvas;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.Proxy;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -19,6 +27,8 @@ import org.jsoup.select.Elements;
 
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.bot.Bot;
+import net.PRP.MCAI.bot.specific.Crafting;
+import net.PRP.MCAI.bot.specific.Crafting.craftingRecepie;
 import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.MathU;
 import net.PRP.MCAI.utils.ThreadU;
@@ -106,22 +116,19 @@ public class SteeringWheel {
 	    sendasrandom.setBounds(0,50,270,20);
 	    frame.add(sendasrandom);
 	    
-	    JTextField bb = new JTextField((String) Main.getsett("host"));
-	    bb.setBounds(330,50,200,20);
-	    frame.add(bb);
+	    JTextField host = new JTextField((String) Main.getsett("host"));
+	    host.setBounds(330,50,200,20);
+	    frame.add(host);
 	    
 	    JButton connectbot = new JButton("присоединить бота");
 	    connectbot.addActionListener(new ActionListener() {
 
 			@Override
 			public void actionPerformed(ActionEvent event) {
+				new Thread(()->{
 				String name = Main.nextNick();
 				Proxy proxy = Main.nextProxy();
-				new Thread(() -> {
-			        Bot client = new Bot(name, bb.getText(), proxy);
-			        client.connect();
-			        Main.bots.add(client);
-			        new Thread(client).start();
+				new Thread(new Bot(name, host.getText(), proxy,false)).start();
 				}).start();
 			}
 	    });
@@ -185,7 +192,7 @@ public class SteeringWheel {
 			public void actionPerformed(ActionEvent e) {
                 JComboBox<String> box = (JComboBox<String>)e.getSource();
                 String item = (String)box.getSelectedItem();
-                bb.setText(item);
+                host.setText(item);
             }
         };
         servers.addActionListener(actionListener);
@@ -219,8 +226,8 @@ public class SteeringWheel {
 	
 	@SuppressWarnings("deprecation")
 	public void SetupTM() {
-		new Thread(()->{
-			taskmanager = new JFrame("создаватель тасков)");
+		//new Thread(()->{
+			taskmanager = new JFrame("shit");
 			taskmanager.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 			taskmanager.setSize(500,200);
 			taskmanager.setLayout(null);
@@ -231,15 +238,15 @@ public class SteeringWheel {
 			taskmanager.add(mining);
 			
 			JTextField bname = new JTextField("назв. блока");
-		    bname.setBounds(85,0,105,20);
+		    bname.setBounds(105,0,85,20);
 		    taskmanager.add(bname);
 		    
 		    JTextField bcount = new JTextField("количество");
 		    bcount.setBounds(195,0,70,20);
 		    taskmanager.add(bcount);
 			
-			JButton rndpasta = new JButton("button.settask.name");
-		    rndpasta.addActionListener(new ActionListener() {
+			JButton bmine = new JButton("(GO)");
+			bmine.addActionListener(new ActionListener() {
 
 				@Override
 				public void actionPerformed(ActionEvent event) {
@@ -250,11 +257,139 @@ public class SteeringWheel {
 					}
 				}
 		    });
-		    rndpasta.setBounds(0,40,250,20);
-		    taskmanager.add(rndpasta);
+			bmine.setBounds(265,0,80,20);
+		    taskmanager.add(bmine);
+		    
+		    
+		    
+		    JLabel gotoo = new JLabel("идти на...хуй");
+		    gotoo.setBounds(0,21,80,20);
+			taskmanager.add(gotoo);
+			
+			JTextField xyz = new JTextField("корды x и z");
+			 xyz.setBounds(105,21,85,20);
+		    taskmanager.add( xyz);
+		    
+		    JTextField radiusw = new JTextField("радиус");
+		    radiusw.setBounds(195,21,70,20);
+		    taskmanager.add(radiusw);
+			
+			JButton walkk = new JButton("(GO)");
+			walkk.addActionListener(new ActionListener() {
+
+				@Override
+				public void actionPerformed(ActionEvent event) {
+					for (Bot bot : Main.bots) {
+						bot.rl.tasklist.add("goto "+xyz.getText()+" "+radiusw.getText());
+					}
+				}
+		    });
+			walkk.setBounds(265,21,80,20);
+		    taskmanager.add(walkk);
+		    
+		    JLabel craftt = new JLabel("скрафтить");
+		    craftt.setBounds(0,42,80,20);
+			taskmanager.add(craftt);
+			
+			//-----------
+			Crafting c = new Crafting(null);
+		    String[] ips = new String[c.Recepies.size()];
+		    int i = 0;
+		    for (Entry<String, craftingRecepie> entry : c.Recepies.entrySet()) {
+		    	ips[i++] = entry.getKey();
+		    }
+		    JComboBox<String> itemname = new JComboBox<>(ips);
+		    itemname.setBounds(105,42,90,20);
+		    taskmanager.add(itemname);
+		    //----------
+		    
+		    
+		    JTextField howmuch = new JTextField("кол-во");
+		    howmuch.setBounds(195,42,70,20);
+		    taskmanager.add(howmuch);
+			
+			JButton craft = new JButton("(GO)");
+			craft.addActionListener(new ActionListener() {
+
+				@Override
+				public void actionPerformed(ActionEvent event) {
+					for (Bot bot : Main.bots) {
+						for (int i = 0; i<Integer.parseInt(howmuch.getText());i++) {
+							bot.rl.tasklist.add("craft "+itemname.getSelectedItem());
+							System.out.println("craft "+itemname.getSelectedItem());
+						}
+					}
+				}
+		    });
+			craft.setBounds(265,42,80,20);
+		    taskmanager.add(craft);
+		    
+		    
+		    JLabel scr = new JLabel("скрипты");
+		    scr.setBounds(0,63,80,20);
+			taskmanager.add(scr);
+		    
+			//-----------
+			List<String> files = new ArrayList<>();
+		    for (final File fileEntry : new File("scripts").listFiles()) {
+		        if (fileEntry.isDirectory()) {
+		            //huy
+		        } else {
+		            files.add(fileEntry.getName());
+		        }
+		    }
+		    
+		    String[] scrpts = new String[c.Recepies.size()];
+		    for (i = 0; i < files.size();i++) {
+		    	scrpts[i] = files.get(i);
+		    }
+		    JComboBox<String> scripts = new JComboBox<>(scrpts);
+		    scripts.setBounds(105,63,160,20);
+		    taskmanager.add(scripts);
+		    //----------
+			
+		    JButton addscripts = new JButton("(GO)");
+		    addscripts.addActionListener(new ActionListener() {
+
+				@Override
+				public void actionPerformed(ActionEvent event) {
+					File file = new File("scripts/"+scripts.getSelectedItem());
+					System.out.println((String) scripts.getSelectedItem());
+					for (Bot bot : Main.bots) {
+				        if (file.exists()) {
+				            try (BufferedReader reader = new BufferedReader(new InputStreamReader((InputStream)new FileInputStream(file), "UTF8"));){
+				            	while (reader.ready()) {
+				                	bot.rl.tasklist.add(reader.readLine());
+				                }
+				            }
+				            catch (Exception pohuy) {}
+				        } else {
+				        	System.out.println("script file dont exisis");
+				        	break;
+				        }
+					}
+				}
+		    });
+		    addscripts.setBounds(265,63,80,20);
+		    taskmanager.add(addscripts);
+		    
+		    
+		    JButton jump = new JButton("jump");
+		    jump.addActionListener(new ActionListener() {
+
+				@Override
+				public void actionPerformed(ActionEvent event) {
+					for (Bot bot : Main.bots) {
+						ThreadU.sleep(MathU.rnd(10, 500));
+						bot.pm.jump();
+					}
+				}
+		    });
+		    jump.setBounds(0,90,250,20);
+		    taskmanager.add(jump);
 		    
 		    taskmanager.setVisible(true);
-		}).start();
+		//}).start();
 	}
 	
 	public void drawPixel(int x, int y) {

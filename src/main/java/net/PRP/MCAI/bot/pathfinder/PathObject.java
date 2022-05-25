@@ -53,25 +53,19 @@ public class PathObject {
 		int l = 0;
 		while (true) {
 			l++; if (l>maxpath) {
-				//if (Main.debug) System.out.println("maxpath");
 				return false;
 			}
 			if (VectorUtils.equalsInt(cursor, end)) {
 				if (addsleepticks) sleepticks = 10;
-				//if (Main.debug) System.out.println(cursor.toStringInt()+" == "+end.toStringInt());
 				return true;
 			}
 			List<Vector3D> neighbors;
 			neighbors = getNeighbors(cursor,1);
 			if (neighbors.isEmpty()) {
-				//if (Main.debug) System.out.println("pizdec");
 				return false;
 			}
 			cursor = pickCloser(neighbors);
 			used.add(cursor);
-			//BotU.chat(client, "/setblock "+cursor.forCommnad()+" stone");
-			//ThreadU.sleep(1000);
-			//BotU.chat(client, "/setblock "+cursor.forCommnad()+" air");
 			toWalk.add(cursor);
 		}
 	}

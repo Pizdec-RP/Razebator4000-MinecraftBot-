@@ -9,8 +9,6 @@ import net.PRP.MCAI.utils.VectorUtils;
 
 public class Vector3D {
 
-	public static final Vector3D ORIGIN = new Vector3D(0, 0, 0);
-
 	public double x;
 	public double y;
 	public double z;
@@ -116,6 +114,12 @@ public class Vector3D {
 		this.x = Math.floor(x);
 		this.z = Math.floor(z);
 		return this;
+	}
+	
+	public void origin() {
+		this.x = 0;
+		this.y = 0;
+		this.z = 0;
 	}
 	
 	public Vector3D func_vf() {

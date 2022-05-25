@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import com.github.steveice10.mc.protocol.data.game.entity.player.CombatState;
 import com.github.steveice10.mc.protocol.data.game.entity.type.EntityType;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerJoinGamePacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerMapDataPacket;
@@ -16,15 +15,14 @@ import com.github.steveice10.packetlib.event.session.SessionAdapter;
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.bot.pathfinder.AStar.State;
-import net.PRP.MCAI.bot.pathfinder.PathObject;
-import net.PRP.MCAI.bot.specific.BlockBreakManager.bbmct;
+import net.PRP.MCAI.bot.specific.Miner.bbmct;
 import net.PRP.MCAI.bot.specific.Crafting.crState;
 import net.PRP.MCAI.data.Block;
 import net.PRP.MCAI.data.Entity;
 import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.utils.*;
 
-public class LivingListener extends SessionAdapter {
+public class Living extends SessionAdapter {
 	
 	private Bot client;
 	private boolean firstJoin = false;
@@ -60,14 +58,23 @@ public class LivingListener extends SessionAdapter {
 		add(EntityType.VINDICATOR);
 	}};
 	int spamticks = 0;
+	int goforwardticks = 0;
+	
+	int degradationLvl = 0;
+	String doubledtask = "";
 
-	public LivingListener(Bot client) {
+	public Living(Bot client) {
         this.client = client;
         this.trusted = (boolean) Main.getsett("living");
+        if (client.automaticMode) {
+        	tasklist.add("goforwardwithangle 30");
+        	tasklist.add("goforwardwithangle 30");
+        	tasklist.add("goforwardwithangle 30");
+        }
     }
 	
 	public enum raidState {
-		IDLE, GOING, MINING, CRAFTING;
+		IDLE, GOING, MINING, CRAFTING, GOFORWARD;
 	}
 	
 	@Override
@@ -82,6 +89,7 @@ public class LivingListener extends SessionAdapter {
         }
 	}
 	
+	@SuppressWarnings("unchecked")
 	public void tick() {
 		//try {
 			if (!firstJoin || !client.isOnline()) return;
@@ -90,8 +98,15 @@ public class LivingListener extends SessionAdapter {
 				spamticks--;
 				if (spamticks <= 0) {
 					spamticks =  (int) Main.getsett("spamrange") / 50;
-					int rand = MathU.rnd(0, Main.pasti.size()-1);
-	                String pasta = (String)Main.pasti.get(rand);
+	                String pasta = (String)Main.pasti.get(MathU.rnd(0, Main.pasti.size()-1));
+	                
+            		while (pasta.contains("=rel=")) {
+            			pasta = pasta.replaceFirst("=rel=", StringUtils.RndLetter());
+            		}
+            		while (pasta.contains("=rrl=")) {
+            			pasta = pasta.replaceFirst("=rrl=", StringUtils.RndRuLetter());
+            		}
+            		
 	                BotU.chat(this.client, pasta);
 				}
 			}
@@ -100,13 +115,171 @@ public class LivingListener extends SessionAdapter {
 				if (!this.trusted) return;
 				if (sleepticks > 0) {sleepticks--;return;}
 				
+				if (!client.onGround) {
+					Map<Integer, Entity> tempentities = client.getWorld().Entites;
+					for(Entry<Integer, Entity> entry : tempentities.entrySet()) {
+						if (entry.getValue().type == EntityType.PLAYER && entry.getValue().uuid != client.getUUID() && VectorUtils.equalsInt(entry.getValue().Position, client.getPositionInt())) {
+							Vector3D pos = VectorUtils.func_31(client, client.getPositionInt(), 4);
+							client.pathfinder.setup(pos);
+							return;
+						}
+					}
+				}
+				
+				if (client.foodlvl >= 8) {
+					
+				}
 				if (!tasklist.isEmpty()) {
-					if (tasklist.get(0).toLowerCase().startsWith("mine")) {
-						Vector3D block;
-						block = VectorUtils.findBlockByName(client, tasklist.get(0).split(" ")[1], blacklist);
-						if (block == null) {//подходящий блок небыл найден
-							tasklist.remove(0);
+					if (doubledtask == "") {
+						doubledtask = tasklist.get(0);
+					} else {
+						if (doubledtask.equalsIgnoreCase(tasklist.get(0))) {
+							++degradationLvl;
+							if (degradationLvl >6) {
+								tasklist.remove(0);
+								client.pathfinder.setup(VectorUtils.randomPointInRaduis(client, 25));
+							}
 						} else {
+							degradationLvl = 0;
+						}
+					}
+					try {
+						if (tasklist.get(0).toLowerCase().startsWith("mine")) {
+							Vector3D block;
+							block = VectorUtils.findBlockByName(client, tasklist.get(0).split(" ")[1], blacklist);
+							if (block == null) {//подходящий блок небыл найден
+								tasklist.remove(0);
+							} else {
+								if (block.getBlock(client).touchLiquid(client)) {//блок касается жидкости
+									this.blacklist.add(block); 
+									return;
+								}
+								if (VectorUtils.sqrt(client.getEyeLocation(), block) <= (int)Main.getsett("maxpostoblock")) {//блок довольно близко
+									
+									if (VectorUtils.sqrt(client.getEyeLocation(), block) <= 2.2) {
+										client.bbm.setup(block);
+										this.state = raidState.MINING;
+										tasklist.remove(0);
+										return;
+									}
+									Vector3D pos = VectorUtils.func_31(client, block, (int)Main.getsett("maxpostoblock"));
+									if (pos != null) {//к нему можно приблизиться
+										client.pathfinder.setup(pos);
+								    	this.state = raidState.GOING;
+								    	this.mineAfterWalk = block;
+								    	tasklist.remove(0);
+									} else {
+										client.bbm.setup(block);
+										this.state = raidState.MINING;
+										tasklist.remove(0);
+									}
+									return;
+							    } else {
+							    	Vector3D pos = VectorUtils.func_31(client, block, (int)Main.getsett("maxpostoblock"));
+							    	if (pos == null) {
+							    		this.blacklist.add(block);
+							    		return;
+							    	}
+							    	if (!client.pathfinder.testForPath(pos)) {
+							    		blacklist.add(block);
+							    		return;
+							    	}
+							    	client.pathfinder.setup(pos);
+							    	this.state = raidState.GOING;
+							    	this.mineAfterWalk = block;
+							    	tasklist.remove(0);
+							    	return;
+							    }
+							}
+						} else if (tasklist.get(0).toLowerCase().startsWith("goto")) {
+						
+							int x = Integer.parseInt(tasklist.get(0).split(" ")[1]);
+							int z = Integer.parseInt(tasklist.get(0).split(" ")[2]);
+							int radius = Integer.parseInt(tasklist.get(0).split(" ")[3]);
+							Vector3D to = VectorUtils.randomPointInRaduis(client, 0, radius, x, z);
+							if (to != null) {		
+								client.pathfinder.setup(to);
+								state = raidState.GOING;
+							}
+							tasklist.remove(0);
+							return;
+							
+						} else if (tasklist.get(0).toLowerCase().startsWith("craft")) {
+							String item = tasklist.get(0).split(" ")[1];
+							if (client.crafter.Recepies.get(item).isInventoried()) {
+								client.crafter.setup(item, null);
+								state = raidState.CRAFTING;
+								tasklist.remove(0);
+								return;
+							} else if (client.crafter.Recepies.get(item).isWorkbenched()) {
+								Vector3D block;
+								block = VectorUtils.findBlockByName(client, "crafting", blacklist);
+								if (block == null) {
+									if (client.playerInventory.contain("crafting")) {
+										Block ct = VectorUtils.placeBlockNear(client, "crafting");
+										if (ct == null) {
+											tasklist.remove(0);
+											return;
+											//нужно чтобы он пробовал кудато пойти и при 5 неудачных попытках сдавался но чето хз как это сделать
+										} else {
+											block = ct.getPos();
+										}
+									} else if (client.crafter.canCraft(client.crafter.Recepies.get("crafting_table"))) {
+										client.crafter.setup("crafting_table", null);
+										state = raidState.CRAFTING;
+										return;
+									} else if (client.playerInventory.contain("log", 1)) {
+										client.crafter.setup("planks",null);
+										state = raidState.CRAFTING;
+										return;
+									} else {
+										tasklist.remove(0);
+										return;
+									}
+								} else if (client.distance(block) > (int)Main.getsett("maxpostoblock")) {
+									Vector3D pos = VectorUtils.func_31(client, block, (int)Main.getsett("maxpostoblock"));
+									if (pos != null) {
+										client.pathfinder.setup(pos);
+										state = raidState.GOING;
+										return;
+									} else {
+										//если дойти неполучается то бот пытается сделать свой верстак
+										if (client.playerInventory.contain("crafting")) {
+											Block ct = VectorUtils.placeBlockNear(client, "crafting");
+											if (ct == null) {
+												tasklist.remove(0);
+												return;
+												//нужно чтобы он пробовал кудато пойти и при 5 неудачных попытках сдавался но чето хз как это сделать
+											} else {
+												block = ct.getPos();
+											}
+										} else if (client.crafter.canCraft(client.crafter.Recepies.get("crafting_table"))) {
+											client.crafter.setup("crafting_table", null);
+											state = raidState.CRAFTING;
+											return;
+										} else if (client.playerInventory.contain("log", 1)) {
+											client.crafter.setup("planks",null);
+											state = raidState.CRAFTING;
+											return;
+										} else {
+											tasklist.remove(0);
+											return;
+										}
+										//конец
+									}
+								} else if (client.distance(block) <= (int)Main.getsett("maxpostoblock")) {
+									client.crafter.setup(item, block);
+									state = raidState.CRAFTING;
+									tasklist.remove(0);
+									return;
+								} else {
+									tasklist.remove(0);
+									throw new Exception("невозможно");
+								}
+							}
+						} else if (tasklist.get(0).toLowerCase().startsWith("minepos")) {
+							Vector3D block = new Vector3D(Integer.parseInt(tasklist.get(0).split(" ")[1]),Integer.parseInt(tasklist.get(0).split(" ")[2]),Integer.parseInt(tasklist.get(0).split(" ")[3]));
+							
 							if (block.getBlock(client).touchLiquid(client)) {//блок касается жидкости
 								this.blacklist.add(block); 
 								return;
@@ -125,12 +298,13 @@ public class LivingListener extends SessionAdapter {
 							    	this.state = raidState.GOING;
 							    	this.mineAfterWalk = block;
 							    	tasklist.remove(0);
+							    	return;
 								} else {
 									client.bbm.setup(block);
 									this.state = raidState.MINING;
 									tasklist.remove(0);
+									return;
 								}
-								return;
 						    } else {
 						    	Vector3D pos = VectorUtils.func_31(client, block, (int)Main.getsett("maxpostoblock"));
 						    	if (pos == null) {
@@ -147,12 +321,64 @@ public class LivingListener extends SessionAdapter {
 						    	tasklist.remove(0);
 						    	return;
 						    }
+						} else if (tasklist.get(0).toLowerCase().startsWith("goforwardwithangle")) {
+							goforwardticks = Integer.parseInt(tasklist.get(0).split(" ")[1]);
+							client.yaw += MathU.rnd(-100, 100);
+							state = raidState.GOFORWARD;
+							tasklist.remove(0);
+							return;
+						}
+					
+					} catch (Exception e) {
+						tasklist.remove(0);
+						return;
+					}
+				} else {
+					if (client.automaticMode) {
+						int i = MathU.rnd(1, 12);
+						if (i == 1) {
+							client.pathfinder.setup(VectorUtils.randomPointInRaduis(client, 5, 10, (int)Math.floor(client.posX), (int)Math.floor(client.posZ)));
+							state = raidState.GOING;
+							return;
+						} else if (i >= 2 && i <= 7) {
+							Vector3D block;
+							if ((boolean) Main.getsett("iol")) {
+								block = VectorUtils.findNearestBlockByArrayId(client, (ArrayList<Integer>)Main.getsett("minertargetid"), this.blacklist);
+								if (block == null) block = VectorUtils.func_1488(client, (ArrayList<Integer>)Main.getsett("minertargetid"), this.blacklist);
+							} else {
+								block = VectorUtils.func_32(client, (ArrayList<String>)Main.getsett("minetargetnames"), this.blacklist);
+							}
+							if (block != null) {
+								if (VectorUtils.sqrt(client.getEyeLocation(), block) <= (int)Main.getsett("maxpostoblock")) {
+									client.bbm.setup(block);
+									this.state = raidState.MINING;
+									return;
+							    } else {
+							    	Vector3D pos = VectorUtils.func_31(client, block, (int)Main.getsett("maxpostoblock"));
+							    	if (pos == null) {
+							    		blacklist.add(block);
+							    		return;
+							    	}
+							    	if (!client.pathfinder.testForPath(pos)) {
+							    		blacklist.add(block);
+							    		return;
+							    	}
+							    	mineAfterWalk = block;
+							    	client.pathfinder.setup(pos);
+							    	this.state = raidState.GOING;
+							    	return;
+							    }
+							}
+							return;
+						} else if (i == 8) {
+							tasklist.add("goforwardwithangle 20");
+						} else if (i >= 9) {
+							VectorUtils.placeBlockNear(client, (String)MathU.random((ArrayList<String>)Main.getsett("minetargetnames")));
 						}
 					}
+					doubledtask = "";
+					degradationLvl = 0;
 				}
-				//now ruled by gui or commands
-				//task ex: mine wood 5
-				//craft sticks 2
 				
 			} else if (state == raidState.GOING) {
 				if (client.pathfinder.state == State.FINISHED) {
@@ -161,34 +387,37 @@ public class LivingListener extends SessionAdapter {
 						client.bbm.setup(mineAfterWalk);
 						mineAfterWalk = null;
 						return;
+					} else {
+						state = raidState.IDLE;
 					}
-					state = raidState.IDLE;
+					
 				}
 			} else if (state == raidState.MINING) {
 				if (client.bbm.state == bbmct.ENDED) {
-					this.state = raidState.IDLE;
-					this.sleepticks = 10;
+					state = raidState.IDLE;
+					sleepticks = 10;
 				} else {
-					if (client.bbm.ticksToBreak < -200) {
+					if (client.bbm.ticksToBreak < -300) {
 						client.bbm.endDigging();
-						this.blacklist.add(client.bbm.getBlockPos());
-						this.state = raidState.IDLE;
-						this.sleepticks = 10;
+						blacklist.add(client.bbm.getBlockPos());
+						state = raidState.IDLE;
+						sleepticks = 10;
 					}
 				}
 				return;
 			} else if (state == raidState.CRAFTING) {
 				if (client.crafter.state == crState.ENDED) this.state = raidState.IDLE;
+			} else if (state == raidState.GOFORWARD) {
+				if (goforwardticks > 0) {
+					client.pm.Walk();
+					--goforwardticks;
+					if (MathU.rnd(1, 3) == 1) {
+						client.pm.jump();
+					}
+				} else {
+					this.state = raidState.IDLE;
+				}
 			}
-		//} catch (Exception e) {
-			//e.printStackTrace();
-			//System.out.println("1");
-		//}
-	}
-	
-	public void go(Vector3D to) {
-		state = raidState.GOING;
-		client.pathfinder.setup(to);
 	}
 	
 	/*if (!client.playerInventory.contain("sticks", 4)) {
@@ -587,7 +816,7 @@ public class LivingListener extends SessionAdapter {
 								block = VectorUtils.func_32(client, d2, this.blacklist);
 							}
 						}
-						if (block == null) {//no one block founded
+						if (block == null) {
 							for (Bot cli : Main.bots) {
 								if (cli.rl.state == raidState.MINING) {
 									if (client.pathfinder.testForPath(cli.getPositionInt())) {
@@ -598,7 +827,6 @@ public class LivingListener extends SessionAdapter {
 									} 
 								}
 							}
-							//i dont know what to do
 							Vector3D to = VectorUtils.randomPointInRaduis(client, 25);
 							if (to == null) to = VectorUtils.func_31(client, client.getPositionInt(), 8);
 							this.sleepticks = 100;

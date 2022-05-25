@@ -30,4 +30,12 @@ public class StringUtils
     {
         return org.apache.commons.lang3.StringUtils.isEmpty(string);
     }
+    
+    public static String RndLetter() {
+    	return "q w e r t y u i o p a s d f g h j k l z x c v b n m".split(" ")[MathU.rnd(0, 25)];
+    }
+    
+    public static String RndRuLetter() {
+    	return "й ц у к е н г ш щ з х ъ ф ы в а п р о л д ж э я ч с м и т ь б ю".split(" ")[MathU.rnd(0, 31)];
+    }
 }

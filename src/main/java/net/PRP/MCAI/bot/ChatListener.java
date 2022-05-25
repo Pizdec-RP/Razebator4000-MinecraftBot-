@@ -14,7 +14,9 @@ import com.github.steveice10.packetlib.packet.Packet;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 
-import net.PRP.MCAI.bot.specific.BlockBreakManager.bbmct;
+import net.PRP.MCAI.Main;
+import net.PRP.MCAI.bot.specific.Living.raidState;
+import net.PRP.MCAI.bot.specific.Miner.bbmct;
 import net.PRP.MCAI.data.Block;
 import net.PRP.MCAI.data.Entity;
 import net.PRP.MCAI.data.Vector3D;
@@ -211,6 +213,43 @@ public class ChatListener extends SessionAdapter {
 					} else if (command.get(0).equalsIgnoreCase("hbc")) {
 						for (Vector3D n : client.getHitbox().getCorners()) {
 							BotU.chat(client, n.toString());
+						}
+					} else if (command.get(0).equalsIgnoreCase("jn")) {
+						if (client.name.contains(command.get(1))) client.pm.jump();
+					} else if (command.get(0).equalsIgnoreCase("dn")) {
+						if (client.name.contains(command.get(1))) client.getSession().disconnect("disconected");
+					} else if (command.get(0).equalsIgnoreCase("mine")) {
+						Vector3D block;
+						block = VectorUtils.findBlockByName(client, command.get(1), client.rl.blacklist);
+						if (block == null) {
+						} else {
+							if (block.getBlock(client).touchLiquid(client)) {
+								return;
+							}
+							if (VectorUtils.sqrt(client.getEyeLocation(), block) <= (int)Main.getsett("maxpostoblock")) {//блок довольно близко
+								
+								if (VectorUtils.sqrt(client.getEyeLocation(), block) <= 2.2) {
+									client.bbm.setup(block);
+									return;
+								}
+								Vector3D pos = VectorUtils.func_31(client, block, (int)Main.getsett("maxpostoblock"));
+								if (pos != null) {//к нему можно приблизиться
+									client.pathfinder.setup(pos);
+								} else {
+									client.bbm.setup(block);
+								}
+								return;
+						    } else {
+						    	Vector3D pos = VectorUtils.func_31(client, block, (int)Main.getsett("maxpostoblock"));
+						    	if (pos == null) {
+						    		return;
+						    	}
+						    	if (!client.pathfinder.testForPath(pos)) {
+						    		return;
+						    	}
+						    	client.pathfinder.setup(pos);
+						    	return;
+						    }
 						}
 					}
 				}

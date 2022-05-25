@@ -49,8 +49,11 @@ public class EntityListener extends SessionAdapter {
 	                //System.out.println("x:"+String.format("%.2f",entity.Position.x)+"  y:"+String.format("%.2f",entity.Position.y)+"  z:"+String.format("%.2f",entity.Position.z));
 	            } else {
 	            	entity.Position.x += p.getMoveX();
+	            	entity.velocity.x = p.getMoveX();
 	                entity.Position.y += p.getMoveY();
+	                entity.velocity.y = p.getMoveY();
 	                entity.Position.z += p.getMoveZ();
+	                entity.velocity.z = p.getMoveZ();
 	            }
 	            
             } else if (event.getPacket() instanceof ServerSpawnPlayerPacket) {

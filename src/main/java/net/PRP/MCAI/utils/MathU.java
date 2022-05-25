@@ -1,9 +1,14 @@
 package net.PRP.MCAI.utils;
 
+import java.util.List;
+
 public class MathU {
 	public static int rnd(int min, int max) {
 		max -= min;
 		return (int) (Math.random() * ++max) + min;
+	}
+	public static Object random(List<?> list) {
+		return list.get(rnd(0,list.size()-1));
 	}
 	
 	public static double round(double numberToRound, int decimalPlaces) {

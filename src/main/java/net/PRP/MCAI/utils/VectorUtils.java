@@ -1,6 +1,5 @@
 package net.PRP.MCAI.utils;
 
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -21,7 +20,6 @@ import net.PRP.MCAI.data.MinecraftData.Type;
 
 public class VectorUtils {
 	/**
-	 * 
 	 * @param client
 	 * @param целевая точка
 	 * @param radius
@@ -47,7 +45,7 @@ public class VectorUtils {
 	}
 	
 	public static Vector3D vector(float Yaw, float Pitch, double speed) {
-        Vector3D vector = Vector3D.ORIGIN;
+        Vector3D vector = new Vector3D(0,0,0);
         double rotX = Yaw;
         double rotY = 0;//pitch
 
@@ -104,7 +102,7 @@ public class VectorUtils {
 	}
 	
 	public static boolean positionIsSafe(Vector3D pos, Bot client) {
-		boolean a = BTavoid(client.getWorld().getBlock(pos).type) && BTavoid(client.getWorld().getBlock(pos.add(0,1,0)).type) && icanstayhere(client.getWorld().getBlock(pos.add(0,-1,0)).type);
+		boolean a = (BTavoid(client.getWorld().getBlock(pos).type) || client.getWorld().getBlock(pos).type == Type.CARPET) && BTavoid(client.getWorld().getBlock(pos.add(0,1,0)).type) && icanstayhere(client.getWorld().getBlock(pos.add(0,-1,0)).type);
 		//System.out.println(pos+" is safe:"+a);
 		return a;
 	}
@@ -324,6 +322,31 @@ public class VectorUtils {
 			}
 		}
 	}
+	public static Vector3D randomPointInRaduis(Bot client, int min, int max, int dx, int dz) {
+		int tryy = 0;
+		while (true) {
+			tryy++;
+			if (tryy > 20) return null;
+			int x;
+			if (MathU.rnd(0, 1) == 1) 
+				x = MathU.rnd(min, max);
+			else 
+				x = MathU.rnd(-min, -max);
+			int z;
+			if (MathU.rnd(0, 1) == 1) 
+				z = MathU.rnd(min, max);
+			else 
+				z = MathU.rnd(-min, -max);
+			Vector3D pos = new Vector3D(x+dx, 256, z+dz);
+			while (true) {
+				if (!pos.add(0,-1,0).getBlock(client).isAvoid() && positionIsSafe(pos, client) && client.pathfinder.testForPath(pos)) {
+					return pos;
+				}
+				pos = pos.add(0,-1,0);
+				if (pos.y < 0) break;
+			}
+		}
+	}
 	
 	@SuppressWarnings({ "deprecation", "serial" })
 	public static Block placeBlockNear(Bot client, String block) {
@@ -445,7 +468,7 @@ public class VectorUtils {
     	    	return pos;
     		}
     	}
-    	pos = getNear(new Vector3D((int)client.getPosX(),(int)client.getPosY(),(int)client.getPosZ()),positions);
+    	pos = getNear(new Vector3D((int)Math.floor(client.getPosX()),(int)Math.floor(client.getPosY()),(int)Math.floor(client.getPosZ())),positions);
     	return pos;
     }
 	

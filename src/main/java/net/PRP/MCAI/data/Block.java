@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import net.PRP.MCAI.Main;
-import net.PRP.MCAI.bot.AABB;
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.data.MinecraftData.Type;
 import net.PRP.MCAI.utils.VectorUtils;
@@ -74,7 +73,7 @@ public class Block {
 			return new AABB(pos.x, pos.y, pos.z, Math.floor(pos.x)+1, Math.floor(pos.y)+1, Math.floor(pos.z)+1).floor();
 		} else if (type == Type.CARPET) {
 			//System.out.println(3);
-			return new AABB(pos.x, pos.y, pos.z, Math.floor(pos.x)+1, Math.floor(pos.y)+0.0625, Math.floor(pos.z)+1).floor();
+			return new AABB(Math.floor(pos.x), Math.floor(pos.y), Math.floor(pos.z), Math.floor(pos.x)+1, Math.floor(pos.y)+0.0625, Math.floor(pos.z)+1);
 		} else if (type == Type.LIQUID) {
 			return new AABB(pos.x, pos.y, pos.z, Math.floor(pos.x)+1, Math.floor(pos.y)+1, Math.floor(pos.z)+1).floor();
 		} else {

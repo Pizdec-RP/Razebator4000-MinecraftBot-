@@ -41,12 +41,12 @@ public class Crafting extends SessionAdapter {
 	public int lastactionid = 0;
 	public Vector3D craftingBlock = null;
 	public craftingRecepie recepie = null;
-	public Map<String, craftingRecepie> Recepies = new HashMap<>() {
+	public final Map<String, craftingRecepie> Recepies = new HashMap<>() {
 	private static final long serialVersionUID = -6379467632960849503L;{
 		put("planks", new craftingRecepie("inv", "log-.-.-.", new String[] {"log-1"}));
 		put("bench",  new craftingRecepie("inv", "planks-planks-planks-planks", new String[] {"planks-4"}));
 		put("crafting_table",  new craftingRecepie("inv", "planks-planks-planks-planks", new String[] {"planks-4"}));
-		put("sticks",  new craftingRecepie("inv", "planks-.-planks-.", new String[] {"planks-4"}));
+		put("sticks",  new craftingRecepie("inv", "planks-.-planks-.", new String[] {"planks-2"}));
 		put("stick",  new craftingRecepie("inv", "planks-.-planks-.", new String[] {"planks-4"}));
 		put("torch",  new craftingRecepie("inv", "coal-.-stick-.", new String[] {"coal-1","stick-1"}));
 		put("wooden_pickaxe",  new craftingRecepie("ct", "planks-planks-planks-.-stick-.-.-stick-.", new String[] {"planks-3","stick-2"}));
@@ -124,7 +124,7 @@ public class Crafting extends SessionAdapter {
 	
 	public void finish() {
 		if (Main.debug) System.out.println("crafitng finished");
-		if (windowType != null) client.getSession().send(new ClientCloseWindowPacket(this.currentWindowId));
+		client.getSession().send(new ClientCloseWindowPacket(this.currentWindowId));
 		recepie = null;
 		craftingBlock = null;
 		state = crState.ENDED;
@@ -134,7 +134,7 @@ public class Crafting extends SessionAdapter {
 	
 	public void finish(String reason) {
 		if (Main.debug) System.out.println("crafitng finished: "+reason);
-		if (windowType != null) client.getSession().send(new ClientCloseWindowPacket(this.currentWindowId));
+		client.getSession().send(new ClientCloseWindowPacket(this.currentWindowId));
 		recepie = null;
 		craftingBlock = null;
 		state = crState.ENDED;
@@ -155,6 +155,15 @@ public class Crafting extends SessionAdapter {
 		plitstate = 0;
 		totaltimeouterrors = 0;
 		timeout = 0;
+	}
+	
+	public boolean canCraft(craftingRecepie recepiee) {
+		for (String item : recepiee.needItems) {
+			if (!client.playerInventory.contain(item.split("-")[0], Integer.parseInt(item.split("-")[1]))) {
+				return false;
+			}
+		}
+		return true;
 	}
 	
 	public void fromSlotToSlotStack(int from, int to) {

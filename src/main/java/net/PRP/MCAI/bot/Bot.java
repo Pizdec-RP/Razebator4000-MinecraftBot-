@@ -14,12 +14,13 @@ import net.PRP.MCAI.utils.ThreadU;
 import net.PRP.MCAI.utils.VectorUtils;
 import net.PRP.MCAI.Inventory.*;
 import net.PRP.MCAI.bot.pathfinder.AStar;
-import net.PRP.MCAI.bot.specific.BlockBreakManager;
+import net.PRP.MCAI.bot.specific.Miner;
 import net.PRP.MCAI.bot.specific.Crafting;
-import net.PRP.MCAI.bot.specific.LivingListener;
+import net.PRP.MCAI.bot.specific.Living;
 import net.PRP.MCAI.bot.specific.PVP;
-import net.PRP.MCAI.bot.specific.PhysicsListener;
+import net.PRP.MCAI.bot.specific.Physics;
 import net.PRP.MCAI.bot.specific.Vision;
+import net.PRP.MCAI.data.AABB;
 import net.PRP.MCAI.data.Block;
 import net.PRP.MCAI.data.EntityEffects;
 import net.PRP.MCAI.data.Vector3D;
@@ -45,8 +46,8 @@ public class Bot implements Runnable {
     public double posX;
     public double posY;
     public double posZ;
-    private float yaw;
-    private float pitch;
+    public float yaw;//left-right
+    public float pitch;//up-down
     private UUID UUID;
     //private boolean inAction;
     private boolean mainhost;
@@ -54,15 +55,14 @@ public class Bot implements Runnable {
     private int id;
     
     public EntityListener entityListener;
-    public LivingListener rl;
-    public PhysicsListener pm;
+    public Living rl;
+    public Physics pm;
     
     public static World world;
     public boolean onGround = true;
-    public BlockBreakManager bbm;
+    public Miner bbm;
     public EntityEffects effects;
     public int currentHotbarSlot = 0;
-    public boolean raidmode;
     public AStar pathfinder;
     public PVP pvp;
     public Vision vis = new Vision(this, 120, 80);
@@ -76,48 +76,46 @@ public class Bot implements Runnable {
 	
 	public static int tickrate = 50;
 	
-	public Vector3D targetpos = Vector3D.ORIGIN;
+	public Vector3D targetpos = new Vector3D(0,0,0);
 	public boolean ztp = false;
 	public int targetradius = 10;
 
 	public boolean reconectAvable = true;
-    
 
-    public Bot(MinecraftProtocol account, String host, int port, Proxy proxy) {
-        this.account = account;
-        this.proxy = proxy;
-        this.name = account.getProfile().getName();
-        this.host = host;
-        this.port = port;
-        this.effects = new EntityEffects();
-        this.raidmode = (boolean)Main.getsett("raidmode");
-        this.pathfinder = new AStar(this);
-        this.crafter = new Crafting(this);
-    }
+	public int foodlvl = 20;
+
+	public boolean automaticMode = false;
+	private boolean running = true;
     
-    public Bot(String name, String ip, Proxy proxy) {
+    public Bot(String name, String ip, Proxy proxy, boolean automaticMode) {
     	if (proxy == null)
     		this.proxy = Proxy.NO_PROXY;
     	else
     		this.proxy = proxy;
+    	this.automaticMode  = automaticMode;
     	this.account = new MinecraftProtocol(name);
     	this.host = ip.split(":")[0];
     	this.port = Integer.parseInt(ip.split(":")[1]);
     	this.name = name;
     	this.effects = new EntityEffects();
-    	this.raidmode = (boolean)Main.getsett("raidmode");
         this.pathfinder = new AStar(this);
         this.crafter = new Crafting(this);
+        Main.bots.add(this);
+        BotU.log(name+" added to list");
+        build();
+        getSession().connect();
     }
     
     @Override
 	public void run() {
     	int curcomp = 0;
 		while (true) {
+			if (!running) break;
 			long timeone = System.currentTimeMillis();
 			if (isOnline()) tick();
 			long timetwo = System.currentTimeMillis();
 			int raznica = (int) (timetwo - timeone);
+			
 			if (raznica > 0 && raznica < tickrate) {
 				curcomp = tickrate-raznica;
 				if (Main.debug) System.out.println("comp "+raznica+"ms");
@@ -131,9 +129,10 @@ public class Bot implements Runnable {
 	}
     
 	public void kill() {
+		running = false;
+		Main.bots.remove(this);
 		reconectAvable = false;
     	this.session.disconnect("session killed");
-    	//this.getWorld().columns.clear();
     	this.reset();
     	this.account = null;
     	this.session = null;
@@ -141,11 +140,11 @@ public class Bot implements Runnable {
     	this.rl = null;
     	this.bbm = null;
     	this.pathfinder = null;
+    	Thread.currentThread().interrupt();
+    	
     }
 
-    public void connect() {
-    	//SessionService sessionService = new SessionService();
-        //sessionService.setProxy(proxy);
+    public void build() {
     	world = new World();
         SocketAddress sa = proxy.address();
         String pt = (String)Main.getsett("proxytype");
@@ -161,14 +160,14 @@ public class Bot implements Runnable {
 		}
         ProxyInfo pr = new ProxyInfo(proxypype, sa);
         Session client = null;
-		if ((boolean) Main.getsett("useproxy")) {
+		if (proxy != Proxy.NO_PROXY) {
         	client = new TcpClientSession(host, port, account, pr);
         } else {
         	client = new TcpClientSession(host, port, account);
         }
         //client.setFlag(MinecraftConstants.SESSION_SERVICE_KEY, sessionService);
         client.addListener(new SessionListener(this));
-        client.addListener(new PingPacketsManager());
+        client.addListener(new Shit());
         client.addListener(new InventoryListener(this));
         if ((boolean) Main.getsett("listenEntities")) {
         	this.entityListener = new EntityListener(this);
@@ -176,12 +175,12 @@ public class Bot implements Runnable {
         }
         client.addListener(new ChatListener(this));
         
-    	this.rl = new LivingListener(this);
+    	this.rl = new Living(this);
     	client.addListener(rl);
     	
-        this.bbm = new BlockBreakManager(this);
+        this.bbm = new Miner(this);
         
-        this.pm = new PhysicsListener(this);
+        this.pm = new Physics(this);
         client.addListener(pm);
         this.pvp = new PVP(this);
         client.addListener(pvp);
@@ -189,7 +188,6 @@ public class Bot implements Runnable {
         
         this.session = client;
         this.playerInventory = new GenericInventory(this);
-        client.connect();
     }
 
     public void register() {
@@ -215,17 +213,14 @@ public class Bot implements Runnable {
     
     public void tick() {
     	if (!isOnline()) return;
-    	//System.out.println(" mining: "+this.bbm.state+" pos: "+this.bbm.getBlockPos().toStringInt()+" pf:"+this.pathfinder.state+" pft:"+this.pathfinder.end.toStringInt());
-    	//if (this.pathfinder.clientIsOnFinish && this.bbm.state == bbmct.ENDED) setInAction(false);
-    	//System.out.println("ticked");
     	try {
     		if (!this.connected) return;
 	    	this.pathfinder.tick();
 	    	this.pvp.tick();
 	    	this.bbm.tick();
 	    	this.rl.tick();
-	    	this.pm.tick();
 	    	this.crafter.tick();
+	    	this.pm.tick();
     	} catch (Exception e) {
     		this.pvp.reset();
     		this.bbm.reset();
@@ -333,11 +328,7 @@ public class Bot implements Runnable {
 	}
 	
 	public void addPitch(float i) {
-		if (pitch == 90) {
-			pitch = -90;
-		} else {
-			pitch+=i;
-		}
+		pitch+=i;
 	}
 	
 	public Vector3D getPosition() {
@@ -437,7 +428,7 @@ public class Bot implements Runnable {
 	public void reconnect() {
 		session.disconnect("reconnect");
 		reset();
-		ThreadU.sleep(10000);
+		ThreadU.sleep(6000);
 		session.connect();
 	}
 	

@@ -1,9 +1,7 @@
-package net.PRP.MCAI.bot;
+package net.PRP.MCAI.data;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import net.PRP.MCAI.data.Vector3D;
 
 public class AABB {
 	public double minX;

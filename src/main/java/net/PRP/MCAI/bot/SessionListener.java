@@ -11,6 +11,7 @@ import com.github.steveice10.mc.protocol.packet.ingame.client.world.ClientTelepo
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerJoinGamePacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.player.ServerPlayerHealthPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.player.ServerPlayerPositionRotationPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.server.window.ServerSetSlotPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerBlockChangePacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerChunkDataPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerMultiBlockChangePacket;
@@ -51,7 +52,7 @@ public class SessionListener extends SessionAdapter {
     @Override
     public void packetReceived(PacketReceivedEvent receiveEvent) {
         if (receiveEvent.getPacket() instanceof ServerJoinGamePacket) {
-        	System.out.println("(" + client.getGameProfile().getName() + ") Подлючился");
+        	//System.out.println("(" + client.getGameProfile().getName() + ") Подлючился");
         	ServerJoinGamePacket p = (ServerJoinGamePacket) receiveEvent.getPacket();
         	client.getWorld().renderDistance = p.getViewDistance();
         	client.setId(p.getEntityId());
@@ -71,13 +72,13 @@ public class SessionListener extends SessionAdapter {
             client.setYaw(packet.getYaw());
 			client.setPitch(packet.getPitch());
 			//BotU.calibratePosition(client);
-            log("pos packet received x:"+packet.getX()+" y:"+packet.getY()+" z:"+packet.getZ()+" yaw:"+packet.getYaw()+" pitch:"+packet.getPitch());
+            BotU.log("pos packet received x:"+packet.getX()+" y:"+packet.getY()+" z:"+packet.getZ()+" yaw:"+packet.getYaw()+" pitch:"+packet.getPitch());
             client.getSession().send(new ClientPlayerPositionRotationPacket(client.onGround,packet.getX(),packet.getY(),packet.getZ(), client.getYaw(), client.getPitch()));
             client.getSession().send(new ClientRequestPacket(ClientRequest.STATS));
-            client.pm.vel = Vector3D.ORIGIN;
+            client.pm.resetVel();
         } else if (receiveEvent.getPacket() instanceof ServerPlayerHealthPacket) {
             final ServerPlayerHealthPacket p = (ServerPlayerHealthPacket) receiveEvent.getPacket();
-            
+            client.foodlvl = p.getFood();
             if (p.getHealth() <= 0)
             	client.pvp.reset();
             	client.bbm.reset();
@@ -111,7 +112,7 @@ public class SessionListener extends SessionAdapter {
             final LoginSuccessPacket p = (LoginSuccessPacket) receiveEvent.getPacket();
             UUID MyUUID = p.getProfile().getId();
             client.setUUID(MyUUID);
-            System.out.println("UUID: " + MyUUID);
+            //System.out.println("UUID: " + MyUUID);
 		} else if (receiveEvent.getPacket() instanceof ServerPlayerListEntryPacket) {
 			final ServerPlayerListEntryPacket p = (ServerPlayerListEntryPacket) receiveEvent.getPacket();
 			client.getWorld().ServerTabPanel.clear();
@@ -132,16 +133,12 @@ public class SessionListener extends SessionAdapter {
     public void disconnected(DisconnectedEvent event) {
     	if (!client.reconectAvable) return;
     	client.connected = false;
-    	System.out.println(event.getReason().toString());
+    	BotU.log(event.getReason().toString());
 		ThreadU.sleep(6100);
 		if ((boolean) Main.getsett("reconect")) {
 			client.reset();
-			client.connect();
+			client.getSession().connect();
 		}
 		//event.getCause().printStackTrace();
-    }
-	
-	public static void log(String f) {
-    	System.out.println("[log] "+f);
     }
 }

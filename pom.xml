@@ -2,9 +2,8 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>net.pizdecrp.MCAI</groupId>
   <artifactId>pizdecrp.MCAI</artifactId>
-  <version>2.20.1</version>
-  <name>Minecraft AI bot</name>
-  <description>nigger nigger nigger</description>
+  <version>2.22-final</version>
+  <name>Minecraft Raid Bot</name>
   <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jdk.version>11</jdk.version>
@@ -20,7 +19,14 @@
     </repositories>
 
     <dependencies>
-
+		
+		<dependency>
+  			<!-- jsoup HTML parser library @ https://jsoup.org/ -->
+  			<groupId>org.jsoup</groupId>
+  			<artifactId>jsoup</artifactId>
+  			<version>1.14.3</version>
+		</dependency>
+		
         <dependency>
             <groupId>com.github.Steveice10</groupId>
             <artifactId>MCProtocolLib</artifactId>

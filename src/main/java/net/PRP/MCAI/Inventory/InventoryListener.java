@@ -32,6 +32,7 @@ public class InventoryListener extends SessionAdapter {
 			final ServerSetSlotPacket p = (ServerSetSlotPacket) receiveEvent.getPacket();
 			//if (client.crafter.windowType != null) client.playerInventory.setSlot(p.getSlot()-Main.getMCData().slotMultipiler.get(client.crafter.windowType), p.getItem());
 			/*else*/client.playerInventory.setSlot(p.getSlot(), p.getItem());
+			client.crafter.currentWindowId = p.getWindowId();
 			if (Main.debug && p.getItem() != null) System.out.println("sssp slot:"+p.getSlot()+ " item:"+Main.getMCData().items.get(p.getItem().getId()).name);
 		}
 	}

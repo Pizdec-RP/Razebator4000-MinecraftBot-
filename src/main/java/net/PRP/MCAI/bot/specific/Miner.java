@@ -1,95 +1,142 @@
 package net.PRP.MCAI.bot.specific;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.github.steveice10.mc.protocol.data.game.entity.player.CombatState;
 import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
 import com.github.steveice10.mc.protocol.data.game.entity.player.PlayerAction;
+import com.github.steveice10.mc.protocol.data.game.entity.type.EntityType;
 import com.github.steveice10.mc.protocol.data.game.world.block.BlockFace;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerActionPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerSwingArmPacket;
 
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.bot.Bot;
+import net.PRP.MCAI.bot.pathfinder.AStar.State;
 import net.PRP.MCAI.data.BlockData;
+import net.PRP.MCAI.data.Entity;
 import net.PRP.MCAI.data.MinecraftData.Type;
 import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.data.materialsBreakTime;
 import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.VectorUtils;
 
-public class BlockBreakManager {
+public class Miner {
 	
-	public Bot client;
+	private Bot client;
 	private Vector3D pos;
 	public bbmct state = bbmct.ENDED;
-	public int d1 = 0;
+	private int d1 = 0;
 	public int ticksToBreak = 0;
+	private Entity droppedItem = null;
+	private Vector3D beforePos = null;
+	private Map<Integer, Entity> te = new HashMap<>();
 	
-	public BlockBreakManager(Bot client) {
-		setBlockPos(Vector3D.ORIGIN);
+	public Miner(Bot client) {
+		setBlockPos(new Vector3D(0,0,0));
 		this.client = client;
 	}
 	
 	public enum bbmct {
-		STARTED, IN_PROGRESS, ENDED;
+		STARTED, IN_PROGRESS, WAITFORDROPITEM, PATHINGTODROP, GOINGTODROPEDITEM, ENDED;
 	}
 	
 	public void reset() {
-		this.pos = Vector3D.ORIGIN;
-		this.d1 = 0;
-		this.ticksToBreak = 0;
-		this.state = bbmct.ENDED;
+		pos = new Vector3D(0,0,0);
+		d1 = 0;
+		ticksToBreak = 0;
+		state = bbmct.ENDED;
+		droppedItem = null;
+		beforePos = null;
 	}
 	
 	@SuppressWarnings("deprecation")
 	public void tick() {
-		try {
-			if (state == bbmct.ENDED) return;
-			if (!client.isOnline() || client.pvp.state != CombatState.END_COMBAT || pos == null) {
-				reset();
+		if (state == bbmct.ENDED) return;
+		if (!client.isOnline() || client.pvp.state != CombatState.END_COMBAT || pos == null) {
+			reset();
+			return;
+		}
+		if (state == bbmct.STARTED) {
+			client.pathfinder.ignored.add(pos);
+			BotU.LookHead(client, pos);
+			prepareitem();
+			client.getSession().send(new ClientPlayerSwingArmPacket(Hand.MAIN_HAND));
+			client.getSession().send(new ClientPlayerActionPacket(PlayerAction.START_DIGGING, pos.translate(), BlockFace.UP));
+			ticksToBreak = (int) Math.floor(calculateBreakTime());
+			if (ticksToBreak == 1.0) {
+				FinishDiggingAGTI();
+				return;
+			} else {
+				state = bbmct.IN_PROGRESS;
 				return;
 			}
+		} else if (state == bbmct.IN_PROGRESS) {
+			if (pos == null) {endDigging(); return;}
+			if (!(VectorUtils.sqrt(pos, client.getEyeLocation()) <= (int)Main.getsett("maxpostoblock"))) {
+				endDigging();
+				return;
+			}
+			d1++;
+			if (d1 >= 3) {
+				client.getSession().send(new ClientPlayerSwingArmPacket(Hand.MAIN_HAND));
+				d1 = 0;
+			}
+			
 			if (pos.getBlock(client).type == Type.AIR) {
 				client.getSession().send(new ClientPlayerActionPacket(PlayerAction.FINISH_DIGGING, pos.translate(), BlockFace.UP));
 				state = bbmct.ENDED;
+				return;
 			}
-			if (state == bbmct.STARTED) {
-				client.pathfinder.ignored.add(pos);
-				BotU.LookHead(client, pos);
-				prepareitem();
-				client.getSession().send(new ClientPlayerSwingArmPacket(Hand.MAIN_HAND));
-				client.getSession().send(new ClientPlayerActionPacket(PlayerAction.START_DIGGING, pos.translate(), BlockFace.UP));
-				this.ticksToBreak = (int) Math.floor(calculateBreakTime());
-				if (ticksToBreak == 1.0) {
-					endDigging();
-				} else {
-					this.state = bbmct.IN_PROGRESS;
+			
+			ticksToBreak--;
+			if (ticksToBreak <= 0) {
+				FinishDiggingAGTI();
+				return;
+			}
+		} else if (state == bbmct.WAITFORDROPITEM) {
+			te.clear();
+			te.putAll(client.getWorld().Entites);
+			if (droppedItem == null) {
+				for (Entry<Integer, Entity> entry : te.entrySet()) {
+					if (entry.getValue().type == EntityType.ITEM && Math.floor(entry.getValue().Position.x) == Math.floor(pos.x) && Math.floor(entry.getValue().Position.z) == Math.floor(pos.z)) {
+						droppedItem = entry.getValue();
+						return;
+					}
 				}
-			} else if (this.state == bbmct.IN_PROGRESS) {
-				if (pos == null) endDigging();
-				if (!(VectorUtils.sqrt(pos, client.getEyeLocation()) <= (int)Main.getsett("maxpostoblock"))) {
-					endDigging();
+			} else {
+				if (beforePos == null) {
+					beforePos = droppedItem.Position;
+					return;
+				} else {
+					if (beforePos.y == droppedItem.Position.y) {
+						state = bbmct.PATHINGTODROP;
+					}
+				}
+			}
+			
+		} else if (state == bbmct.PATHINGTODROP) {
+			if (client.pathfinder.testForPath(beforePos)) {
+				state = bbmct.GOINGTODROPEDITEM;
+				client.pathfinder.setup(beforePos);
+				return;
+			} else {
+				Vector3D poss = VectorUtils.func_31(client, beforePos, (int)Main.getsett("maxpostoblock"));
+				if (pos == null) {
+					state = bbmct.ENDED;
 					return;
 				}
-				d1++;
-				if (d1 >= 3) {
-					client.getSession().send(new ClientPlayerSwingArmPacket(Hand.MAIN_HAND));
-					d1 = 0;
-				}
-				
-				if (pos.getBlock(client).type == Type.AIR) {
-					endDigging();
-				}
-				
-				this.ticksToBreak--;
-				if (ticksToBreak <= 0) {
-					endDigging();
-				}
+				state = bbmct.GOINGTODROPEDITEM;
+				client.pathfinder.setup(poss);
+				return;
 			}
-		} catch (Exception e) {
-			if (e instanceof NullPointerException) reset();
-			e.printStackTrace();
+		} else if (state == bbmct.GOINGTODROPEDITEM) {
+			System.out.println(2);
+			if (client.pathfinder.state == State.FINISHED) {state = bbmct.ENDED; droppedItem = null; beforePos = null; return;}
 		}
 	}
 	
@@ -97,8 +144,24 @@ public class BlockBreakManager {
 	public void endDigging() {
 		if (Main.debug) System.out.println("mining ended");
 		client.getSession().send(new ClientPlayerActionPacket(PlayerAction.FINISH_DIGGING, pos.translate(), BlockFace.UP));
-		
-		this.state = bbmct.ENDED;
+		state = bbmct.ENDED;
+		droppedItem = null;
+		beforePos = null;
+	}
+	
+	@SuppressWarnings("deprecation")
+	public void FinishDiggingAGTI() {
+		if (Main.debug) System.out.println("mining ended");
+		client.getSession().send(new ClientPlayerActionPacket(PlayerAction.FINISH_DIGGING, pos.translate(), BlockFace.UP));
+		state = bbmct.ENDED;
+		droppedItem = null;
+		beforePos = null;
+		/*System.out.println(3);
+		if (Main.debug) System.out.println("mining ended");
+		client.getSession().send(new ClientPlayerActionPacket(PlayerAction.FINISH_DIGGING, pos.translate(), BlockFace.UP));
+		state = bbmct.WAITFORDROPITEM;
+		droppedItem = null;
+		beforePos = null;*/
 	}
 	
 	public void setup(Vector3D block) {
@@ -116,7 +179,6 @@ public class BlockBreakManager {
 		for (materialsBreakTime item : mtm) {
 			client.setToSlotInHotbarWithItemId(item.toolId);
 		}}
-		//System.out.println("hand");
 	}
 
 	public Vector3D getBlockPos() {
@@ -124,7 +186,7 @@ public class BlockBreakManager {
 	}
 
 	public void setBlockPos(Vector3D blockPos) {
-		this.pos = blockPos;
+		pos = blockPos;
 	}
 	
 	public Double calculateBreakTime() {
@@ -170,7 +232,7 @@ public class BlockBreakManager {
 	    }
 	    
 	    double blockHardness = blockdata.hardness;
-	    double matchingToolMultiplier = this.canHarvest(blockdata, mtm) ? 30.0 : 100.0;
+	    double matchingToolMultiplier = canHarvest(blockdata, mtm) ? 30.0 : 100.0;
 	    
 	    double blockBreakingDelta = blockBreakingSpeed / blockHardness / matchingToolMultiplier;
 	    

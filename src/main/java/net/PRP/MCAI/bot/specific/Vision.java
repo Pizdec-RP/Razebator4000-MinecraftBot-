@@ -46,7 +46,7 @@ public class Vision {
     }
 	
 	public Vector3D getDirection(double yaw, double pitch) {
-        Vector3D vector = Vector3D.ORIGIN;
+        Vector3D vector = new Vector3D(0,0,0);
         double rotX = yaw;
         double rotY = pitch;
         vector.setY(-Math.sin(Math.toRadians(rotY)));
