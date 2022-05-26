@@ -77,9 +77,7 @@ public class Main {
 			        nextProxy();
 			        new Thread(() -> {
 				        //System.out.println("created bot name: "+USERNAME+" proxy: "+proxy.toString());
-						Bot client = new Bot(USERNAME, ip, proxy,true);
-						bots.add(client);
-						new Thread(client).start();
+						new Thread(new Bot(USERNAME, ip, proxy,true)).start();
 			        }).start();
 				    ThreadU.sleep((int) getsett("enterrange"));
 		    	}
