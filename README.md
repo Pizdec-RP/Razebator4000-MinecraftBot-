@@ -1,7 +1,6 @@
 # анархия мать порядка
 
-![unknow1n](https://user-images.githubusercontent.com/70069310/148758365-3a623ff3-da34-42e9-9b40-72a899b837d9.png)
-![DoND84chr8s](https://user-images.githubusercontent.com/70069310/168780325-467874ae-6488-400d-9804-f7392bc50952.jpg)
+![unknow1n](https://media.discordapp.net/attachments/858076704823181366/984110584415006760/Picsart_22-06-08_18-03-36-750.jpg)
 
 ### шо к чему
  * только для версии 1.16.5.
