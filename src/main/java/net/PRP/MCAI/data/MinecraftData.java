@@ -23,7 +23,7 @@ public class MinecraftData {
 	{
 		put(WindowType.CRAFTING, 1);
 	}};
-	
+	public static String codecc = "===================1===========1=================21=221==221==221=";
 	public MinecraftData() {
 		
 	}

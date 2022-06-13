@@ -9,7 +9,9 @@ import com.github.steveice10.mc.protocol.data.game.chunk.Chunk;
 import com.github.steveice10.mc.protocol.data.game.chunk.Column;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
 import net.PRP.MCAI.*;
+import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.data.MinecraftData.Type;
+import net.PRP.MCAI.utils.VectorUtils;
 
 
 public class World {
@@ -17,13 +19,18 @@ public class World {
 	public Map<Integer, Entity> Entites = new ConcurrentHashMap<>();
 	public List<ServerPlayerObject> ServerTabPanel = new CopyOnWriteArrayList<>();
 	public int renderDistance = 2;
-
+	public Bot client;
+	
+	public World(Bot client) {
+		this.client = client;
+	}
+	
 	public void unloadColumn(ChunkCoordinates coords) {
 		columns.remove(coords);
 	}
 	
 	public void addChunkColumn(ChunkCoordinates coords, Column column) {
-		if ((boolean) Main.getsett("multiworld")) {
+		if ((boolean) Main.gamerule("multiworld")) {
 			Multiworld.addChunkColumn(coords, column);
 		} else {
 			if (columns.containsKey(coords)) {
@@ -35,7 +42,7 @@ public class World {
 	}
 	
 	public void setBlock(Position pos, int state) {
-		if ((boolean) Main.getsett("multiworld")) {
+		if ((boolean) Main.gamerule("multiworld")) {
 			Multiworld.setBlock(pos, state);
 		} else {
 			try {
@@ -57,10 +64,15 @@ public class World {
 				//e.printStackTrace();
 			}
 		}
+		if ((boolean)Main.gamerule("mineonlyiftouchair"))client.rl.blacklist.forEach((block)->{
+			if (block.getBlock(client).getNeighbors().contains(VectorUtils.convert(pos))) {
+				client.rl.blacklist.remove(block);
+			}
+		});
 	}
 	
 	public Block getBlock(double x, double y, double z) {
-		if ((boolean) Main.getsett("multiworld")) {
+		if ((boolean) Main.gamerule("multiworld")) {
 			return Multiworld.getBlock(x,y,z);
 		} else {
 			if (y < 0 || y > 256) {
@@ -86,7 +98,7 @@ public class World {
 	}
 	
 	public Block getBlock(Vector3D pos) {
-		if ((boolean) Main.getsett("multiworld")) {
+		if ((boolean) Main.gamerule("multiworld")) {
 			return Multiworld.getBlock(pos);
 		} else {
 			if (pos.y < 0 || pos.y > 256) {

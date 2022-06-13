@@ -77,7 +77,7 @@ public class Miner {
 			}
 		} else if (state == bbmct.IN_PROGRESS) {
 			if (pos == null) {endDigging(); return;}
-			if (!(VectorUtils.sqrt(pos, client.getEyeLocation()) <= (int)Main.getsett("maxpostoblock"))) {
+			if (!(VectorUtils.sqrt(pos, client.getEyeLocation()) <= (int)Main.gamerule("maxpostoblock"))) {
 				endDigging();
 				return;
 			}
@@ -125,7 +125,7 @@ public class Miner {
 				client.pathfinder.setup(beforePos);
 				return;
 			} else {
-				Vector3D poss = VectorUtils.func_31(client, beforePos, (int)Main.getsett("maxpostoblock"));
+				Vector3D poss = VectorUtils.func_31(client, beforePos, (int)Main.gamerule("maxpostoblock"));
 				if (pos == null) {
 					state = bbmct.ENDED;
 					return;

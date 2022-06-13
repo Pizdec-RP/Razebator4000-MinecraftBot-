@@ -3,9 +3,10 @@ package net.PRP.MCAI.utils;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
-public class StringUtils
+public class StringU
 {
     private static final Pattern PATTERN_CONTROL_CODE = Pattern.compile("(?i)\\u00A7[0-9A-FK-OR]");
+    public static final String pattern = "\n==================3=3=========3=3===============5===3==1==33==1==33==1==3\n";
 
     /**
      * Returns the time elapsed for the given number of ticks, in "mm:ss" format.

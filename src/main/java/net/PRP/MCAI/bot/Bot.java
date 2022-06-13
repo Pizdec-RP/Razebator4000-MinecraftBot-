@@ -75,10 +75,6 @@ public class Bot implements Runnable {
 	public boolean connected = false;
 	
 	public static int tickrate = 50;
-	
-	public Vector3D targetpos = new Vector3D(0,0,0);
-	public boolean ztp = false;
-	public int targetradius = 10;
 
 	public boolean reconectAvable = true;
 
@@ -145,9 +141,9 @@ public class Bot implements Runnable {
     }
 
     public void build() {
-    	world = new World();
+    	world = new World(this);
         SocketAddress sa = proxy.address();
-        String pt = (String)Main.getsett("proxytype");
+        String pt = (String)Main.gamerule("proxytype");
         Type proxypype = null;
 		if (pt.equalsIgnoreCase("socks4")) {
 			proxypype = ProxyInfo.Type.SOCKS4;
@@ -169,7 +165,7 @@ public class Bot implements Runnable {
         client.addListener(new SessionListener(this));
         client.addListener(new Shit());
         client.addListener(new InventoryListener(this));
-        if ((boolean) Main.getsett("listenEntities")) {
+        if ((boolean) Main.gamerule("listenEntities")) {
         	this.entityListener = new EntityListener(this);
         	client.addListener(this.entityListener);
         }
@@ -203,7 +199,7 @@ public class Bot implements Runnable {
         ThreadU.sleep(100);
         session.send(new ClientChatPacket("/login 112233asdasd"));
         ThreadU.sleep(300);
-        BotU.chat(this, (String) Main.getsett("loginfrase"));
+        BotU.chat(this, (String) Main.gamerule("loginfrase"));
     }
     
     public void reset() {
@@ -347,24 +343,26 @@ public class Bot implements Runnable {
 		return new Vector3D((int)Math.floor(this.posX), (int)this.posY, (int)Math.floor(this.posZ));
 	}
 	
-	@Deprecated
 	public boolean isInLiquid() {
-		int id = getWorld().getBlock(getPosition()).id;
-		if (id == 8 || id == 9 || id == 10 || id == 11) {
-			return true;
-		} else {
-			return false;
+		for (Vector3D corner : getHitbox().getCorners()) {
+			//System.out.println(corner.toStringInt()+" isLiq: "+corner.getBlock(this).type.toString());
+			if (corner.floor().getBlock(this).type == net.PRP.MCAI.data.MinecraftData.Type.LIQUID) return true;
 		}
+		return false;
 	}
 	
 	public boolean isInWater() {
-		int id = getWorld().getBlock(getPosition()).id;
-		return id == 26;
+		for (Vector3D corner : getHitbox().getCorners()) {
+			if (corner.floor().getBlock(this).id == 26) return true;
+		}
+		return false;
 	}
 	
 	public boolean isInLava() {
-		int id = getWorld().getBlock(getPosition()).id;
-		return id == 27;
+		for (Vector3D corner : getHitbox().getCorners()) {
+			if (corner.floor().getBlock(this).id == 27) return true;
+		}
+		return false;
 	}
 
 	public UUID getUUID() {

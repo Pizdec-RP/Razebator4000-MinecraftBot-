@@ -8,10 +8,10 @@ import net.kyori.adventure.text.Component;
 
 public class ServerPlayerObject {
 	
-	Component displayName;
-	GameMode gamemode;
-	int ping;
-	GameProfile profile;
+	public Component displayName;
+	public GameMode gamemode;
+	public int ping;
+	public GameProfile profile;
 	
 	public ServerPlayerObject(PlayerListEntry entry) {
 		this.displayName = entry.getDisplayName();

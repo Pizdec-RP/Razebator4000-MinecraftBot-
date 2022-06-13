@@ -115,7 +115,11 @@ public class PathObject {
 		neighbors.add(ps.add(-1, 0, 0));
 		neighbors.add(ps.add(0, 0, -1));
 		for (Vector3D n : neighbors) {
-			if (pointIsUsed(n) || !VectorUtils.positionIsSafe(n, client)) neighbors.remove(n);
+			if (!pointIsUsed(n) && (VectorUtils.positionIsSafe(n, client) || VectorUtils.waterroad(client, n))) {
+				
+			} else {
+				neighbors.remove(n);
+			}
 		}
 		
 		List<Vector3D> temp = new CopyOnWriteArrayList<>();
@@ -136,9 +140,9 @@ public class PathObject {
 		neighbors.addAll(temp);
 		
 		if (!neighbors.isEmpty() && method != 2) {
-			for (Vector3D n : neighbors) {
+			/*for (Vector3D n : neighbors) {
 				if (n.getBlock(client).touchLiquid(client)) neighbors.remove(n);
-			}
+			}*/
 			return neighbors;
 		}
 		

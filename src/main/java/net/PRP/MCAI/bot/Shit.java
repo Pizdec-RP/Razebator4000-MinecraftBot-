@@ -12,7 +12,7 @@ public class Shit extends SessionAdapter {
     public void packetReceived(PacketReceivedEvent event) {
 		if (event.getPacket() instanceof ServerKeepAlivePacket) {
 			if (!Main.debug) {
-				if ((boolean) Main.getsett("KeepAlivePackets")) {
+				if ((boolean) Main.gamerule("KeepAlivePackets")) {
 					final ServerKeepAlivePacket p = (ServerKeepAlivePacket) event.getPacket();
 				    event.getSession().send(new ClientKeepAlivePacket(p.getPingId()));
 				}

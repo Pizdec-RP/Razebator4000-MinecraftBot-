@@ -44,15 +44,13 @@ public class VectorUtils {
 		return getNear(pos, normal);
 	}
 	
-	public static Vector3D vector(float Yaw, float Pitch, double speed) {
+	public static Vector3D vector(float Yaw, float Pitch, double speed, Bot client) {
         Vector3D vector = new Vector3D(0,0,0);
         double rotX = Yaw;
-        double rotY = 0;//pitch
-
-        //vector.setY(-Math.sin(Math.toRadians(rotY)));
+        double rotY = Pitch;
 
         double xz = Math.cos(Math.toRadians(rotY));
-
+        if (client.isInLiquid()) vector.setY(-Math.sin(Math.toRadians(rotY)));//0.35
         vector.setX(-xz * Math.sin(Math.toRadians(rotX)));
         vector.setZ(xz * Math.cos(Math.toRadians(rotX)));
         vector = vector.multiply(speed);
@@ -86,23 +84,12 @@ public class VectorUtils {
 		return false;
 	}
 	
-	public static boolean equalsForPF(Vector3D one, Vector3D two, boolean nonY) {
-		if (one == null || two == null) return false;
-		if (nonY) {
-			if ((int)one.getX() == (int)two.getX() && (int)one.getZ() == (int)two.getZ()) return true;
-			return false;
-		} else {
-			if ((int)one.getX() == (int)two.getX() && (int)one.getY() == (int)two.getY() && (int)one.getZ() == (int)two.getZ()) return true;
-			return false;
-		}
-	}
-	
 	public static Vector3D convert(Position pos) {
 		return new Vector3D(pos.getX(), pos.getY(), pos.getZ());
 	}
 	
 	public static boolean positionIsSafe(Vector3D pos, Bot client) {
-		boolean a = (BTavoid(client.getWorld().getBlock(pos).type) || client.getWorld().getBlock(pos).type == Type.CARPET) && BTavoid(client.getWorld().getBlock(pos.add(0,1,0)).type) && icanstayhere(client.getWorld().getBlock(pos.add(0,-1,0)).type);
+		boolean a = (BTavoid(client.getWorld().getBlock(pos).type) || (client.getWorld().getBlock(pos).getHitbox() != null && client.getWorld().getBlock(pos).getHitbox().maxY <= 0.2)) && BTavoid(client.getWorld().getBlock(pos.add(0,1,0)).type) && icanstayhere(client.getWorld().getBlock(pos.add(0,-1,0)).type);
 		//System.out.println(pos+" is safe:"+a);
 		return a;
 	}
@@ -125,7 +112,7 @@ public class VectorUtils {
 	}
 	
 	public static double sqrt2D(Vector3D one, Vector3D IIdPoint) {
-		double distance = Math.sqrt(Math.pow(one.getX() - IIdPoint.getX(), 2) + Math.pow(one.getY(), 2) + Math.pow(one.getZ() - IIdPoint.getZ(), 2));
+		double distance = Math.sqrt(Math.pow(one.getX() - IIdPoint.getX(), 2) + Math.pow(one.getZ() - IIdPoint.getZ(), 2));
 		return distance;
 	}
 	
@@ -186,6 +173,7 @@ public class VectorUtils {
         return temp.get(MathU.rnd(0, temp.size()-1));
     }
 	
+	public static final String ward = "=1=2=2=1=22213=32===2=13=31=21==1=2===5=53=3=35'=33=35'=33=35'=3\n3='25=1`=31==5=1=4='1=4=5=1`=3=25=1=43='23=5=513=3==53=33==53=33==53=3";
 	public static Vector3D findNearestBlockById(Bot client, int id) {
     	List<Vector3D> positions = new CopyOnWriteArrayList<>();
     	int x = (int)client.getEyeLocation().getPosX();
@@ -296,31 +284,14 @@ public class VectorUtils {
 		return getNearBlock(client.getEyeLocation(), blocks);
 	}
 	
+	public static boolean waterroad(Bot client, Vector3D n) {
+		return (n.add(0,-1,0).getBlock(client).id == 26 && n.getBlock(client).isAvoid() && n.add(0,1,0).getBlock(client).isAvoid())
+		||
+		(n.getBlock(client).id == 26 && n.add(0,1,0).getBlock(client).isAvoid());
+	}
+	
 	public static Vector3D randomPointInRaduis(Bot client, int min) {
-		int tryy = 0;
-		while (true) {
-			tryy++;
-			if (tryy > 20) return null;
-			int max = client.getWorld().renderDistance*16;
-			int x;
-			if (MathU.rnd(0, 1) == 1) 
-				x = MathU.rnd(min, max);
-			else 
-				x = MathU.rnd(-min, -max);
-			int z;
-			if (MathU.rnd(0, 1) == 1) 
-				z = MathU.rnd(min, max);
-			else 
-				z = MathU.rnd(-min, -max);
-			Vector3D pos = new Vector3D(x+client.getPosX(), 256, z+client.getPosZ());
-			while (true) {
-				if (!pos.add(0,-1,0).getBlock(client).isAvoid() && positionIsSafe(pos, client) && client.pathfinder.testForPath(pos)) {
-					return pos;
-				}
-				pos = pos.add(0,-1,0);
-				if (pos.y < 0) break;
-			}
-		}
+		return randomPointInRaduis(client, min, client.getWorld().renderDistance*16,(int)client.getPosX(),(int)client.getPosZ());
 	}
 	public static Vector3D randomPointInRaduis(Bot client, int min, int max, int dx, int dz) {
 		int tryy = 0;
@@ -339,7 +310,8 @@ public class VectorUtils {
 				z = MathU.rnd(-min, -max);
 			Vector3D pos = new Vector3D(x+dx, 256, z+dz);
 			while (true) {
-				if (!pos.add(0,-1,0).getBlock(client).isAvoid() && positionIsSafe(pos, client) && client.pathfinder.testForPath(pos)) {
+				if (!pos.add(0,-1,0).getBlock(client).isAvoid() && (positionIsSafe(pos, client) || waterroad(client, pos)) && client.pathfinder.testForPath(pos)) {
+
 					return pos;
 				}
 				pos = pos.add(0,-1,0);
@@ -377,7 +349,7 @@ public class VectorUtils {
     	int x = (int)ps.getPosX();
     	int y = (int)ps.getPosY();
     	int z = (int)ps.getPosZ();
-    	int radius = (int)Main.getsett("maxpostoblock");
+    	int radius = (int)Main.gamerule("maxpostoblock");
     	Vector3D pos = null;
     	for (int i = 1; i <= radius; i++) {
     		int xs = x-i;

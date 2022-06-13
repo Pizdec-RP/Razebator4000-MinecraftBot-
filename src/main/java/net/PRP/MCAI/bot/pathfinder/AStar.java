@@ -176,7 +176,7 @@ public class AStar {
 	}
 	
 	public boolean botinpos(Vector3D pos) {
-		return client.getPosX() >= pos.x+0.3 && client.getPosX() <= pos.x+0.6 && client.getPosZ() >= pos.z+0.3 && client.getPosZ() <= pos.z+0.6 && client.getPosY() >= pos.y-0.1 && client.getPosY() <= pos.y+1;
+		return client.getPosX() >= pos.x+0.3 && client.getPosX() <= pos.x+0.6 && client.getPosZ() >= pos.z+0.3 && client.getPosZ() <= pos.z+0.6 && client.getPosY() >= pos.y-1 && client.getPosY() <= pos.y+1.5;
 	}
 	
 	public Vector3D getVector(Vector3D from, Vector3D to) {
@@ -258,7 +258,9 @@ public class AStar {
 		client.pm.Walk();
 		if (client.getPitch() < -85) {
 			client.pm.jump();
-		}
+		} /*else if (client.isInWater() && to.y - client.posY >= 1) {
+			client.pm.inWaterJump(10);
+		}*/
 		//System.out.println(playerSpeed +" | "+ to.toString() +" | "+ client.getPosition());
 		
 		

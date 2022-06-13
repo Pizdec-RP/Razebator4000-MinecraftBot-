@@ -9,8 +9,6 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.Proxy;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
@@ -116,7 +114,7 @@ public class SteeringWheel {
 	    sendasrandom.setBounds(0,50,270,20);
 	    frame.add(sendasrandom);
 	    
-	    JTextField host = new JTextField((String) Main.getsett("host"));
+	    JTextField host = new JTextField((String) Main.gamerule("host"));
 	    host.setBounds(330,50,200,20);
 	    frame.add(host);
 	    
@@ -268,7 +266,7 @@ public class SteeringWheel {
 			
 			JTextField xyz = new JTextField("корды x и z");
 			 xyz.setBounds(105,21,85,20);
-		    taskmanager.add( xyz);
+		    taskmanager.add(xyz);
 		    
 		    JTextField radiusw = new JTextField("радиус");
 		    radiusw.setBounds(195,21,70,20);

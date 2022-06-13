@@ -12,6 +12,9 @@ public class BotU {
 	public static void log(String f) {
     	if (Main.debug) System.out.println("[log] "+f);
     }
+	public static void ts(Object p) {
+		System.out.println(p);
+	}
 	public static void chat (Bot client, String text) {
 		client.getSession().send(new ClientChatPacket(text));
 	}

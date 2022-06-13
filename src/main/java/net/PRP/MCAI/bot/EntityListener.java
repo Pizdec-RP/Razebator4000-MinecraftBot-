@@ -42,7 +42,7 @@ public class EntityListener extends SessionAdapter {
 	        		double xa = p.getMoveX();
 	        		double ya = p.getMoveY();
 	        		double za = p.getMoveZ();
-	        		System.out.println("x:"+xa+"  y:"+String.format("%.2f",ya)+"  z:"+String.format("%.2f",za)+"  milis:"+System.currentTimeMillis());
+	        		System.out.println("onGround:"+p.isOnGround()+" x:"+xa+"  y:"+String.format("%.2f",ya)+"  z:"+String.format("%.2f",za)+"  milis:"+System.currentTimeMillis());
 	        		entity.Position.x += p.getMoveX();
 	                entity.Position.y += p.getMoveY();
 	                entity.Position.z += p.getMoveZ();

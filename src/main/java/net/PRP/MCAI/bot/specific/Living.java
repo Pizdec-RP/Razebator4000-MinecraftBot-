@@ -4,7 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
+
+import org.apache.commons.lang3.StringUtils;
 
 import com.github.steveice10.mc.protocol.data.game.entity.type.EntityType;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerJoinGamePacket;
@@ -19,8 +22,12 @@ import net.PRP.MCAI.bot.specific.Miner.bbmct;
 import net.PRP.MCAI.bot.specific.Crafting.crState;
 import net.PRP.MCAI.data.Block;
 import net.PRP.MCAI.data.Entity;
+import net.PRP.MCAI.data.ServerPlayerObject;
 import net.PRP.MCAI.data.Vector3D;
-import net.PRP.MCAI.utils.*;
+import net.PRP.MCAI.utils.BotU;
+import net.PRP.MCAI.utils.VectorUtils;
+import net.PRP.MCAI.utils.MathU;
+import net.PRP.MCAI.utils.StringU;
 
 public class Living extends SessionAdapter {
 	
@@ -30,7 +37,7 @@ public class Living extends SessionAdapter {
 	public Vector3D mineAfterWalk = null;
 	public List<Vector3D> blacklist = new CopyOnWriteArrayList<>();
 	public boolean trusted;
-	private int sleepticks = (int)Main.getsett("walkeverymilseconds") / 50;
+	private int sleepticks = (int)Main.gamerule("walkeverymilseconds") / 50;
 	public Integer enemy = null;
 	
 	public int tickstocheck = 0;
@@ -65,11 +72,18 @@ public class Living extends SessionAdapter {
 
 	public Living(Bot client) {
         this.client = client;
-        this.trusted = (boolean) Main.getsett("living");
+        this.trusted = (boolean) Main.gamerule("living");
         if (client.automaticMode) {
-        	tasklist.add("goforwardwithangle 30");
-        	tasklist.add("goforwardwithangle 30");
-        	tasklist.add("goforwardwithangle 30");
+        	switch (MathU.rnd(1, 3)) {
+        		case 1:
+        			tasklist.add("goforwardwithangle 30");
+    	        	tasklist.add("goforwardwithangle 30");
+    	        	tasklist.add("goforwardwithangle 30");
+        			break;
+        		case 2:
+        			tasklist.add("goforwardwithangle 30");
+        			break;
+        	}
         }
     }
 	
@@ -81,11 +95,9 @@ public class Living extends SessionAdapter {
     public void packetReceived(PacketReceivedEvent receiveEvent) {
         if (receiveEvent.getPacket() instanceof ServerJoinGamePacket) {
         	if (firstJoin) return;
-        	ThreadU.sleep((int) Main.getsett("timebeforeraidon"));
+        	sleepticks += (int) Main.gamerule("timebeforeraidon")/50;
         	firstJoin = true;
-        	spamticks = (int) Main.getsett("spamrange") / 50;
-        } else if (receiveEvent.getPacket() instanceof ServerMapDataPacket) {
-        	//final ServerMapDataPacket p = (ServerMapDataPacket) receiveEvent.getPacket();
+        	spamticks = (int) Main.gamerule("spamrange") / 50;
         }
 	}
 	
@@ -93,28 +105,94 @@ public class Living extends SessionAdapter {
 	public void tick() {
 		//try {
 			if (!firstJoin || !client.isOnline()) return;
-			//System.out.println(state+" "+trusted);
-			if ((boolean) Main.getsett("raidspam") && Main.pasti.size() > 0) {
+			if (!this.trusted) return;
+			if (sleepticks > 0) {sleepticks--;return;}
+		
+			if ((boolean) Main.gamerule("raidspam") && Main.pasti.size() > 0 && (Main.suc > 5 | (int)Main.gamerule("bots") <= 5)) {
 				spamticks--;
 				if (spamticks <= 0) {
-					spamticks =  (int) Main.getsett("spamrange") / 50;
+					spamticks =  (int) Main.gamerule("spamrange") / 50;
 	                String pasta = (String)Main.pasti.get(MathU.rnd(0, Main.pasti.size()-1));
 	                
             		while (pasta.contains("=rel=")) {
-            			pasta = pasta.replaceFirst("=rel=", StringUtils.RndLetter());
+            			pasta = pasta.replaceFirst("=rel=", StringU.RndLetter());
             		}
             		while (pasta.contains("=rrl=")) {
-            			pasta = pasta.replaceFirst("=rrl=", StringUtils.RndRuLetter());
+            			pasta = pasta.replaceFirst("=rrl=", StringU.RndRuLetter());
             		}
             		BotU.chat(this.client, pasta);
 				}
 			}
 			
 			if (state == raidState.IDLE) {
-				if (!this.trusted) return;
-				if (sleepticks > 0) {sleepticks--;return;}
 				
-				if (!client.onGround) {
+				if ((boolean) Main.gamerule("isitfollow")) {
+					Vector3D target = new Vector3D(0,-999999,0);
+					boolean itsstring = false;
+					if (((String) Main.gamerule("followtarget")).split(" ").length > 1) {
+						if (((String) Main.gamerule("followtarget")).split(" ").length == 2) {
+							if (StringUtils.isNumeric(((String) Main.gamerule("followtarget")).split(" ")[0].replace("-", ""))) {
+								target.x = Integer.parseInt(((String) Main.gamerule("followtarget")).split(" ")[0]);
+							} else {
+								//System.out.println(1+" "+StringUtils.isNumeric(((String) Main.gamerule("followtarget")).split(" ")[0])+" '"+((String) Main.gamerule("followtarget")).split(" ")[0]+"'");
+								itsstring = true;
+							}
+							
+							if (StringUtils.isNumeric(((String) Main.gamerule("followtarget")).split(" ")[1].replace("-", ""))) {
+								target.z = Integer.parseInt(((String) Main.gamerule("followtarget")).split(" ")[1]);
+							} else {
+								itsstring = true;
+							}
+							
+						} else if (((String) Main.gamerule("followtarget")).split(" ").length == 3) {
+							if (StringUtils.isNumeric(((String) Main.gamerule("followtarget")).split(" ")[0].replace("-", ""))) {
+								target.x = Integer.parseInt(((String) Main.gamerule("followtarget")).split(" ")[0]);
+							} else {
+								itsstring = true;
+							}
+							if (StringUtils.isNumeric(((String) Main.gamerule("followtarget")).split(" ")[2].replace("-", ""))) {
+								target.z = Integer.parseInt(((String) Main.gamerule("followtarget")).split(" ")[2]);
+							} else {
+								itsstring = true;
+							}
+						} else if (((String) Main.gamerule("followtarget")).split(" ")[0].startsWith("/execute")) {
+							//    /execute in minecraft:overworld run tp @s 172.27 64.00 -993.02 398.15 20.57
+							target.x = Double.parseDouble(((String) Main.gamerule("followtarget")).split(" ")[6]);
+							target.z = Double.parseDouble(((String) Main.gamerule("followtarget")).split(" ")[8]);
+						}
+					} else {
+						itsstring = true;
+					}
+					if (itsstring) {
+						UUID TargetUUID = null;
+						for (ServerPlayerObject player : client.getWorld().ServerTabPanel) {
+							if ((player.displayName != null && player.displayName.toString().contains((String) Main.gamerule("followtarget"))) || 
+									(player.profile.getName() != null && player.profile.getName().contains((String) Main.gamerule("followtarget")))) {
+								TargetUUID = player.profile.getId();
+							}
+						}
+						
+						if (TargetUUID != null) for (Entry<Integer, Entity> entry : client.getWorld().Entites.entrySet()) {
+							if (entry.getValue().uuid.toString().equals(TargetUUID.toString())) {
+								target = entry.getValue().Position;
+								break;
+							}
+						}
+					}
+					if (!target.equals(new Vector3D(0,-999999,0))) {
+						if (VectorUtils.sqrt2D(client.getPosition(), target) > (int) Main.gamerule("radius")) {
+							Vector3D to = VectorUtils.randomPointInRaduis(client, 0, (int)Main.gamerule("radius"), (int)target.x, (int)target.z);
+							if (to != null) {
+								client.pathfinder.setup(to);
+								state = raidState.GOING;
+								return;
+							}
+						}
+						
+					}
+				}
+				
+				if (client.onGround) {
 					Map<Integer, Entity> tempentities = client.getWorld().Entites;
 					for(Entry<Integer, Entity> entry : tempentities.entrySet()) {
 						if (entry.getValue().type == EntityType.PLAYER && entry.getValue().uuid != client.getUUID() && VectorUtils.equalsInt(entry.getValue().Position, client.getPositionInt())) {
@@ -149,11 +227,11 @@ public class Living extends SessionAdapter {
 							if (block == null) {//подходящий блок небыл найден
 								tasklist.remove(0);
 							} else {
-								if (block.getBlock(client).touchLiquid(client)) {//блок касается жидкости
+								if (block.getBlock(client).touchLiquid(client) || ((boolean)Main.gamerule("mineonlyiftouchair") && !block.getBlock(client).touchAir(client))) {
 									this.blacklist.add(block); 
 									return;
 								}
-								if (VectorUtils.sqrt(client.getEyeLocation(), block) <= (int)Main.getsett("maxpostoblock")) {//блок довольно близко
+								if (VectorUtils.sqrt(client.getEyeLocation(), block) <= (int)Main.gamerule("maxpostoblock")) {//блок довольно близко
 									
 									if (VectorUtils.sqrt(client.getEyeLocation(), block) <= 2.2) {
 										client.bbm.setup(block);
@@ -161,7 +239,7 @@ public class Living extends SessionAdapter {
 										tasklist.remove(0);
 										return;
 									}
-									Vector3D pos = VectorUtils.func_31(client, block, (int)Main.getsett("maxpostoblock"));
+									Vector3D pos = VectorUtils.func_31(client, block, (int)Main.gamerule("maxpostoblock"));
 									if (pos != null) {//к нему можно приблизиться
 										client.pathfinder.setup(pos);
 								    	this.state = raidState.GOING;
@@ -174,7 +252,7 @@ public class Living extends SessionAdapter {
 									}
 									return;
 							    } else {
-							    	Vector3D pos = VectorUtils.func_31(client, block, (int)Main.getsett("maxpostoblock"));
+							    	Vector3D pos = VectorUtils.func_31(client, block, (int)Main.gamerule("maxpostoblock"));
 							    	if (pos == null) {
 							    		this.blacklist.add(block);
 							    		return;
@@ -235,8 +313,8 @@ public class Living extends SessionAdapter {
 										tasklist.remove(0);
 										return;
 									}
-								} else if (client.distance(block) > (int)Main.getsett("maxpostoblock")) {
-									Vector3D pos = VectorUtils.func_31(client, block, (int)Main.getsett("maxpostoblock"));
+								} else if (client.distance(block) > (int)Main.gamerule("maxpostoblock")) {
+									Vector3D pos = VectorUtils.func_31(client, block, (int)Main.gamerule("maxpostoblock"));
 									if (pos != null) {
 										client.pathfinder.setup(pos);
 										state = raidState.GOING;
@@ -266,7 +344,7 @@ public class Living extends SessionAdapter {
 										}
 										//конец
 									}
-								} else if (client.distance(block) <= (int)Main.getsett("maxpostoblock")) {
+								} else if (client.distance(block) <= (int)Main.gamerule("maxpostoblock")) {
 									client.crafter.setup(item, block);
 									state = raidState.CRAFTING;
 									tasklist.remove(0);
@@ -283,7 +361,7 @@ public class Living extends SessionAdapter {
 								this.blacklist.add(block); 
 								return;
 							}
-							if (VectorUtils.sqrt(client.getEyeLocation(), block) <= (int)Main.getsett("maxpostoblock")) {//блок довольно близко
+							if (VectorUtils.sqrt(client.getEyeLocation(), block) <= (int)Main.gamerule("maxpostoblock")) {//блок довольно близко
 								
 								if (VectorUtils.sqrt(client.getEyeLocation(), block) <= 2.2) {
 									client.bbm.setup(block);
@@ -291,7 +369,7 @@ public class Living extends SessionAdapter {
 									tasklist.remove(0);
 									return;
 								}
-								Vector3D pos = VectorUtils.func_31(client, block, (int)Main.getsett("maxpostoblock"));
+								Vector3D pos = VectorUtils.func_31(client, block, (int)Main.gamerule("maxpostoblock"));
 								if (pos != null) {//к нему можно приблизиться
 									client.pathfinder.setup(pos);
 							    	this.state = raidState.GOING;
@@ -305,7 +383,7 @@ public class Living extends SessionAdapter {
 									return;
 								}
 						    } else {
-						    	Vector3D pos = VectorUtils.func_31(client, block, (int)Main.getsett("maxpostoblock"));
+						    	Vector3D pos = VectorUtils.func_31(client, block, (int)Main.gamerule("maxpostoblock"));
 						    	if (pos == null) {
 						    		this.blacklist.add(block);
 						    		return;
@@ -341,19 +419,19 @@ public class Living extends SessionAdapter {
 							return;
 						} else if (i >= 2 && i <= 7) {
 							Vector3D block;
-							if ((boolean) Main.getsett("iol")) {
-								block = VectorUtils.findNearestBlockByArrayId(client, (ArrayList<Integer>)Main.getsett("minertargetid"), this.blacklist);
-								if (block == null) block = VectorUtils.func_1488(client, (ArrayList<Integer>)Main.getsett("minertargetid"), this.blacklist);
+							if ((boolean) Main.gamerule("iol")) {
+								block = VectorUtils.findNearestBlockByArrayId(client, (ArrayList<Integer>)Main.gamerule("minertargetid"), this.blacklist);
+								if (block == null) block = VectorUtils.func_1488(client, (ArrayList<Integer>)Main.gamerule("minertargetid"), this.blacklist);
 							} else {
-								block = VectorUtils.func_32(client, (ArrayList<String>)Main.getsett("minetargetnames"), this.blacklist);
+								block = VectorUtils.func_32(client, (ArrayList<String>)Main.gamerule("minetargetnames"), this.blacklist);
 							}
 							if (block != null) {
-								if (VectorUtils.sqrt(client.getEyeLocation(), block) <= (int)Main.getsett("maxpostoblock")) {
+								if (VectorUtils.sqrt(client.getEyeLocation(), block) <= (int)Main.gamerule("maxpostoblock")) {
 									client.bbm.setup(block);
 									this.state = raidState.MINING;
 									return;
 							    } else {
-							    	Vector3D pos = VectorUtils.func_31(client, block, (int)Main.getsett("maxpostoblock"));
+							    	Vector3D pos = VectorUtils.func_31(client, block, (int)Main.gamerule("maxpostoblock"));
 							    	if (pos == null) {
 							    		blacklist.add(block);
 							    		return;
@@ -372,7 +450,7 @@ public class Living extends SessionAdapter {
 						} else if (i == 8) {
 							tasklist.add("goforwardwithangle 20");
 						} else if (i >= 9) {
-							VectorUtils.placeBlockNear(client, (String)MathU.random((ArrayList<String>)Main.getsett("minetargetnames")));
+							VectorUtils.placeBlockNear(client, (String)MathU.random((ArrayList<String>)Main.gamerule("minetargetnames")));
 						}
 					}
 					doubledtask = "";

@@ -292,7 +292,7 @@ public class Crafting extends SessionAdapter {
 							return;
 						}
 					}
-					if (VectorUtils.sqrt(client.getEyeLocation(), craftingBlock) <= (int)Main.getsett("maxpostoblock")) {
+					if (VectorUtils.sqrt(client.getEyeLocation(), craftingBlock) <= (int)Main.gamerule("maxpostoblock")) {
 						BotU.LookHead(client, craftingBlock);
 						client.getSession().send(new ClientPlayerPlaceBlockPacket(craftingBlock.translate(), BlockFace.UP, Hand.MAIN_HAND, 0.5F, 1F, 0.5F, false));
 						client.getSession().send(new ClientPlayerSwingArmPacket(Hand.MAIN_HAND));

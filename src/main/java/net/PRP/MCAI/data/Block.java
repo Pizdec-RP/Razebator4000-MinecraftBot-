@@ -66,18 +66,14 @@ public class Block {
 	public AABB getHitbox() {
 		//System.out.println(pos.toStringInt());
 		if (type == Type.VOID ||type == Type.AIR || type == Type.AVOID) {
-			//System.out.println(1);
 			return null;
 		} else if (type == Type.DOOR || type == Type.GATE || type == Type.GOAWAY || type == Type.HARD || type == Type.UNBREAKABLE || type == Type.UNKNOWN) {
-			//System.out.println(2);
 			return new AABB(pos.x, pos.y, pos.z, Math.floor(pos.x)+1, Math.floor(pos.y)+1, Math.floor(pos.z)+1).floor();
 		} else if (type == Type.CARPET) {
-			//System.out.println(3);
 			return new AABB(Math.floor(pos.x), Math.floor(pos.y), Math.floor(pos.z), Math.floor(pos.x)+1, Math.floor(pos.y)+0.0625, Math.floor(pos.z)+1);
 		} else if (type == Type.LIQUID) {
-			return new AABB(pos.x, pos.y, pos.z, Math.floor(pos.x)+1, Math.floor(pos.y)+1, Math.floor(pos.z)+1).floor();
+			return null;
 		} else {
-			//System.out.println(4);
 			return new AABB(pos.x, pos.y, pos.z, Math.floor(pos.x)+1, Math.floor(pos.y)+1, Math.floor(pos.z)+1).floor();
 		}
 	}
@@ -103,10 +99,41 @@ public class Block {
 		return blocks;
 	}
 	
+	public List<Vector3D> getNeighbors() {
+		List<Vector3D> blocks = new CopyOnWriteArrayList<>();
+		blocks.add(pos.add(1,0,0));
+		blocks.add(pos.add(-1,0,0));
+		blocks.add(pos.add(0,0,1));
+		blocks.add(pos.add(0,0,-1));
+		blocks.add(pos.add(0,1,0));
+		blocks.add(pos.add(0,-1,0));
+		return blocks;
+	}
+	
 	public boolean touchLiquid(Bot client) {
 		List<Block> blocks = getNeighbors(client);
 		for (Block block : blocks) {
 			if (block.isLiquid()) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public boolean touchAir(Bot client) {
+		List<Block> blocks = getNeighbors(client);
+		for (Block block : blocks) {
+			if (block.isAvoid()) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public boolean touch(Bot client, Vector3D poss) {
+		List<Block> blocks = getNeighbors(client);
+		for (Block block : blocks) {
+			if (VectorUtils.equalsInt(block.pos, poss)) {
 				return true;
 			}
 		}
@@ -126,7 +153,7 @@ public class Block {
 	}
 	
 	public boolean isLiquid() {
-		return type == Type.LIQUID || id == 26 || id == 27;
+		return type == Type.LIQUID;
 	}
 
 	public int getId() {

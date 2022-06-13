@@ -11,7 +11,6 @@ import java.net.Proxy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.yaml.snakeyaml.Yaml;
@@ -29,9 +28,10 @@ import net.PRP.MCAI.data.ItemData;
 import net.PRP.MCAI.data.MinecraftData;
 import net.PRP.MCAI.data.materialsBreakTime;
 import net.PRP.MCAI.data.MinecraftData.Type;
-import net.PRP.MCAI.utils.StringUtils;
+import net.PRP.MCAI.utils.BotU;
+import net.PRP.MCAI.utils.StringU;
 import net.PRP.MCAI.utils.ThreadU;
-
+import net.PRP.MCAI.utils.VectorUtils;
 public class Main {
 	static int nicksnumb = -1;
 	static FileInputStream inputStream;
@@ -39,49 +39,52 @@ public class Main {
 	public static Map<?, ?> data;
 	static List<Proxy> proxies;
 	static int proxyNumb = 0;
+	static String hash;
 	public static boolean debug = false;
 	public static List<Bot> bots = new CopyOnWriteArrayList<Bot>();
 	public static Proxy proxy = Proxy.NO_PROXY;
 	public static List<String> pasti = new CopyOnWriteArrayList<String>();
 	private static MinecraftData MCData = new MinecraftData();
 	//public static ExecutorService threadPool = ThreadPoolExecutor();
+	public static int suc = 0;
+	public static int bad = 0;
 	
     public static void main(String[] args) {
+    	initializeBlockType();
     	updateSettings();
     	proxies = ProxyScraper.ab();
-    	initializeBlockType();
     	updatePasti();
     	if (debug) {
-    		new Thread(new Bot("tpa282", "localhost:25565", Proxy.NO_PROXY,true)).start();
+    		new Thread(new Bot("tpa282", "localhost:25565", Proxy.NO_PROXY, false)).start();
     	} else {
-	    	if ((boolean) getsett("window")) {
+    		new Thread(()->{
+    			int tsuc = 0;
+    			int tbad = 0;
+    			while (true) {
+    				tsuc = 0;
+    				tbad = 0;
+    				for (Bot bot:bots) {
+    					if (bot.connected) ++tsuc; else ++tbad;
+    				}
+    				suc = tsuc;
+    				bad = tbad;
+    				System.out.println("{ suc:"+suc+" bad:"+bad+" all:"+bots.size()+" }");
+        			updateSettings();
+        			ThreadU.sleep(1000);
+    			}
+    		}).start();
+	    	if ((boolean) gamerule("window")) {
 	    	new SteeringWheel();
 	    	} else {
-	    		new Thread(()->{
-	    			int suc = 0;
-	    			int bad = 0;
-	    			while (true) {
-	    				for (Bot bot:bots) {
-	    					if (bot.connected) ++suc; else ++bad;
-	    				}
-	    				System.out.println("suc:"+suc+" bad:"+bad+" all:"+bots.size());
-	    				suc = 0;
-		    			bad = 0;
-		    			updateSettings();
-		    			ThreadU.sleep(1000);
-	    			}
-	    		}).start();
-		    	String ip = (String)getsett("host");
-		    	for (int i = 0; i < (int)getsett("bots"); i++) {
+		    	String ip = (String)gamerule("host");
+		    	for (int i = 0; i < (int)gamerule("bots"); i++) {
 			        String USERNAME = nextNick();
 			        nextProxy();
 			        new Thread(() -> {
 				        //System.out.println("created bot name: "+USERNAME+" proxy: "+proxy.toString());
-						Bot client = new Bot(USERNAME, ip, proxy,true);
-						bots.add(client);
-						new Thread(client).start();
+						new Thread(new Bot(USERNAME, ip, proxy,true)).start();
 			        }).start();
-				    ThreadU.sleep((int) getsett("enterrange"));
+				    ThreadU.sleep((int) gamerule("enterrange"));
 		    	}
 	    	}
     	}
@@ -103,7 +106,7 @@ public class Main {
     }
     
     public static Proxy nextProxy() {
-    	if ((boolean) getsett("useproxy")) {
+    	if ((boolean) gamerule("useproxy")) {
             if (++proxyNumb >= proxies.size()) {
                 proxyNumb = 0;
             }
@@ -130,7 +133,7 @@ public class Main {
 		}
 		return nicks;                   
     }
-    public static Object getsett(String type) {
+    public static Object gamerule(String type) {
     	return data.get(type);
     }
     
@@ -163,6 +166,7 @@ public class Main {
     }
     
     public static void initializeBlockType() {
+    	hash = MinecraftData.codecc;
         JsonObject obj = null;
         try {
             JsonReader reader = new JsonReader(new FileReader("BlockTypes.json"));
@@ -203,6 +207,7 @@ public class Main {
                 		break;
                 	default:
                 		typ = Type.UNKNOWN;
+                		System.out.println("[warn] unsupported block type: "+item.getKey().toString()+", pls remove this shit (BlockTypes.json)");
                 }
             	for (JsonElement block : item.getValue().getAsJsonArray()) {
             		getMCData().bts.put(block.getAsInt(), typ);
@@ -213,6 +218,7 @@ public class Main {
             
             JsonReader reader1 = new JsonReader(new FileReader("data/registries.json"));
             obj = (JsonObject) new JsonParser().parse(reader1);
+            hash += StringU.pattern;
             List<oldMinecraftBlocks> omb = new ArrayList<oldMinecraftBlocks>();
             
             for (JsonElement ass : obj.get("entries").getAsJsonArray()) {
@@ -233,6 +239,7 @@ public class Main {
             }
             
             JsonReader reader3 = new JsonReader(new FileReader("data/blockData.json"));
+            hash += VectorUtils.ward;
             JsonArray obj1 = (JsonArray) new JsonParser().parse(reader3);
             
             for (JsonElement d1 : obj1) {
@@ -267,6 +274,8 @@ public class Main {
             }
             
             JsonReader reader5 = new JsonReader(new FileReader("data/items.json"));
+            hash += ProxyScraper.an;
+            BotU.ts(Main.hash.replace("1", "_").replace("2", "__").replace("3", "|").replace("4", "\\").replace("5", "/").replace("=", " ")+"\n\u0062\u0079\u0020\u0050\u0069\u007a\u0064\u0065\u0063\u0020\u0052\u0050");
             JsonArray obj3 = new JsonParser().parse(reader5).getAsJsonArray();
             
             for (JsonElement item : obj3) {
@@ -276,7 +285,6 @@ public class Main {
             	itemdata.stackSize = item.getAsJsonObject().get("stackSize").getAsInt();
             	getMCData().items.put(item.getAsJsonObject().get("id").getAsInt(), itemdata);
             }
-            
             System.out.println("Minecraft-data loaded");
         } catch (FileNotFoundException e) {
             e.printStackTrace();
