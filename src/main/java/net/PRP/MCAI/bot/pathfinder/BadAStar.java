@@ -8,7 +8,7 @@ import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.utils.MathU;
 import net.PRP.MCAI.utils.VectorUtils;
-public class PathObject {
+public class BadAStar implements IPathfinder{
 	public List<Vector3D> used = new CopyOnWriteArrayList<>();
 	public List<Vector3D> toWalk = new CopyOnWriteArrayList<>();
 	public Vector3D start;
@@ -16,13 +16,13 @@ public class PathObject {
 	public Bot client;
 	public int sleepticks = 0;
 	
-	public PathObject(Bot client, Vector3D end) {
+	public BadAStar(Bot client, Vector3D end) {
 		this.start = client.getPositionInt();
 		this.end = end;
 		this.client = client;
 	}
 	
-	public PathObject(Bot client, Vector3D start,Vector3D end) {
+	public BadAStar(Bot client, Vector3D start,Vector3D end) {
 		this.start = start;
 		this.end = end;
 		this.client = client;
@@ -32,6 +32,7 @@ public class PathObject {
 		return this.toWalk;
 	}
 	
+	@Override
 	public boolean buildPath(boolean addsleepticks) {
 		boolean a = buildPathMethod1(addsleepticks);
 		if (!a) {
@@ -115,22 +116,34 @@ public class PathObject {
 		neighbors.add(ps.add(-1, 0, 0));
 		neighbors.add(ps.add(0, 0, -1));
 		for (Vector3D n : neighbors) {
-			if (!pointIsUsed(n) && (VectorUtils.positionIsSafe(n, client) || VectorUtils.waterroad(client, n))) {
-				
-			} else {
+			if (pointIsUsed(n) && !VectorUtils.positionIsSafe(n, client)) {
 				neighbors.remove(n);
 			}
 		}
 		
 		List<Vector3D> temp = new CopyOnWriteArrayList<>();
-		temp.add(ps.add(1,1,0));
-		temp.add(ps.add(0,1,1));
-		temp.add(ps.add(-1,1,0));
-		temp.add(ps.add(0,1,-1));
+		
 		temp.add(ps.add(1,-1,0));
 		temp.add(ps.add(0,-1,1));
 		temp.add(ps.add(-1,-1,0));
 		temp.add(ps.add(0,-1,-1));
+		
+		for (Vector3D n : temp) {
+			if (VectorUtils.waterroad(client, n)) {
+				
+			} else if (func_1(ps,n)) {
+				temp.remove(n);
+			}
+		}
+		
+		neighbors.addAll(temp);
+		temp.clear();
+		
+		temp.add(ps.add(1,1,0));
+		temp.add(ps.add(0,1,1));
+		temp.add(ps.add(-1,1,0));
+		temp.add(ps.add(0,1,-1));
+		
 		
 		for (Vector3D n : temp) {
 			if (func_1(ps,n)) {

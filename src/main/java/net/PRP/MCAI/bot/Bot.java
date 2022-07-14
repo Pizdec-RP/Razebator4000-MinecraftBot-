@@ -9,27 +9,25 @@ import com.github.steveice10.packetlib.ProxyInfo.Type;
 import com.github.steveice10.packetlib.Session;
 import com.github.steveice10.packetlib.tcp.TcpClientSession;
 import net.PRP.MCAI.Main;
+import net.PRP.MCAI.ListenersForServers.NukerFucker;
 import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.ThreadU;
 import net.PRP.MCAI.utils.VectorUtils;
-import net.PRP.MCAI.Inventory.*;
-import net.PRP.MCAI.bot.pathfinder.AStar;
+import net.PRP.MCAI.bot.pathfinder.PathExecutor;
 import net.PRP.MCAI.bot.specific.Miner;
 import net.PRP.MCAI.bot.specific.Crafting;
+import net.PRP.MCAI.bot.specific.Inventory;
 import net.PRP.MCAI.bot.specific.Living;
 import net.PRP.MCAI.bot.specific.PVP;
 import net.PRP.MCAI.bot.specific.Physics;
 import net.PRP.MCAI.bot.specific.Vision;
 import net.PRP.MCAI.data.AABB;
-import net.PRP.MCAI.data.Block;
 import net.PRP.MCAI.data.EntityEffects;
 import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.data.World;
 
 import java.net.Proxy;
 import java.net.SocketAddress;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map.Entry;
 import java.util.UUID;
 
@@ -51,37 +49,29 @@ public class Bot implements Runnable {
     private UUID UUID;
     //private boolean inAction;
     private boolean mainhost;
-    public GenericInventory playerInventory;
+    public Inventory playerInventory;
     private int id;
-    
     public EntityListener entityListener;
     public Living rl;
     public Physics pm;
-    
-    public static World world;
+    public World world;
     public boolean onGround = true;
     public Miner bbm;
     public EntityEffects effects;
     public int currentHotbarSlot = 0;
-    public AStar pathfinder;
+    public PathExecutor pathfinder;
     public PVP pvp;
     public Vision vis = new Vision(this, 120, 80);
     public Crafting crafter;
-    
     public boolean listencaptcha = false;
-
 	public String name;
-
 	public boolean connected = false;
-	
 	public static int tickrate = 50;
-
 	public boolean reconectAvable = true;
-
 	public int foodlvl = 20;
-
 	public boolean automaticMode = false;
 	private boolean running = true;
+	public boolean isHoldSlowdownItem = false;//shield, bow, eating
     
     public Bot(String name, String ip, Proxy proxy, boolean automaticMode) {
     	if (proxy == null)
@@ -94,7 +84,7 @@ public class Bot implements Runnable {
     	this.port = Integer.parseInt(ip.split(":")[1]);
     	this.name = name;
     	this.effects = new EntityEffects();
-        this.pathfinder = new AStar(this);
+        this.pathfinder = new PathExecutor(this);
         this.crafter = new Crafting(this);
         Main.bots.add(this);
         BotU.log(name+" added to list");
@@ -164,7 +154,7 @@ public class Bot implements Runnable {
         //client.setFlag(MinecraftConstants.SESSION_SERVICE_KEY, sessionService);
         client.addListener(new SessionListener(this));
         client.addListener(new Shit());
-        client.addListener(new InventoryListener(this));
+        client.addListener(new Inventory(this));
         if ((boolean) Main.gamerule("listenEntities")) {
         	this.entityListener = new EntityListener(this);
         	client.addListener(this.entityListener);
@@ -179,19 +169,22 @@ public class Bot implements Runnable {
         this.pm = new Physics(this);
         client.addListener(pm);
         this.pvp = new PVP(this);
-        client.addListener(pvp);
+        //client.addListener(pvp);
         client.addListener(this.crafter);
         
+        if ((boolean) Main.gamerule("nuker")) {
+        	rl.listeners.add(new NukerFucker(this));
+        	BotU.log("nuke");
+        }
+        
+        
         this.session = client;
-        this.playerInventory = new GenericInventory(this);
+        this.playerInventory = new Inventory(this);
     }
     
-    public void reconnect() {
+    public void disconnect() {
 		session.disconnect("reconnect");
 		reset();
-		ThreadU.sleep(6000);
-		build();
-		session.connect();
 	}
 
     public void register() {
@@ -225,6 +218,7 @@ public class Bot implements Runnable {
 	    	this.rl.tick();
 	    	this.crafter.tick();
 	    	this.pm.tick();
+	    	this.playerInventory.tick();
     	} catch (Exception e) {
     		this.pvp.reset();
     		this.bbm.reset();

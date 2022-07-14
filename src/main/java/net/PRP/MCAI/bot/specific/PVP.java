@@ -1,17 +1,22 @@
 package net.PRP.MCAI.bot.specific;
 
-import com.github.steveice10.packetlib.event.session.DisconnectedEvent;
-import com.github.steveice10.packetlib.event.session.PacketReceivedEvent;
-import com.github.steveice10.packetlib.event.session.SessionAdapter;
+import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerActionPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerInteractEntityPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerSwingArmPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerUseItemPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.client.window.ClientCloseWindowPacket;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map.Entry;
 
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
 import com.github.steveice10.mc.protocol.data.game.entity.player.CombatState;
 import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
 import com.github.steveice10.mc.protocol.data.game.entity.player.InteractAction;
+import com.github.steveice10.mc.protocol.data.game.entity.player.PlayerAction;
+import com.github.steveice10.mc.protocol.data.game.entity.type.EntityType;
+import com.github.steveice10.mc.protocol.data.game.world.block.BlockFace;
 
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.data.Entity;
@@ -19,50 +24,70 @@ import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.VectorUtils;
 
-public class PVP extends SessionAdapter {
+public class PVP {
 	
 	public int enemy = -1;
 	public Bot client;
 	public int cooldownticks = 0;
 	public int pvpticks = 0;
-	public CombatState state = CombatState.END_COMBAT;
+	public CombatState state = CombatState.ENTER_COMBAT;
+	boolean folowEnemy = false;
+	public int maxPos = 25;
+	boolean shieldmode = false;
+	boolean shieldCovered = false;
+	
 	public List<Integer> swords = new ArrayList<Integer>() {
 		private static final long serialVersionUID = 5529429801037940521L;
-
 	{
-		add(268);
-		add(272);
-		add(283);
-		add(267);
-		add(276);
+		add(583);
+		add(588);
+		add(593);
+		add(598);
+		add(603);
+		add(608);
 	}};
 	
 	public PVP(Bot client) {
 		this.client = client;
 	}
 	
-	@Override
-    public void packetReceived(PacketReceivedEvent receiveEvent) {
-		
-	}
-	
-	@Override
-    public void disconnected(DisconnectedEvent event) {
-		
-	}
-	
 	public void endPVP() {
+		lowerShield();
 		pvpticks = 0;
 		enemy = -1;
 		state = CombatState.END_COMBAT;
-		client.rl.enemy = null;
+		folowEnemy = false;
+		shieldmode = false;
 	}
 	
 	public void tick() {
-		try {
 		//System.out.println("atacking: "+enemy+" state:"+state+" toen:"+VectorUtils.sqrt(client.getWorld().Entites.get(enemy).Position, client.getPosition()));
 		if (state == CombatState.ENTER_COMBAT) {
-			if (pvpticks > 1200) {
+			if (!shieldmode) {
+				if (client.playerInventory.contain("shield")) {
+					if (client.crafter.windowType != null) {
+						client.getSession().send(new ClientCloseWindowPacket(client.playerInventory.currentWindowId));
+					}
+					int shieldslot = client.playerInventory.getSlotWithItem("shield");
+					if (shieldslot != 45) {
+						client.crafter.fromSlotToSlotStack(shieldslot, 45);
+						shieldmode = true;
+					} else {
+						shieldmode = true;
+					}
+				} else if (client.playerInventory.getSlot(45) != null && client.playerInventory.getSlot(45).getId() == 897) {
+					shieldmode = true;
+				}
+			} else {
+				if (client.playerInventory.getSlot(45) != null && client.playerInventory.getSlot(45).getId() == 897) {
+					shieldmode = true;
+				} else {
+					shieldmode = false;
+				}
+			}
+			
+			++pvpticks;
+			if (pvpticks > 3000) {
 				endPVP();
 				return;
 			}
@@ -72,47 +97,101 @@ public class PVP extends SessionAdapter {
 				endPVP();
 				return;
 			}
+			double toEnemy = VectorUtils.sqrt(tempenemy.Position, client.getPosition());
 			
-			if (VectorUtils.sqrt(tempenemy.Position, client.getPosition()) > 4) {
-				if (VectorUtils.sqrt(tempenemy.Position, client.getPosition()) <= 10)  {
+			if (folowEnemy) {
+				if (client.pathfinder.state == net.PRP.MCAI.bot.pathfinder.PathExecutor.State.FINISHED) {
+					folowEnemy = false;
+					return;
+				}
+				
+				if (VectorUtils.sqrt(client.pathfinder.end, tempenemy.Position) > 5) {
+					client.pathfinder.finish();
+				}
+			} else {
+				BotU.LookHead(client, tempenemy.Position);
+			}
+			if (!folowEnemy) if (toEnemy > 4) {
+				
+				if (toEnemy <= maxPos)  {
+					
+					if (toEnemy >= 6) {
+						lowerShield();
+					} else {
+						holdShield();
+					}
+					
+					/*if ((int)tempenemy.Position.y == (int)client.posY) {
+						BotU.LookHead(client, tempenemy.Position.add(0,1,0));
+						client.pm.Walk();
+					} else {*/
 					if (client.pathfinder.testForPath(tempenemy.Position)) {
 						client.pathfinder.setup(tempenemy.Position);
-						//client.rl.state = raidState.GOING;
-						//client.rl.asd = null;
+						folowEnemy = true;
 						return;
 					} else {
-						Vector3D pos = VectorUtils.func_31(client, client.getPositionInt(), 3);
+						Vector3D pos = VectorUtils.randomPointInRaduis(client, 1, 2);
 						if (pos == null) {
 							endPVP();
 							return;
 						} else {
 							client.pathfinder.setup(pos);
-							//client.rl.asd = null;
-							//client.rl.state = raidState.GOING;
+							folowEnemy = true;
 							return;
 						}
 					}
+					//}
 				} else {
 					endPVP();
 					return;
 				}
 			}
 			
-			//continuepvp
-			pvpticks++;
-			prepareitem();
-			cooldownticks = 20;
-			BotU.LookHead(client, tempenemy.Position);
-			client.getSession().send(new ClientPlayerInteractEntityPacket(enemy, InteractAction.ATTACK, false));
-			client.getSession().send(new ClientPlayerSwingArmPacket(Hand.MAIN_HAND));
+			/*for (Entry<Integer, Entity> entity : client.getWorld().Entites.entrySet()) {
+				if (entity.getValue().type == EntityType.ARROW) {
+					if (client.distance(entity.getValue().Position) <= 3) {
+						holdShield();
+						return;
+					}
+				}
+			}*/
+			
+			if (cooldownticks >= 0) {
+				if (toEnemy < 0.5) {
+					hit(tempenemy);
+					return;
+				}
+				--cooldownticks;
+				if (cooldownticks == 5 && !folowEnemy) {
+					client.pm.jump();
+				}
+				return;
+			}
+			if (toEnemy <= 4) hit(tempenemy);
 		}
-		
-		
-		} catch (Exception e) {
-			e.printStackTrace();
-			reset();
-			System.out.println("2");
-		}
+	}
+	
+	public void holdShield() {
+		BotU.log("sm:"+shieldmode+" hold");
+		if (!shieldmode || client.isHoldSlowdownItem) return;
+		client.getSession().send(new ClientPlayerUseItemPacket(Hand.OFF_HAND));
+		client.isHoldSlowdownItem = true;
+	}
+	
+	public void lowerShield() {
+		if (!shieldmode || !client.isHoldSlowdownItem) return;
+		client.getSession().send(new ClientPlayerActionPacket(PlayerAction.RELEASE_USE_ITEM, new Position(0,0,0),BlockFace.UP));
+		client.isHoldSlowdownItem = false;
+	}
+	
+	public void hit(Entity tempenemy) {
+		lowerShield();
+		prepareitem();
+		cooldownticks = 10;
+		BotU.LookHead(client, tempenemy.Position);
+		client.getSession().send(new ClientPlayerInteractEntityPacket(enemy, InteractAction.ATTACK, false));
+		client.getSession().send(new ClientPlayerSwingArmPacket(Hand.MAIN_HAND));
+		holdShield();
 	}
 	
 	public void pvp(int entityId) {
@@ -122,10 +201,14 @@ public class PVP extends SessionAdapter {
 	}
 	
 	public void reset() {
-		this.enemy = -1;
-		this.cooldownticks = 0;
-		this.state = CombatState.END_COMBAT;
-		this.pvpticks = 0;
+		lowerShield();
+		enemy = -1;
+		cooldownticks = 0;
+		state = CombatState.END_COMBAT;
+		pvpticks = 0;
+		folowEnemy = false;
+		shieldmode = false;
+		shieldCovered = false;
 	}
 	
 	public void prepareitem() {

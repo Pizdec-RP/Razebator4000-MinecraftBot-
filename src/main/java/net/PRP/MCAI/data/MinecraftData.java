@@ -6,6 +6,7 @@ import java.util.Map;
 
 import com.github.steveice10.mc.protocol.data.game.window.WindowType;
 
+import net.PRP.MCAI.Main;
 import net.PRP.MCAI.oldMinecraftBlocks;
 
 public class MinecraftData {
@@ -26,6 +27,10 @@ public class MinecraftData {
 	public static String codecc = "===================1===========1=================21=221==221==221=";
 	public MinecraftData() {
 		
+	}
+	
+	public static Type getTypeByState(int state) {
+		return Main.getMCData().bt(Main.getMCData().blockStates.get(state).id);
 	}
 	
 	public Type bt(int id) {

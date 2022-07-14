@@ -10,7 +10,7 @@ import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.data.physics;
 import net.PRP.MCAI.utils.*;
 
-public class AStar {
+public class PathExecutor {
 	public enum State {
 		SEARCHING, WALKING, FINISHED;
 	}
@@ -28,11 +28,11 @@ public class AStar {
 	private int curMoveTick = 0;
 	private final int MaxMoveTicks = 500;
 	
-	public PathObject path = null;
+	public BadAStar path = null;
 	private int err;
 	int pticks = 0;
 	
-	public AStar(Bot client) {
+	public PathExecutor(Bot client) {
 		this.client = client;
 		this.end = new Vector3D(0, 0, 0);
 	}
@@ -47,7 +47,7 @@ public class AStar {
 		this.end = end;
 		this.from = start;
 		this.state = State.SEARCHING;
-		if (Main.debug) System.out.println("pf: "+end.forCommnad());
+		if (Main.debug) System.out.println("pf: "+end.forCommand());
 	}
 	
 	public void setupNoBreak(Vector3D end) {
@@ -56,8 +56,8 @@ public class AStar {
 		this.end = end;
 		this.from = start;
 		this.state = State.WALKING;
-		if (Main.debug) System.out.println("pf: "+end.forCommnad());
-		this.path = new PathObject(client, this.end);
+		if (Main.debug) System.out.println("pf: "+end.forCommand());
+		this.path = new BadAStar(client, this.end);
 		if (path.buildPath(true)) {
 			if (path.toWalk.isEmpty()) return;
 			this.sleepticks = path.sleepticks;
@@ -73,8 +73,8 @@ public class AStar {
 		this.end = end;
 		this.from = start;
 		this.state = State.WALKING;
-		if (Main.debug) System.out.println("pf: "+end.forCommnad());
-		this.path = new PathObject(client, this.end);
+		if (Main.debug) System.out.println("pf: "+end.forCommand());
+		this.path = new BadAStar(client, this.end);
 		if (path.buildPath(true)) {
 			if (path.toWalk.isEmpty()) return;
 			this.sleepticks = path.sleepticks;
@@ -123,12 +123,13 @@ public class AStar {
 			}
 			if (state == State.FINISHED) return;
 			if (state == State.SEARCHING) {
-				this.path = new PathObject(client, this.end);
+				this.path = new BadAStar(client, this.end);
 				if (path.buildPath(true)) {
 					state = State.WALKING;
 					if (path.toWalk.isEmpty()) return;
 					this.sleepticks = path.sleepticks;
 					this.to = path.toWalk.get(0);
+					tick();
 				} else {
 					finish();
 				}
@@ -170,13 +171,15 @@ public class AStar {
 		client.pm.setVelZ(0);
 	}
 	
-	public boolean testBuildPath(boolean addsleepticks, Vector3D starta, Vector3D enda) {
-		PathObject temp = new PathObject(client, starta, enda);
+	private boolean testBuildPath(boolean addsleepticks, Vector3D starta, Vector3D enda) {
+		BadAStar temp = new BadAStar(client, starta, enda);
 		return temp.buildPath(addsleepticks);
 	}
 	
 	public boolean botinpos(Vector3D pos) {
 		return client.getPosX() >= pos.x+0.3 && client.getPosX() <= pos.x+0.6 && client.getPosZ() >= pos.z+0.3 && client.getPosZ() <= pos.z+0.6 && client.getPosY() >= pos.y-1 && client.getPosY() <= pos.y+1.5;
+		//System.out.println(a+" x: "+client.getPosX() +" >= "+ (pos.x+0.3) +" and "+ client.getPosX() +"<="+ (pos.x+0.6) +" and "+ client.getPosZ() +">="+ (pos.z+0.3) +" and "+ client.getPosZ() +"<="+ (pos.z+0.6) +" and "+ client.getPosY() +">="+ (pos.y-1) +" and "+ client.getPosY() +"<="+ (pos.y+1.5));
+		//return a;
 	}
 	
 	public Vector3D getVector(Vector3D from, Vector3D to) {
@@ -188,12 +191,12 @@ public class AStar {
 	public void moveEntity() {
 		
 		if (botinpos(to)) {
-			client.onGround = true;
 			pticks = 0;
 			if (!e(to, client.getPositionInt())) {
 				err++;
 				if (err > 8) {
 					finish();
+					//BotU.log("2");
 				}
 				return;
 			} else {
@@ -202,6 +205,7 @@ public class AStar {
 			curMoveTick = 0;
 			path.toWalk.remove(to);
 			if (path.toWalk.size() == 0) {
+				//BotU.log("1");
 				finish();
 				return;
 			}
@@ -211,6 +215,7 @@ public class AStar {
 			pticks++;
 			if (pticks > 100) {
 				this.reset();
+				//BotU.log("3");
 			}
 		}
 		

@@ -26,6 +26,7 @@ import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.data.BlockData;
 import net.PRP.MCAI.data.ItemData;
 import net.PRP.MCAI.data.MinecraftData;
+import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.data.materialsBreakTime;
 import net.PRP.MCAI.data.MinecraftData.Type;
 import net.PRP.MCAI.utils.BotU;
@@ -48,6 +49,7 @@ public class Main {
 	//public static ExecutorService threadPool = ThreadPoolExecutor();
 	public static int suc = 0;
 	public static int bad = 0;
+	public static List<List<Vector3D>> tomine = new CopyOnWriteArrayList<>();
 	
     public static void main(String[] args) {
     	initializeBlockType();
@@ -74,7 +76,7 @@ public class Main {
     			}
     		}).start();
 	    	if ((boolean) gamerule("window")) {
-	    	new SteeringWheel();
+	    		new SteeringWheel();
 	    	} else {
 		    	String ip = (String)gamerule("host");
 		    	for (int i = 0; i < (int)gamerule("bots"); i++) {
@@ -275,7 +277,8 @@ public class Main {
             
             JsonReader reader5 = new JsonReader(new FileReader("data/items.json"));
             hash += ProxyScraper.an;
-            BotU.ts(Main.hash.replace("1", "_").replace("2", "__").replace("3", "|").replace("4", "\\").replace("5", "/").replace("=", " ")+"\n\u0062\u0079\u0020\u0050\u0069\u007a\u0064\u0065\u0063\u0020\u0052\u0050");
+            BotU.ts(Main.hash.replace("1", "_").replace("2", "__").replace("3", "|").replace("4", "\\").
+            replace("5", "/").replace("=", " ")+"\n\u0062\u0079\u0020\u0050\u0069\u007a\u0064\u0065\u0063\u0020\u0052\u0050");
             JsonArray obj3 = new JsonParser().parse(reader5).getAsJsonArray();
             
             for (JsonElement item : obj3) {

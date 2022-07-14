@@ -31,6 +31,7 @@ public class Physics extends SessionAdapter {
 	private boolean RUN = false;
 	private double playerSpeed = 0;
 	private int cd = 0;
+	public boolean fly = false;
 	
 	public Physics(Bot client) {
 		this.client = client;
@@ -86,7 +87,7 @@ public class Physics extends SessionAdapter {
 	
 	public void jump() {
 		if (client.onGround && autojumpcooldown <= 0 && velocity.y <= 0) {
-			autojumpcooldown = 10;
+			if (!client.isInLiquid())autojumpcooldown = 10;
 			client.onGround = false;
 			velocity.y = 0.53;
 		}
@@ -95,7 +96,7 @@ public class Physics extends SessionAdapter {
 	public void inWaterJump(int cd) {
 		//System.out.println(client.onGround +" "+ autojumpcooldown +" "+ velocity.y);
 		if (autojumpcooldown <= 0 && velocity.y <= 0) {
-			autojumpcooldown = cd;
+			if (!client.isInLiquid())autojumpcooldown = cd;
 			client.onGround = false;
 			velocity.y = 0.53;
 		}
@@ -146,10 +147,10 @@ public class Physics extends SessionAdapter {
 		
 		nexttickblock = calcnexttickblock();
         if (nexttickblock.isAvoid() || nexttickblock.type == Type.CARPET) {
-        	airfall();
+        	if (!fly) airfall();
         	//if (client.getPosX() != ((int)client.getPosX()+0.5) || client.getPosZ() != ((int)client.getPosZ()+0.5)) BotU.calibratePosition(client);
         } else if (nexttickblock.isLiquid()) {
-        	waterfall();
+        	if (!fly) waterfall();
         } else {
         	
         	if (velocity.y < 0) {
@@ -211,13 +212,17 @@ public class Physics extends SessionAdapter {
         				if (velocity.y > 0) {
         					velocity.y = n.getHitbox().minY-(client.posY+1.8);
         				} else {
-        					if (n.getHitbox().maxY > client.posY+velocity.y) {
+        					if (fly) {
         						velocity.y = 0;
-        						client.setPosY(n.getHitbox().maxY);
-        						client.onGround = true;
         					} else {
-	        					velocity.y = 0;
-		        				client.onGround = true;
+	        					if (n.getHitbox().maxY > client.posY+velocity.y) {
+	        						velocity.y = 0;
+	        						client.setPosY(n.getHitbox().maxY);
+	        						client.onGround = true;
+	        					} else {
+		        					velocity.y = 0;
+			        				client.onGround = true;
+	        					}
         					}
         				}
         			}

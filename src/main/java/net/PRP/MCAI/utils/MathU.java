@@ -3,9 +3,9 @@ package net.PRP.MCAI.utils;
 import java.util.List;
 
 public class MathU {
-	public static int rnd(int min, int max) {
+	public static int rnd(double min, double max) {
 		max -= min;
-		return (int) (Math.random() * ++max) + min;
+		return (int) ((Math.random() * ++max) + min);
 	}
 	public static Object random(List<?> list) {
 		return list.get(rnd(0,list.size()-1));

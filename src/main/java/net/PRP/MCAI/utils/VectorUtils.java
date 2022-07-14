@@ -19,6 +19,10 @@ import net.PRP.MCAI.data.Block;
 import net.PRP.MCAI.data.MinecraftData.Type;
 
 public class VectorUtils {
+	
+	
+	
+	
 	/**
 	 * @param client
 	 * @param целевая точка
@@ -134,6 +138,8 @@ public class VectorUtils {
 	        	} else {
 	        		double distanceminpos = sqrt(minpos, target);
 	        		if (distance < distanceminpos) {
+	        			minpos = position;
+	        		} else if (distance == distanceminpos && MathU.rnd(1, 2) == 1) {
 	        			minpos = position;
 	        		}
 	        	}
@@ -285,15 +291,18 @@ public class VectorUtils {
 	}
 	
 	public static boolean waterroad(Bot client, Vector3D n) {
-		return (n.add(0,-1,0).getBlock(client).id == 26 && n.getBlock(client).isAvoid() && n.add(0,1,0).getBlock(client).isAvoid())
-		||
-		(n.getBlock(client).id == 26 && n.add(0,1,0).getBlock(client).isAvoid());
+		return (n.getBlock(client).id == 26 && n.add(0,1,0).getBlock(client).isAvoid() && n.add(0,2,0).getBlock(client).isAvoid());
 	}
 	
-	public static Vector3D randomPointInRaduis(Bot client, int min) {
-		return randomPointInRaduis(client, min, client.getWorld().renderDistance*16,(int)client.getPosX(),(int)client.getPosZ());
+	public static Vector3D randomPointInRaduis(Bot client, double min) {
+		return randomPointInRaduis(client, min, client.getWorld().renderDistance*16,client.getPosX(),client.getPosZ());
 	}
-	public static Vector3D randomPointInRaduis(Bot client, int min, int max, int dx, int dz) {
+	
+	public static Vector3D randomPointInRaduis(Bot client, double min, double max) {
+		return randomPointInRaduis(client, min, max,(int)client.getPosX(),(int)client.getPosZ());
+	}
+	
+	public static Vector3D randomPointInRaduis(Bot client, double min, double max, double dx, double dz) {
 		int tryy = 0;
 		while (true) {
 			tryy++;
@@ -311,7 +320,6 @@ public class VectorUtils {
 			Vector3D pos = new Vector3D(x+dx, 256, z+dz);
 			while (true) {
 				if (!pos.add(0,-1,0).getBlock(client).isAvoid() && (positionIsSafe(pos, client) || waterroad(client, pos)) && client.pathfinder.testForPath(pos)) {
-
 					return pos;
 				}
 				pos = pos.add(0,-1,0);
@@ -319,6 +327,21 @@ public class VectorUtils {
 			}
 		}
 	}
+	
+	
+	
+	/*public static Vector3D randomPointInRaduis(Bot client, double min, double max, double x, double y, double z) {
+		int tryy = 0;
+		int addy = 0;
+		while (true) {
+			if (tryy >= 20)  return null;
+			Vector3D pos = new Vector3D(x+MathU.rnd(min, max),y,z+MathU.rnd(min, max));
+			while (true) {
+				pos = pos.add(0,addy,0);
+				
+			}
+		}
+	}*/
 	
 	@SuppressWarnings({ "deprecation", "serial" })
 	public static Block placeBlockNear(Bot client, String block) {

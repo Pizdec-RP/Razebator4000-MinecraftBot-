@@ -3,10 +3,17 @@ package net.PRP.MCAI.bot;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 
+import com.github.steveice10.mc.protocol.data.game.PlayerListEntry;
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
 import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
+import com.github.steveice10.mc.protocol.data.game.entity.player.PlayerAction;
 import com.github.steveice10.mc.protocol.data.game.world.block.BlockFace;
+import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerActionPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerPlaceBlockPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerSwingArmPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerUseItemPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerChatPacket;
 import com.github.steveice10.packetlib.event.session.PacketReceivedEvent;
 import com.github.steveice10.packetlib.event.session.SessionAdapter;
@@ -25,6 +32,7 @@ import net.PRP.MCAI.utils.*;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
+import net.minecraft.server.v1_12_R1.Slot;
 
 public class ChatListener extends SessionAdapter {
 
@@ -80,7 +88,7 @@ public class ChatListener extends SessionAdapter {
 						}
 					}
 					if (en == null) return;
-					client.pathfinder.setup(en.Position);
+					client.rl.tasklist.add("come "+en.Position.forCommand());
 				} else if (command.get(0).equalsIgnoreCase("goto")) {
 					client.pathfinder.setup(new Vector3D(Integer.parseInt(command.get(1)), Integer.parseInt(command.get(2)), Integer.parseInt(command.get(3))));
 				} else if (command.get(0).equalsIgnoreCase("record")) {
@@ -159,6 +167,7 @@ public class ChatListener extends SessionAdapter {
 		            BotU.chat(client, "block: x:"+bx+" y:"+by+" z:"+bz+" / chunk: x:"+cx+" y:"+cy+" z:"+cz);
 				} else if (command.get(0).equalsIgnoreCase("killme")) {
 					UUID uuid = ((ServerChatPacket) receiveEvent.getPacket()).getSenderUuid();
+					if (uuid.equals(client.getUUID())) return;
 					Entity en = null;
 					for (Entity entity : client.getWorld().Entites.values()) {
 						if (entity.uuid.toString().equalsIgnoreCase(uuid.toString())) {
@@ -167,7 +176,8 @@ public class ChatListener extends SessionAdapter {
 						}
 					}
 					if (en == null) return;
-					client.rl.enemy = en.EntityID;
+					client.pvp.pvp(en.EntityID);
+					client.rl.state = raidState.PVP;
 				} else if (command.get(0).equalsIgnoreCase("isavoid")) {
 					BotU.chat(client, VectorUtils.BTavoid(new Vector3D(Integer.parseInt(command.get(1)),Integer.parseInt(command.get(2)),Integer.parseInt(command.get(3))).getBlock(client).type)+"");
 				} else if (command.get(0).equalsIgnoreCase("moveinvtest")) {
@@ -244,7 +254,71 @@ public class ChatListener extends SessionAdapter {
 					}
 				} else if (command.get(0).equalsIgnoreCase("tellmetype")) {
 					Vector3D vec = new Vector3D(Integer.parseInt(command.get(1)), Integer.parseInt(command.get(2)), Integer.parseInt(command.get(3)));
-					BotU.chat(client, "isliq: "+ vec.getBlock(client).isLiquid());
+					BotU.chat(client, vec.getBlock(client).type.toString());
+				} else if (command.get(0).equalsIgnoreCase("demolit")) {
+					Vector3D min = new Vector3D(Integer.parseInt(command.get(1)), Integer.parseInt(command.get(2)), Integer.parseInt(command.get(3)));
+					Vector3D max = new Vector3D(Integer.parseInt(command.get(4)), Integer.parseInt(command.get(5)), Integer.parseInt(command.get(6)));
+					List<Vector3D> temp = new ArrayList<>();
+					int i = 0;
+					for (int y = (int) Math.max(min.y, max.y); y >= Math.min(min.y, max.y); y--) {
+						for (int x = (int) Math.min(min.x, max.x); x <= Math.max(min.x, max.x); x++) {
+							for (int z = (int) Math.min(min.z, max.z); z <= Math.max(min.z, max.z); z++) {
+								if (client.getWorld().getBlock(x, y, z).type != Type.AIR)temp.add(new Vector3D(x,y,z));
+							}
+						}
+						while (!temp.isEmpty()) {
+							CopyOnWriteArrayList<Vector3D> a = new CopyOnWriteArrayList<>();
+							a.addAll(temp);
+							if (!Main.tomine.contains(a)) Main.tomine.add(a);
+							temp.clear();
+						}
+					}
+					
+				} else if (command.get(0).equalsIgnoreCase("gimme")) {
+					UUID uuid = ((ServerChatPacket) receiveEvent.getPacket()).getSenderUuid();
+					Entity en = null;
+					for (Entity entity : client.getWorld().Entites.values()) {
+						if (entity.uuid.toString().equalsIgnoreCase(uuid.toString())) {
+							en=entity;
+							break;
+						}
+					}
+					if (en == null) return;
+					Vector3D pos = VectorUtils.randomPointInRaduis(client, 2,2,(int)en.Position.x,(int)en.Position.z);
+					if (client.pathfinder.testForPath(pos)) {
+						client.rl.tasklist.add("come "+(int)en.Position.x+" "+(int)en.Position.y+" "+(int)en.Position.z);
+						client.rl.tasklist.add("faceto "+(int)en.Position.x+" "+((int)en.Position.y++) +" "+(int)en.Position.z);
+						client.rl.tasklist.add("dropitemstack "+command.get(1));
+					}
+				} else if (command.get(0).equalsIgnoreCase("cr")) {
+					UUID uuid = ((ServerChatPacket) receiveEvent.getPacket()).getSenderUuid();
+					Entity en = null;
+					for (Entity entity : client.getWorld().Entites.values()) {
+						if (entity.uuid.toString().equalsIgnoreCase(uuid.toString())) {
+							en=entity;
+							break;
+						}
+					}
+					if (en == null) return;
+					Vector3D pos = VectorUtils.randomPointInRaduis(client, Integer.parseInt(command.get(1)),Integer.parseInt(command.get(2)),(int)en.Position.x,(int)en.Position.z);
+					client.rl.tasklist.add("come "+(int)pos.x+" "+(int)pos.y+" "+(int)pos.z);
+				} else if (command.get(0).equalsIgnoreCase("printentities")) {
+					System.out.println(client.name+" "+client.getWorld().Entites.toString());
+				} else if (command.get(0).equalsIgnoreCase("printtab")) {
+					for (PlayerListEntry player : client.getWorld().ServerTabPanel) {
+						System.out.println(((TextComponent)player.getDisplayName()).content());
+					}
+				} else if (command.get(0).equalsIgnoreCase("useitem")) {
+					client.getSession().send(new ClientPlayerUseItemPacket(Hand.OFF_HAND));
+				} else if (command.get(0).equalsIgnoreCase("shield")) {
+					int shieldslot = client.playerInventory.getSlotWithItem("shield");
+					if (shieldslot != 45) {
+						client.crafter.fromSlotToSlotStack(shieldslot, 45);
+					}
+				} else if (command.get(0).equalsIgnoreCase("t1")) {
+					client.getSession().send(new ClientPlayerActionPacket(PlayerAction.RELEASE_USE_ITEM, new Position(0,0,0),BlockFace.UP));
+				} else if (command.get(0).equalsIgnoreCase("youid")) {
+					BotU.chat(client, "myid: "+client.getId());
 				}
 			}
 		} 

@@ -61,6 +61,10 @@ public class Vector3D {
 	public boolean isMineable(Bot client) {
 		return getBlock(client).type != Type.UNBREAKABLE || getBlock(client).type != Type.LIQUID || !getBlock(client).isLiquid();
 	}
+	
+	public boolean isZero() {
+		return x == 0 && y == 0 && z == 0;
+	}
 
 	public double getX() {
 		return this.x;
@@ -192,11 +196,11 @@ public class Vector3D {
 	}
 	
 	public String toStringInt() {
-		return "x:"+(int)x+" y:"+(int)y+" z:"+(int)z;
+		return "x:"+(int)Math.floor(x)+" y:"+(int)Math.floor(y)+" z:"+(int)Math.floor(z);
 	}
 	
-	public String forCommnad() {
-		return (int)x+" "+(int)y+" "+(int)z;
+	public String forCommand() {
+		return (int)Math.floor(x)+" "+(int)Math.floor(y)+" "+(int)Math.floor(z);
 	}
 	
 	public double distanceSq(double toX, double toY, double toZ) {

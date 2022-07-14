@@ -9,21 +9,27 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.github.steveice10.mc.protocol.data.game.PlayerListEntry;
+import com.github.steveice10.mc.protocol.data.game.entity.player.CombatState;
+import com.github.steveice10.mc.protocol.data.game.entity.player.PlayerAction;
 import com.github.steveice10.mc.protocol.data.game.entity.type.EntityType;
+import com.github.steveice10.mc.protocol.data.game.world.block.BlockFace;
+import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerActionPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerJoinGamePacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerMapDataPacket;
 import com.github.steveice10.packetlib.event.session.PacketReceivedEvent;
 import com.github.steveice10.packetlib.event.session.SessionAdapter;
 
 import net.PRP.MCAI.Main;
+import net.PRP.MCAI.ListenersForServers.ServerListener;
 import net.PRP.MCAI.bot.Bot;
-import net.PRP.MCAI.bot.pathfinder.AStar.State;
+import net.PRP.MCAI.bot.pathfinder.PathExecutor.State;
 import net.PRP.MCAI.bot.specific.Miner.bbmct;
 import net.PRP.MCAI.bot.specific.Crafting.crState;
 import net.PRP.MCAI.data.Block;
 import net.PRP.MCAI.data.Entity;
-import net.PRP.MCAI.data.ServerPlayerObject;
 import net.PRP.MCAI.data.Vector3D;
+import net.PRP.MCAI.data.MinecraftData.Type;
 import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.VectorUtils;
 import net.PRP.MCAI.utils.MathU;
@@ -38,18 +44,21 @@ public class Living extends SessionAdapter {
 	public List<Vector3D> blacklist = new CopyOnWriteArrayList<>();
 	public boolean trusted;
 	private int sleepticks = (int)Main.gamerule("walkeverymilseconds") / 50;
-	public Integer enemy = null;
-	
+	public Entity target = null; 
 	public int tickstocheck = 0;
 	public short stage = 0;
 	public List<String> tasklist = new ArrayList<>();
-	
+	public List<ServerListener> listeners = new ArrayList<>();
 	
 	public List<EntityType> badentities = new ArrayList<EntityType>() {
 		private static final long serialVersionUID = -6373621458088442703L;
 
 	{
 		add(EntityType.ZOMBIE);
+		add(EntityType.ZOGLIN);
+		add(EntityType.ZOMBIFIED_PIGLIN);
+		add(EntityType.PIGLIN);
+		add(EntityType.PIGLIN_BRUTE);
 		add(EntityType.CAVE_SPIDER);
 		add(EntityType.SPIDER);
 		add(EntityType.WITCH);
@@ -63,6 +72,12 @@ public class Living extends SessionAdapter {
 		add(EntityType.SILVERFISH);
 		add(EntityType.VEX);
 		add(EntityType.VINDICATOR);
+		add(EntityType.ZOMBIE_VILLAGER);
+		add(EntityType.SKELETON);
+		add(EntityType.EVOKER);
+		add(EntityType.WITHER);
+		add(EntityType.ENDER_DRAGON);
+		add(EntityType.ENDERMAN);
 	}};
 	int spamticks = 0;
 	int goforwardticks = 0;
@@ -88,7 +103,7 @@ public class Living extends SessionAdapter {
     }
 	
 	public enum raidState {
-		IDLE, GOING, MINING, CRAFTING, GOFORWARD;
+		IDLE, GOING, MINING, CRAFTING, GOFORWARD, PVP, FOLLOW;
 	}
 	
 	@Override
@@ -125,6 +140,13 @@ public class Living extends SessionAdapter {
 			}
 			
 			if (state == raidState.IDLE) {
+				
+				if (!listeners.isEmpty()) {
+					listeners.forEach((l)->{
+						l.tick();
+					});
+					return;
+				}
 				
 				if ((boolean) Main.gamerule("isitfollow")) {
 					Vector3D target = new Vector3D(0,-999999,0);
@@ -165,15 +187,15 @@ public class Living extends SessionAdapter {
 					}
 					if (itsstring) {
 						UUID TargetUUID = null;
-						for (ServerPlayerObject player : client.getWorld().ServerTabPanel) {
-							if ((player.displayName != null && player.displayName.toString().contains((String) Main.gamerule("followtarget"))) || 
-									(player.profile.getName() != null && player.profile.getName().contains((String) Main.gamerule("followtarget")))) {
-								TargetUUID = player.profile.getId();
+						for (PlayerListEntry player : client.getWorld().ServerTabPanel) {
+							if (player != null) if ((player.getDisplayName() != null && player.getDisplayName().toString().contains((String) Main.gamerule("followtarget"))) || 
+									(player.getProfile().getName() != null && player.getProfile().getName().contains((String) Main.gamerule("followtarget")))) {
+								TargetUUID = player.getProfile().getId();
 							}
 						}
 						
 						if (TargetUUID != null) for (Entry<Integer, Entity> entry : client.getWorld().Entites.entrySet()) {
-							if (entry.getValue().uuid.toString().equals(TargetUUID.toString())) {
+							if (entry.getValue().uuid.equals(TargetUUID)) {
 								target = entry.getValue().Position;
 								break;
 							}
@@ -193,8 +215,7 @@ public class Living extends SessionAdapter {
 				}
 				
 				if (client.onGround) {
-					Map<Integer, Entity> tempentities = client.getWorld().Entites;
-					for(Entry<Integer, Entity> entry : tempentities.entrySet()) {
+					for(Entry<Integer, Entity> entry : client.getWorld().Entites.entrySet()) {
 						if (entry.getValue().type == EntityType.PLAYER && entry.getValue().uuid != client.getUUID() && VectorUtils.equalsInt(entry.getValue().Position, client.getPositionInt())) {
 							Vector3D pos = VectorUtils.func_31(client, client.getPositionInt(), 4);
 							client.pathfinder.setup(pos);
@@ -202,10 +223,39 @@ public class Living extends SessionAdapter {
 						}
 					}
 				}
+				Integer enemy = null;
+				for(Entry<Integer, Entity> entry : client.getWorld().Entites.entrySet()) {
+					if (entry.getValue() != null && badentities.contains(entry.getValue().type)) {
+						//System.out.println(1);
+						if (enemy == null) {
+							//System.out.println(2);
+							enemy = entry.getValue().EntityID;
+						} else if (client.getWorld().Entites.get(enemy) != null && client.getWorld().Entites.get(enemy).alive && VectorUtils.sqrt(client.getWorld().Entites.get(enemy).Position,client.getPosition()) > VectorUtils.sqrt(client.getWorld().Entites.get(entry.getValue().EntityID).Position, client.getPosition())) {
+							//System.out.println(3);
+							enemy = entry.getValue().EntityID;
+						}
+					}/* else if (entry.getValue() != null & entry.getValue().type == EntityType.PLAYER) {
+						for (PlayerListEntry ia : client.getWorld().ServerTabPanel) {
+							
+						}
+					}*/
+				}
+				
+				if (enemy != null) {
+					//System.out.println(4);
+					if (client.getWorld().Entites.get(enemy) != null && VectorUtils.sqrt(client.getWorld().Entites.get(enemy).Position, client.getPosition()) <= (client.pvp.maxPos*0.7) && client.getWorld().Entites.get(enemy).alive) {
+						//System.out.println(5);
+						client.pvp.pvp(enemy);
+						state = raidState.PVP;
+						enemy = null;
+						return;
+					}
+				}
 				
 				if (client.foodlvl >= 8) {
 					
 				}
+				
 				if (!tasklist.isEmpty()) {
 					if (doubledtask == "") {
 						doubledtask = tasklist.get(0);
@@ -221,7 +271,7 @@ public class Living extends SessionAdapter {
 						}
 					}
 					try {
-						if (tasklist.get(0).toLowerCase().startsWith("mine")) {
+						if (tasklist.get(0).toLowerCase().split(" ")[0].equalsIgnoreCase("mine")) {
 							Vector3D block;
 							block = VectorUtils.findBlockByName(client, tasklist.get(0).split(" ")[1], blacklist);
 							if (block == null) {//подходящий блок небыл найден
@@ -280,7 +330,16 @@ public class Living extends SessionAdapter {
 							}
 							tasklist.remove(0);
 							return;
-							
+						} else if (tasklist.get(0).toLowerCase().startsWith("come")) {
+							int x = Integer.parseInt(tasklist.get(0).split(" ")[1]);
+							int y = Integer.parseInt(tasklist.get(0).split(" ")[2]);
+							int z = Integer.parseInt(tasklist.get(0).split(" ")[3]);
+							Vector3D to = new Vector3D(x,y,z);
+							if (client.pathfinder.testForPath(to)) {		
+								client.pathfinder.setup(to);
+								state = raidState.GOING;
+							}
+							tasklist.remove(0);
 						} else if (tasklist.get(0).toLowerCase().startsWith("craft")) {
 							String item = tasklist.get(0).split(" ")[1];
 							if (client.crafter.Recepies.get(item).isInventoried()) {
@@ -356,11 +415,15 @@ public class Living extends SessionAdapter {
 							}
 						} else if (tasklist.get(0).toLowerCase().startsWith("minepos")) {
 							Vector3D block = new Vector3D(Integer.parseInt(tasklist.get(0).split(" ")[1]),Integer.parseInt(tasklist.get(0).split(" ")[2]),Integer.parseInt(tasklist.get(0).split(" ")[3]));
-							
+							if (block.getBlock(client).type == Type.AIR || block.getBlock(client).type == Type.LIQUID || block.getBlock(client).type == Type.UNBREAKABLE) {
+								tasklist.remove(0);
+								return;
+							}
 							if (block.getBlock(client).touchLiquid(client)) {//блок касается жидкости
 								this.blacklist.add(block); 
 								return;
 							}
+							
 							if (VectorUtils.sqrt(client.getEyeLocation(), block) <= (int)Main.gamerule("maxpostoblock")) {//блок довольно близко
 								
 								if (VectorUtils.sqrt(client.getEyeLocation(), block) <= 2.2) {
@@ -371,6 +434,7 @@ public class Living extends SessionAdapter {
 								}
 								Vector3D pos = VectorUtils.func_31(client, block, (int)Main.gamerule("maxpostoblock"));
 								if (pos != null) {//к нему можно приблизиться
+									
 									client.pathfinder.setup(pos);
 							    	this.state = raidState.GOING;
 							    	this.mineAfterWalk = block;
@@ -404,15 +468,43 @@ public class Living extends SessionAdapter {
 							state = raidState.GOFORWARD;
 							tasklist.remove(0);
 							return;
+						} else if (tasklist.get(0).toLowerCase().startsWith("faceto")) {
+							Vector3D block = new Vector3D(Integer.parseInt(tasklist.get(0).split(" ")[1]),Integer.parseInt(tasklist.get(0).split(" ")[2]),Integer.parseInt(tasklist.get(0).split(" ")[3]));
+							BotU.LookHead(client, block);
+							tasklist.remove(0);
+							return;
+						} else if (tasklist.get(0).toLowerCase().startsWith("dropitemstack")) {
+							for (int i = 9; i <= 44; i++) {
+								if (client.playerInventory.slots.get(i) != null && Main.getMCData().items.get(client.playerInventory.slots.get(i).getId()).name.contains(tasklist.get(0).split(" ")[1])) {
+									client.playerInventory.dropItem(true, i);
+								}
+							}
+							tasklist.remove(0);
+							return;
+						} else {
+							tasklist.remove(0);
+							return;
 						}
 					
 					} catch (Exception e) {
+						e.printStackTrace();
 						tasklist.remove(0);
 						return;
 					}
 				} else {
+					if (!Main.tomine.isEmpty()) {
+						if (Main.tomine.get(0).isEmpty()) {
+							Main.tomine.remove(0);
+						} else {
+							Vector3D rnd = VectorUtils.getNear(client.getPosition(), Main.tomine.get(0));
+							tasklist.add("minepos "+(int)rnd.x+" "+(int)rnd.y+" "+(int)rnd.z);
+							Main.tomine.get(0).remove(rnd);
+							return;
+						}
+						
+					}
 					if (client.automaticMode) {
-						int i = MathU.rnd(1, 12);
+						int i = MathU.rnd(1, 9);
 						if (i == 1) {
 							client.pathfinder.setup(VectorUtils.randomPointInRaduis(client, 5, 10, (int)Math.floor(client.posX), (int)Math.floor(client.posZ)));
 							state = raidState.GOING;
@@ -449,7 +541,7 @@ public class Living extends SessionAdapter {
 							return;
 						} else if (i == 8) {
 							tasklist.add("goforwardwithangle 20");
-						} else if (i >= 9) {
+						} else if (i == 9) {
 							VectorUtils.placeBlockNear(client, (String)MathU.random((ArrayList<String>)Main.gamerule("minetargetnames")));
 						}
 					}
@@ -493,6 +585,18 @@ public class Living extends SessionAdapter {
 					}
 				} else {
 					this.state = raidState.IDLE;
+				}
+			} else if (state == raidState.PVP) {
+				if (client.pvp.state == CombatState.END_COMBAT) {
+					state = raidState.IDLE;
+				} else {
+					
+				}
+			} else if (state == raidState.FOLLOW) {
+				if (target != null) {
+					
+				} else {
+					state = raidState.IDLE;
 				}
 			}
 	}

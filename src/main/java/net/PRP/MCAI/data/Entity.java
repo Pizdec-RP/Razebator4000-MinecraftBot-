@@ -26,4 +26,9 @@ public class Entity {
 
     public Entity() {
     }
+    
+    @Override
+    public String toString() {
+    	return "id: "+EntityID+" pos:"+Position.toStringInt();
+    }
 }

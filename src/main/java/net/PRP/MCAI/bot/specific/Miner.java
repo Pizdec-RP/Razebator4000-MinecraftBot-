@@ -16,9 +16,10 @@ import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlaye
 
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.bot.Bot;
-import net.PRP.MCAI.bot.pathfinder.AStar.State;
+import net.PRP.MCAI.bot.pathfinder.PathExecutor.State;
 import net.PRP.MCAI.data.BlockData;
 import net.PRP.MCAI.data.Entity;
+import net.PRP.MCAI.data.MinecraftData;
 import net.PRP.MCAI.data.MinecraftData.Type;
 import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.data.materialsBreakTime;
@@ -62,6 +63,11 @@ public class Miner {
 			return;
 		}
 		if (state == bbmct.STARTED) {
+			if (pos.getBlock(client).type == Type.AIR || pos.getBlock(client).type == Type.LIQUID || pos.getBlock(client).type == Type.UNBREAKABLE) {
+				BotU.log("a");
+				state = bbmct.ENDED;
+				return;
+			}
 			client.pathfinder.ignored.add(pos);
 			BotU.LookHead(client, pos);
 			prepareitem();
@@ -87,8 +93,8 @@ public class Miner {
 				d1 = 0;
 			}
 			
-			if (pos.getBlock(client).type == Type.AIR) {
-				client.getSession().send(new ClientPlayerActionPacket(PlayerAction.FINISH_DIGGING, pos.translate(), BlockFace.UP));
+			if (pos.getBlock(client).type == Type.AIR || pos.getBlock(client).type == Type.LIQUID || pos.getBlock(client).type == Type.UNBREAKABLE) {
+				client.getSession().send(new ClientPlayerActionPacket(PlayerAction.CANCEL_DIGGING, pos.translate(), BlockFace.UP));
 				state = bbmct.ENDED;
 				return;
 			}
@@ -135,7 +141,6 @@ public class Miner {
 				return;
 			}
 		} else if (state == bbmct.GOINGTODROPEDITEM) {
-			System.out.println(2);
 			if (client.pathfinder.state == State.FINISHED) {state = bbmct.ENDED; droppedItem = null; beforePos = null; return;}
 		}
 	}
@@ -192,7 +197,7 @@ public class Miner {
 	public Double calculateBreakTime() {
 		BlockData blockdata = Main.getMCData().blockData.get(pos.getBlock(client).id);
 		List<materialsBreakTime> mtm = Main.getMCData().materialToolMultipliers.get(blockdata.material);
-		double materialToolMultipliers = func_12(mtm);
+		double materialToolMultipliers = getToolMultipiler(mtm);
 		//boolean isBestTool = client.getItemInHand() == null && materialToolMultipliers != 0 && materialToolMultipliers[heldItemType]
 		
 		double blockBreakingSpeed = 1.0;//default
@@ -252,7 +257,7 @@ public class Miner {
 	    return ticksToBreakBlock / 3;
 	}
 	
-	public boolean func_1(List<materialsBreakTime> asd) {
+	public boolean isItRightTool(List<materialsBreakTime> asd) {
 		if (client.getItemInHand() == null) return false;
 		for (materialsBreakTime a : asd) {
 			if (client.getItemInHand().getId() == a.toolId) {
@@ -262,7 +267,7 @@ public class Miner {
 		return false;
 	}
 	
-	public double func_12(List<materialsBreakTime> asd) {
+	public double getToolMultipiler(List<materialsBreakTime> asd) {
 		if (asd == null) return 0;
 		if (client.getItemInHand() == null) return 0;
 		for (materialsBreakTime a : asd) {
@@ -275,7 +280,7 @@ public class Miner {
 	
 	public boolean canHarvest(BlockData data, List<materialsBreakTime> mtm) {
 		if (data.material.equalsIgnoreCase("default")) return true;
-		return client.getItemInHand() == null && !data.material.equalsIgnoreCase("default") && func_1(mtm);
+		return client.getItemInHand() == null && !data.material.equalsIgnoreCase("default") && isItRightTool(mtm);
 	}
 	
 }

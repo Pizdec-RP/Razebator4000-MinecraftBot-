@@ -35,7 +35,6 @@ public class Crafting extends SessionAdapter {
 	
 	private Bot client;
 	public crState state = crState.ENDED;
-	public int currentWindowId = 0;
 	public WindowType windowType = null;
 	public int actionId = 1;
 	public int lastactionid = 0;
@@ -56,6 +55,7 @@ public class Crafting extends SessionAdapter {
 	public int plitstate = 0;
 	public int timeout = 0;
 	public int totaltimeouterrors = 0;
+	private String windowName;
 	
 	
 	public class craftingRecepie {
@@ -73,7 +73,7 @@ public class Crafting extends SessionAdapter {
 	}
 	
 	public enum crState {
-		START, OPENINGINV, WAITFOROPEN, PLACINGITEMS, GETTINGCRAFTED, ENDED;
+		START, OPENINGINV, WAITFOROPEN, PLACINGITEMS, GETTINGCRAFTED, ENDED, REVERSECRAFT;
 	}
 	
 	@Override
@@ -81,11 +81,13 @@ public class Crafting extends SessionAdapter {
 		if (receiveEvent.getPacket() instanceof ServerOpenWindowPacket) {
 			final ServerOpenWindowPacket p = (ServerOpenWindowPacket) receiveEvent.getPacket();
 			//System.out.println("sopw "+p.getType());
-			currentWindowId = p.getWindowId();
+			client.playerInventory.currentWindowId = p.getWindowId();
 			windowType = p.getType();
-			if (state == crState.ENDED) {
-				client.getSession().send(new ClientCloseWindowPacket(this.currentWindowId));
-			}
+			windowName = p.getName();
+			/*if (state == crState.ENDED) {
+				ThreadU.sleep(1000);
+				client.getSession().send(new ClientCloseWindowPacket(client.playerInventory.currentWindowId));
+			}*/
 			
 		} else if (receiveEvent.getPacket() instanceof ServerWindowPropertyPacket) {
 			//final ServerWindowPropertyPacket p = (ServerWindowPropertyPacket) receiveEvent.getPacket();
@@ -93,13 +95,13 @@ public class Crafting extends SessionAdapter {
 			
 		} else if (receiveEvent.getPacket() instanceof ServerConfirmTransactionPacket) {
             final ServerConfirmTransactionPacket p = (ServerConfirmTransactionPacket) receiveEvent.getPacket();
-            System.out.println("confirmed: "+p.getActionId()+"/"+actionId);
+            if (Main.debug) System.out.println("confirmed: "+p.getActionId()+"/"+actionId);
             lastactionid = p.getActionId();
             client.getSession().send(new ClientConfirmTransactionPacket(p.getWindowId(), p.getActionId(), true));
 		} else if (receiveEvent.getPacket() instanceof ServerCloseWindowPacket) {
 			final ServerCloseWindowPacket p = (ServerCloseWindowPacket) receiveEvent.getPacket();
 			//System.out.println("scwp");
-			currentWindowId = p.getWindowId();
+			client.playerInventory.currentWindowId = p.getWindowId();
 			windowType = null;
 		}
 	}
@@ -124,7 +126,7 @@ public class Crafting extends SessionAdapter {
 	
 	public void finish() {
 		if (Main.debug) System.out.println("crafitng finished");
-		client.getSession().send(new ClientCloseWindowPacket(this.currentWindowId));
+		client.getSession().send(new ClientCloseWindowPacket(client.playerInventory.currentWindowId));
 		recepie = null;
 		craftingBlock = null;
 		state = crState.ENDED;
@@ -134,7 +136,7 @@ public class Crafting extends SessionAdapter {
 	
 	public void finish(String reason) {
 		if (Main.debug) System.out.println("crafitng finished: "+reason);
-		client.getSession().send(new ClientCloseWindowPacket(this.currentWindowId));
+		client.getSession().send(new ClientCloseWindowPacket(client.playerInventory.currentWindowId));
 		recepie = null;
 		craftingBlock = null;
 		state = crState.ENDED;
@@ -148,7 +150,7 @@ public class Crafting extends SessionAdapter {
 	}
 	
 	public void reset() {
-		if (windowType != null) client.getSession().send(new ClientCloseWindowPacket(this.currentWindowId));
+		if (windowType != null) client.getSession().send(new ClientCloseWindowPacket(client.playerInventory.currentWindowId));
 		recepie = null;
 		craftingBlock = null;
 		state = crState.ENDED;
@@ -168,21 +170,21 @@ public class Crafting extends SessionAdapter {
 	
 	public void fromSlotToSlotStack(int from, int to) {
 		if (client.playerInventory.getSlot(to) != null) {
-			client.getSession().send(new ClientWindowActionPacket(client.crafter.currentWindowId,
+			client.getSession().send(new ClientWindowActionPacket(client.playerInventory.currentWindowId,
 				nextActionId(),
 				from,
 				client.playerInventory.getSlot(from), 
 				WindowAction.CLICK_ITEM,
 				ClickItemParam.LEFT_CLICK
 			));
-			client.getSession().send(new ClientWindowActionPacket(client.crafter.currentWindowId,
+			client.getSession().send(new ClientWindowActionPacket(client.playerInventory.currentWindowId,
 				nextActionId(),
 				to,
 				client.playerInventory.getSlot(to), 
 				WindowAction.CLICK_ITEM,
 				ClickItemParam.LEFT_CLICK
 			));
-			client.getSession().send(new ClientWindowActionPacket(client.crafter.currentWindowId,
+			client.getSession().send(new ClientWindowActionPacket(client.playerInventory.currentWindowId,
 				nextActionId(),
 				from,
 				client.playerInventory.getSlot(from),
@@ -190,14 +192,14 @@ public class Crafting extends SessionAdapter {
 				ClickItemParam.LEFT_CLICK
 			));
 		} else {
-			client.getSession().send(new ClientWindowActionPacket(client.crafter.currentWindowId,
+			client.getSession().send(new ClientWindowActionPacket(client.playerInventory.currentWindowId,
 				nextActionId(),
 				from,
 				client.playerInventory.getSlot(from), 
 				WindowAction.CLICK_ITEM,
 				ClickItemParam.LEFT_CLICK
 			));
-			client.getSession().send(new ClientWindowActionPacket(client.crafter.currentWindowId,
+			client.getSession().send(new ClientWindowActionPacket(client.playerInventory.currentWindowId,
 				nextActionId(),
 				to,
 				client.playerInventory.getSlot(to), 
@@ -216,22 +218,22 @@ public class Crafting extends SessionAdapter {
 	}
 	
 	public void fromSlotToSlot(int from, int to) {
-		System.out.println(from+"|"+i(from)+" >>> "+to+"|"+i(to));
-		client.getSession().send(new ClientWindowActionPacket(client.crafter.currentWindowId,
+		if(Main.debug)System.out.println(from+"|"+i(from)+" >>> "+to+"|"+i(to));
+		client.getSession().send(new ClientWindowActionPacket(client.playerInventory.currentWindowId,
 			nextActionId(),
 			from,
 			client.playerInventory.getSlot(from), 
 			WindowAction.CLICK_ITEM,
 			ClickItemParam.LEFT_CLICK
 		));
-		client.getSession().send(new ClientWindowActionPacket(client.crafter.currentWindowId,
+		client.getSession().send(new ClientWindowActionPacket(client.playerInventory.currentWindowId,
 			nextActionId(),
 			to,
 			client.playerInventory.getSlot(to), 
 			WindowAction.CLICK_ITEM,
 			ClickItemParam.RIGHT_CLICK
 		));
-		client.getSession().send(new ClientWindowActionPacket(client.crafter.currentWindowId,
+		client.getSession().send(new ClientWindowActionPacket(client.playerInventory.currentWindowId,
 			nextActionId(),
 			from,
 			client.playerInventory.getSlot(from),
@@ -241,7 +243,7 @@ public class Crafting extends SessionAdapter {
 	}
 	
 	public void ShiftClick(int slot) {
-		client.getSession().send(new ClientWindowActionPacket(client.crafter.currentWindowId,
+		client.getSession().send(new ClientWindowActionPacket(client.playerInventory.currentWindowId,
 			client.crafter.nextActionId(),
 			slot,
 			client.playerInventory.getSlot(slot),
@@ -253,7 +255,7 @@ public class Crafting extends SessionAdapter {
 	@SuppressWarnings("deprecation")
 	public void tick() {
 		if (totaltimeouterrors >= 2) {
-			client.reconnect();
+			client.disconnect();
 		}
 		try {
 			if (state == crState.START) {
@@ -341,7 +343,7 @@ public class Crafting extends SessionAdapter {
 						plitstate--;
 					} else {
 						int i = plitstate / 2;
-						System.out.println(client.playerInventory.getSlotWithItem(recepie.recepie.split("-")[i-1]));
+						if (Main.debug)System.out.println(client.playerInventory.getSlotWithItem(recepie.recepie.split("-")[i-1]));
 						if (!recepie.recepie.split("-")[i-1].equalsIgnoreCase(".")) fromSlotToSlot(client.playerInventory.getSlotWithItem(recepie.recepie.split("-")[i-1]), i);
 						plitstate--;
 					}
@@ -357,20 +359,7 @@ public class Crafting extends SessionAdapter {
 						timeout++;
 						if (timeout > 200) {
 							totaltimeouterrors++;
-							finish("getcrafted_timeout, palette:\n"
-									+ "#####\n"
-									+ "#"+slotstring(1)+"#"+slotstring(2)+"#\n"
-									+ "##### ==> "+slotstring(0)+"\n"
-									+ "#"+slotstring(3)+"#"+slotstring(4)+"#\n"
-									+ "#####"
-									);
-							ShiftClick(1);
-							ThreadU.sleep(50);
-							ShiftClick(2);
-							ThreadU.sleep(50);
-							ShiftClick(3);
-							ThreadU.sleep(50);
-							ShiftClick(4);
+							state = crState.REVERSECRAFT;
 						}
 					}
 				} else if (recepie.isWorkbenched()) {
@@ -382,26 +371,57 @@ public class Crafting extends SessionAdapter {
 						timeout++;
 						if (timeout > 200) {
 							totaltimeouterrors++;
-							ShiftClick(1);
-							ThreadU.sleep(20);
-							ShiftClick(2);
-							ThreadU.sleep(20);
-							ShiftClick(3);
-							ThreadU.sleep(20);
-							ShiftClick(4);
-							ThreadU.sleep(20);
-							ShiftClick(5);
-							ThreadU.sleep(20);
-							ShiftClick(6);
-							ThreadU.sleep(20);
-							ShiftClick(7);
-							ThreadU.sleep(20);
-							ShiftClick(8);
-							ThreadU.sleep(20);
-							ShiftClick(9);
-							//if (windowType != null) client.getSession().send(new ClientCloseWindowPacket(this.currentWindowId));
-							finish("getcrafted_timeout");
+							state = crState.REVERSECRAFT;
 						}
+					}
+				}
+			} else if (state == crState.REVERSECRAFT) {
+				if (recepie.isWorkbenched()) {
+					if (i(1) != 0) {
+						ShiftClick(1);
+						return;
+					} else if (i(2) != 0) {
+						ShiftClick(2);
+						return;
+					} else if (i(3) != 0) {
+						ShiftClick(3);
+						return;
+					} else if (i(4) != 0) {
+						ShiftClick(4);
+						return;
+					} else if (i(5) != 0) {
+						ShiftClick(5);
+						return;
+					} else if (i(6) != 0) {
+						ShiftClick(6);
+						return;
+					} else if (i(7) != 0) {
+						ShiftClick(7);
+						return;
+					} else if (i(8) != 0) {
+						ShiftClick(8);
+						return;
+					} else if (i(9) != 0) {
+						ShiftClick(9);
+						return;
+					} else {
+						finish("getcrafted_timeout");
+					}
+				} else if (recepie.isInventoried()) {
+					if (i(1) != 0) {
+						ShiftClick(1);
+						return;
+					} else if (i(2) != 0) {
+						ShiftClick(2);
+						return;
+					} else if (i(3) != 0) {
+						ShiftClick(3);
+						return;
+					} else if (i(4) != 0) {
+						ShiftClick(4);
+						return;
+					} else {
+						finish("getcrafted_timeout");
 					}
 				}
 			}
