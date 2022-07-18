@@ -18,6 +18,7 @@ import net.PRP.MCAI.utils.VectorUtils;
 
 public class NukerFucker implements ServerListener{
 
+	public static final boolean allGameCapt = true;
 	Bot client;
 	boolean run = false;
 	Vector3D startpos = null;

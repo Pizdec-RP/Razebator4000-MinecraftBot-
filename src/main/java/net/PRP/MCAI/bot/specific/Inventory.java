@@ -50,10 +50,7 @@ public class Inventory extends SessionAdapter {
 	
 	@Override
     public void packetReceived(PacketReceivedEvent receiveEvent) {
-		if (receiveEvent.getPacket() instanceof ServerJoinGamePacket) {
-			ThreadU.sleep(1000);
-			BotU.SetSlot(client, 0);
-		} else if (receiveEvent.getPacket() instanceof ServerWindowItemsPacket) {
+		if (receiveEvent.getPacket() instanceof ServerWindowItemsPacket) {
 			final ServerWindowItemsPacket p = (ServerWindowItemsPacket) receiveEvent.getPacket();
 			client.playerInventory.setup(p.getItems());
 			

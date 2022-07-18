@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import com.github.steveice10.mc.protocol.data.game.MessageType;
 import com.github.steveice10.mc.protocol.data.game.PlayerListEntry;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
 import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
@@ -31,6 +32,7 @@ import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.utils.*;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.TranslatableComponent;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import net.minecraft.server.v1_12_R1.Slot;
 
@@ -326,29 +328,19 @@ public class ChatListener extends SessionAdapter {
 	
 	public static String chatMessageToString(ServerChatPacket packet) {
 		//System.out.println(packet.getMessage().toString());
-		if (packet.getMessage() instanceof TextComponent)  {
-			JsonElement asds = GsonComponentSerializer.gson().serializeToTree((TextComponent)packet.getMessage());
-			String as = "";
-			if (asds.getAsJsonObject().get("content").getAsString() == "" && asds.getAsJsonObject().get("content").getAsString() == null) {
-				//asds.getAsJsonObject().get("children").getAsJsonArray()
-			} else {
-				for (JsonElement asdsa : asds.getAsJsonObject().get("extra").getAsJsonArray()) {
-					as += asdsa.getAsJsonObject().get("text");
-					as += " ";
+		StringBuilder message = new StringBuilder();
+		if (packet.getMessage() instanceof TranslatableComponent) {
+			TranslatableComponent a = (TranslatableComponent)packet.getMessage();
+			for (Component arg : a.args()) {
+				if (arg instanceof TextComponent) {
+					message.append(" ").append(((TextComponent)arg).content());
 				}
 			}
-			as = as.replace("\"", "");
-			return as;
 		} else {
-			JsonElement json = GsonComponentSerializer.gson().serializeToTree(packet.getMessage());
-		    if (json.getAsJsonObject().get("with") == null) return null;
-			JsonArray asd = json.getAsJsonObject().get("with").getAsJsonArray();
-			if (asd.size() == 2) {
-				JsonElement asdasd = asd.get(1);
-				if (asdasd.getAsJsonObject().get("text") != null) return asdasd.getAsJsonObject().get("text").getAsString();
-			}
-			return "";
+			System.out.println(packet.getMessage());
 		}
+		System.out.println(message.toString());
+		return message.toString();
 	}
 	
 	public static List<String> messageToCommand(Packet event) {

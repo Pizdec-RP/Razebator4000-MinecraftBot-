@@ -17,18 +17,18 @@ public class BotU {
 	}
 	public static void chat (Bot client, String text) {
 		client.getSession().send(new ClientChatPacket(text));
+		log("message sended, content: "+text);
 	}
 	
-	public static void calibratePosition(Bot client) {
+	/*public static void calibratePosition(Bot client) {
 		client.setPosX((int) Math.floor(client.getPosX())+0.5);
 		client.setPosZ((int) Math.floor(client.getPosZ())+0.5);
 	}
 	
 	public static void calibrateY(Bot client) {
 		client.setPosY(Math.floor(client.getPosY()));
-	}
+	}*/
 
-	
 	public static void SetSlot(Bot client, int slot) {
         client.getSession().send(new ClientPlayerChangeHeldItemPacket(slot));
         client.currentHotbarSlot = 36+slot;

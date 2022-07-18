@@ -41,7 +41,7 @@ public class Main {
 	static List<Proxy> proxies;
 	static int proxyNumb = 0;
 	static String hash;
-	public static boolean debug = false;
+	public static boolean debug = true;
 	public static List<Bot> bots = new CopyOnWriteArrayList<Bot>();
 	public static Proxy proxy = Proxy.NO_PROXY;
 	public static List<String> pasti = new CopyOnWriteArrayList<String>();

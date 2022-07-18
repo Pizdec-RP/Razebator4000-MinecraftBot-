@@ -3,13 +3,16 @@ package net.PRP.MCAI.bot;
 import com.github.steveice10.mc.auth.data.GameProfile;
 import com.github.steveice10.mc.protocol.MinecraftProtocol;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.ItemStack;
+import com.github.steveice10.mc.protocol.data.game.entity.player.GameMode;
 import com.github.steveice10.mc.protocol.packet.ingame.client.ClientChatPacket;
 import com.github.steveice10.packetlib.ProxyInfo;
 import com.github.steveice10.packetlib.ProxyInfo.Type;
 import com.github.steveice10.packetlib.Session;
 import com.github.steveice10.packetlib.tcp.TcpClientSession;
+
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.ListenersForServers.NukerFucker;
+import net.PRP.MCAI.ListenersForServers.hyperspace;
 import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.ThreadU;
 import net.PRP.MCAI.utils.VectorUtils;
@@ -72,6 +75,8 @@ public class Bot implements Runnable {
 	public boolean automaticMode = false;
 	private boolean running = true;
 	public boolean isHoldSlowdownItem = false;//shield, bow, eating
+	public boolean catchedRegister = false;
+	public GameMode gamemode;
     
     public Bot(String name, String ip, Proxy proxy, boolean automaticMode) {
     	if (proxy == null)
@@ -151,9 +156,10 @@ public class Bot implements Runnable {
         } else {
         	client = new TcpClientSession(host, port, account);
         }
+		this.session = client;
         //client.setFlag(MinecraftConstants.SESSION_SERVICE_KEY, sessionService);
         client.addListener(new SessionListener(this));
-        client.addListener(new Shit());
+        if ((boolean) Main.gamerule("KeepAlivePackets")) client.addListener(new Shit());
         client.addListener(new Inventory(this));
         if ((boolean) Main.gamerule("listenEntities")) {
         	this.entityListener = new EntityListener(this);
@@ -176,9 +182,10 @@ public class Bot implements Runnable {
         	rl.listeners.add(new NukerFucker(this));
         	BotU.log("nuke");
         }
+        if (host.contains("hypermc")) {
+        	rl.listeners.add(new hyperspace(this));
+        }
         
-        
-        this.session = client;
         this.playerInventory = new Inventory(this);
     }
     
@@ -188,6 +195,7 @@ public class Bot implements Runnable {
 	}
 
     public void register() {
+    	if (catchedRegister) return;
         session.send(new ClientChatPacket("/register 112233asdasd 112233asdasd"));
         ThreadU.sleep(100);
         session.send(new ClientChatPacket("/login 112233asdasd"));

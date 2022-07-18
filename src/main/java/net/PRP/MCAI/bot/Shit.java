@@ -7,15 +7,14 @@ import com.github.steveice10.packetlib.event.session.SessionAdapter;
 import net.PRP.MCAI.Main;
 
 public class Shit extends SessionAdapter {
-
+	boolean ns = true;
 	@Override
     public void packetReceived(PacketReceivedEvent event) {
 		if (event.getPacket() instanceof ServerKeepAlivePacket) {
-			if (!Main.debug) {
-				if ((boolean) Main.gamerule("KeepAlivePackets")) {
-					final ServerKeepAlivePacket p = (ServerKeepAlivePacket) event.getPacket();
-				    event.getSession().send(new ClientKeepAlivePacket(p.getPingId()));
-				}
+			if (ns) {
+				ServerKeepAlivePacket p = (ServerKeepAlivePacket) event.getPacket();
+			    event.getSession().send(new ClientKeepAlivePacket(p.getPingId()));
+			    ns = false;
 			}
 		}
 	}

@@ -139,14 +139,14 @@ public class Living extends SessionAdapter {
 				}
 			}
 			
-			if (state == raidState.IDLE) {
-				
-				if (!listeners.isEmpty()) {
-					listeners.forEach((l)->{
-						l.tick();
-					});
-					return;
+			if (!listeners.isEmpty()) {
+				for (ServerListener listener : listeners) {
+					listener.tick();
+					if (listener.allGameCapt) return;
 				}
+			}
+			
+			if (state == raidState.IDLE) {
 				
 				if ((boolean) Main.gamerule("isitfollow")) {
 					Vector3D target = new Vector3D(0,-999999,0);

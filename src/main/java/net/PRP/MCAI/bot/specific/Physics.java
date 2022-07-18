@@ -1,5 +1,6 @@
 package net.PRP.MCAI.bot.specific;
 
+import com.github.steveice10.mc.protocol.data.game.entity.player.GameMode;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerPositionPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerPositionRotationPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerRotationPacket;
@@ -18,10 +19,11 @@ import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.MathU;
 
 public class Physics extends SessionAdapter {
+	public boolean noPhysics = false;//????
 	public Vector3D before;
-	private float beforeYaw;
-    private float beforePitch;
-	private Bot client;
+	public float beforeYaw;
+	public float beforePitch;
+	public Bot client;
 	public Vector3D velocity = new Vector3D(0,0,0);
 	public int sleepticks = 0;
 	private int autojumpcooldown = 0;
@@ -238,6 +240,7 @@ public class Physics extends SessionAdapter {
 	public void tick() {
 		if (!client.isOnline() || !client.isGameReady()) return;
 		if (autojumpcooldown > 0) autojumpcooldown--;
+		//if (!noPhysics && client.gamemode == GameMode.SURVIVAL | client.gamemode == GameMode.ADVENTURE) 
 		PhysicsUpdate();
 		Vector3D nowPos = client.getPosition();
 		float nowYaw = client.getYaw();
@@ -246,11 +249,14 @@ public class Physics extends SessionAdapter {
 		if (!VectorUtils.equals(before, nowPos)) {
 			if (nowYaw != beforeYaw || nowPitch != beforePitch) {
 				client.getSession().send(new ClientPlayerPositionRotationPacket(client.onGround, client.posX, client.posY, client.posZ, client.getYaw(), client.getPitch()));
+				BotU.log("cpprp x"+client.posX+" y"+client.posY+" z"+client.posZ+" yaw"+client.getYaw()+" pitch"+client.getPitch());
 			} else {
 				client.getSession().send(new ClientPlayerPositionPacket(client.onGround, client.posX, client.posY, client.posZ));
+				BotU.log("cppp x"+client.posX+" y"+client.posY+" z"+client.posZ);
 			}
 		} else if (nowYaw != beforeYaw || nowPitch != beforePitch) {
 			client.getSession().send(new ClientPlayerRotationPacket(client.onGround, client.getYaw(), client.getPitch()));
+			BotU.log("cprp yaw"+client.getYaw()+" pitch"+client.getPitch());
 		}
 		before = nowPos;
 		beforePitch = nowPitch;
