@@ -3,6 +3,7 @@ package net.PRP.MCAI.utils;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
@@ -15,14 +16,12 @@ import com.google.common.collect.AbstractIterator;
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.data.Vector3D;
+import net.PRP.MCAI.data.AABB;
 import net.PRP.MCAI.data.Block;
+import net.PRP.MCAI.data.Entity;
 import net.PRP.MCAI.data.MinecraftData.Type;
 
 public class VectorUtils {
-	
-	
-	
-	
 	/**
 	 * @param client
 	 * @param целевая точка
@@ -55,6 +54,7 @@ public class VectorUtils {
 
         double xz = Math.cos(Math.toRadians(rotY));
         if (client.isInLiquid()) vector.setY(-Math.sin(Math.toRadians(rotY)));//0.35
+        else xz = 1;
         vector.setX(-xz * Math.sin(Math.toRadians(rotX)));
         vector.setZ(xz * Math.cos(Math.toRadians(rotX)));
         vector = vector.multiply(speed);
@@ -66,6 +66,50 @@ public class VectorUtils {
 			if (sqrt(target, position) > radius) positions.remove(position);
 		}
 		return positions;
+	}
+	
+	@SuppressWarnings("serial")
+	public static BlockFace rbf(Bot client, Vector3D target) {
+		BlockFace bf = null;
+		
+		List<Vector3D> blockfaces = new CopyOnWriteArrayList<>() {{
+				add(target.add(0.5, 0, 0));
+				add(target.add(0, 0, 0.5));
+				add(target.add(-0.5, 0, 0));
+				add(target.add(0, 0, -0.5));
+				add(target.add(0, 0.5, 0));
+				add(target.add(0, -0.5, 0));
+		}};
+		for (Vector3D b : blockfaces) {
+			if (!b.getBlock(client).ishard()) {
+				blockfaces.remove(b);
+			}
+		}
+		if (blockfaces.isEmpty()) {
+			blockfaces.add(target.add(0.5, 0, 0));
+			blockfaces.add(target.add(0, 0, 0.5));
+			blockfaces.add(target.add(-0.5, 0, 0));
+			blockfaces.add(target.add(0, 0, -0.5));
+			blockfaces.add(target.add(0, 0.5, 0));
+			blockfaces.add(target.add(0, -0.5, 0));
+		}
+		
+		Vector3D temp = getNear(client.getEyeLocation(), blockfaces);
+		if (temp.x > target.x) {//x+
+			bf = BlockFace.EAST;
+		} else if (temp.x < target.x) {//x-
+			bf = BlockFace.WEST;
+		} else if (temp.z > target.z) {//z+
+			bf = BlockFace.SOUTH;
+		} else if (temp.z < target.z) {//z-
+			bf = BlockFace.NORTH;
+		} else if (temp.y > target.y) {//y+
+			bf = BlockFace.UP;
+		} else if (temp.y < target.y) {//y-
+			bf = BlockFace.DOWN;
+		}
+		BotU.log("target:"+target.toString()+" bfc: "+bf.toString());
+		return bf;
 	}
 	
 	public static boolean equals(Vector3D one, Vector3D two) {
@@ -147,11 +191,30 @@ public class VectorUtils {
         }
         temp.add(minpos);
         for (Vector3D position : allPos) {
+        	if (minpos == null || position == null) return null;
         	if (sqrt(minpos, target) == sqrt(position, target)) {
         		temp.add(position);
         	}
         }
         return temp.get(MathU.rnd(0, temp.size()-1));
+    }
+	
+	public static Entry<Integer, Entity> getNearE(Vector3D target, List<Entry<Integer, Entity>> all) {
+		Entry<Integer, Entity> minimal = null;
+        for (Entry<Integer, Entity> entity : all) {
+        	double distance = sqrt(entity.getValue().Position, target);
+        	if (minimal == null) {
+        		minimal = entity;
+        	} else {
+        		double distanceminpos = sqrt(minimal.getValue().Position, target);
+        		if (distance < distanceminpos) {
+        			minimal = entity;
+        		} else if (distance == distanceminpos && MathU.rnd(1, 2) == 1) {
+        			minimal = entity;
+        		}
+        	}
+        }
+        return minimal;
     }
 	
 	public static Vector3D getNearBlock(Vector3D target, List<Block> allPos) {
@@ -351,7 +414,7 @@ public class VectorUtils {
 			if (slot == null) return null;
 			BotU.SetSlot(client, slot-36);
 			client.getSession().send(new ClientPlayerSwingArmPacket(Hand.MAIN_HAND));
-			client.getSession().send(new ClientPlayerPlaceBlockPacket(pos.translate(), BlockFace.DOWN, Hand.MAIN_HAND, 0,0,0, false));
+			client.getSession().send(new ClientPlayerPlaceBlockPacket(pos.translate(), VectorUtils.rbf(client, pos), Hand.MAIN_HAND, 0,0,0, false));
 			return pos.getBlock(client);
 		} else if (client.playerInventory.invContain(block, 1)) {
 			client.playerInventory.fromInventoryToHotbar(new CopyOnWriteArrayList<String>() {{add(block);}}, 1);
@@ -360,7 +423,7 @@ public class VectorUtils {
 			if (slot == null) return null;
 			BotU.SetSlot(client, slot-36);
 			client.getSession().send(new ClientPlayerSwingArmPacket(Hand.MAIN_HAND));
-			client.getSession().send(new ClientPlayerPlaceBlockPacket(pos.translate(), BlockFace.DOWN, Hand.MAIN_HAND, 0,0,0, false));
+			client.getSession().send(new ClientPlayerPlaceBlockPacket(pos.translate(), VectorUtils.rbf(client, pos), Hand.MAIN_HAND, 0,0,0, false));
 			return pos.getBlock(client);
 		}
 		return null;

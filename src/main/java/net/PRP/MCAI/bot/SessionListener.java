@@ -4,23 +4,32 @@ import com.github.steveice10.mc.protocol.data.game.ClientRequest;
 import com.github.steveice10.mc.protocol.data.game.PlayerListEntry;
 import com.github.steveice10.mc.protocol.data.game.PlayerListEntryAction;
 import com.github.steveice10.mc.protocol.data.game.ResourcePackStatus;
-import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
-import com.github.steveice10.mc.protocol.data.game.entity.player.PositionElement;
+import com.github.steveice10.mc.protocol.data.game.entity.attribute.Attribute;
+import com.github.steveice10.mc.protocol.data.game.entity.player.HandPreference;
+import com.github.steveice10.mc.protocol.data.game.setting.ChatVisibility;
+import com.github.steveice10.mc.protocol.data.game.setting.SkinPart;
+import com.github.steveice10.mc.protocol.packet.ingame.client.ClientPluginMessagePacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.ClientRequestPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.ClientResourcePackStatusPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.client.ClientSettingsPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerPositionRotationPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerStatePacket;
+import com.github.steveice10.mc.protocol.packet.ingame.client.window.ClientCloseWindowPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.world.ClientTeleportConfirmPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.server.ServerCombatPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.server.ServerChatPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerJoinGamePacket;
+import com.github.steveice10.mc.protocol.packet.ingame.server.entity.ServerEntityPositionPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.server.entity.ServerEntityPropertiesPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.server.entity.player.ServerPlayerAbilitiesPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.server.entity.player.ServerPlayerChangeHeldItemPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.player.ServerPlayerHealthPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.player.ServerPlayerPositionRotationPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.server.window.ServerSetSlotPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerBlockChangePacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerChunkDataPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerMultiBlockChangePacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerUnloadChunkPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerUpdateTimePacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerPlayerListEntryPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.server.ServerPlayerListDataPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerResourcePackSendPacket;
 import com.github.steveice10.mc.protocol.packet.login.server.LoginSuccessPacket;
 import com.github.steveice10.packetlib.event.session.DisconnectedEvent;
@@ -31,24 +40,18 @@ import net.PRP.MCAI.Main;
 import net.PRP.MCAI.data.ChunkCoordinates;
 import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.utils.*;
-import net.kyori.adventure.text.TextComponent;
-
-import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
 import com.github.steveice10.mc.protocol.data.game.world.block.BlockChangeRecord;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class SessionListener extends SessionAdapter {
-    private final Bot client;
-    static int exline = -1;
-    Position actionentity;
+    private Bot client;
     
 
     public SessionListener(Bot client) {
         this.client = client;
-    }
-    
-    public Hand findTrashBlockInInventory() {
-		return null;
     }
     
     @Override
@@ -60,32 +63,59 @@ public class SessionListener extends SessionAdapter {
         	client.setId(p.getEntityId());
         	client.pm.sleepticks = 600;
         	client.connected = true;
-        	ThreadU.sleep(500);
+        	client.gamemode = p.getGameMode();
+        	client.getSession().send(new ClientSettingsPacket(
+        			"ru",
+        			16,
+        			ChatVisibility.FULL,
+        			true,
+        			new ArrayList<SkinPart>() {
+					private static final long serialVersionUID = 1562002041284663871L;
+					{
+						add(SkinPart.CAPE);
+						add(SkinPart.HAT);
+						add(SkinPart.JACKET);
+						add(SkinPart.LEFT_PANTS_LEG);
+						add(SkinPart.LEFT_SLEEVE);
+						add(SkinPart.RIGHT_PANTS_LEG);
+						add(SkinPart.RIGHT_SLEEVE);
+					}},
+        			HandPreference.RIGHT_HAND
+        	));
+        	client.getSession().send(new ClientPluginMessagePacket("minecraft:brand", new byte[] {7,118,97,110,105,108,108,97}));
         	client.register();
         } else if (receiveEvent.getPacket() instanceof ServerPlayerPositionRotationPacket) {
             ServerPlayerPositionRotationPacket packet = (ServerPlayerPositionRotationPacket) receiveEvent.getPacket();
             client.getSession().send(new ClientTeleportConfirmPacket(packet.getTeleportId()));
-            client.pm.sleepticks = 15;
-            ThreadU.sleep(100);
+            client.pm.sleepticks = 1;
             client.setPosX(packet.getX());
             client.setPosY(packet.getY());
             client.setPosZ(packet.getZ());
             client.pm.before = new Vector3D(packet.getX(),packet.getY(),packet.getZ());
             client.setYaw(packet.getYaw());
 			client.setPitch(packet.getPitch());
-			//BotU.calibratePosition(client);
+			client.pm.beforePitch = packet.getPitch();
+			client.pm.beforeYaw = packet.getYaw();
             BotU.log("pos packet received x:"+packet.getX()+" y:"+packet.getY()+" z:"+packet.getZ()+" yaw:"+packet.getYaw()+" pitch:"+packet.getPitch());
             client.getSession().send(new ClientPlayerPositionRotationPacket(client.onGround,packet.getX(),packet.getY(),packet.getZ(), client.getYaw(), client.getPitch()));
-            client.getSession().send(new ClientRequestPacket(ClientRequest.STATS));
+            //client.getSession().send(new ClientRequestPacket(ClientRequest.STATS));
             client.pm.resetVel();
+            if (client.crafter.windowType != null) {
+            	if (VectorUtils.sqrt(client.crafter.lastWindowPos, new Vector3D(packet.getX(),packet.getY(),packet.getZ())) > 8) {
+            		client.getSession().send(new ClientCloseWindowPacket(client.playerInventory.currentWindowId));
+            		client.crafter.windowType = null;
+            		client.playerInventory.currentWindowId = 0;
+            	}
+            }
         } else if (receiveEvent.getPacket() instanceof ServerPlayerHealthPacket) {
             final ServerPlayerHealthPacket p = (ServerPlayerHealthPacket) receiveEvent.getPacket();
             client.foodlvl = p.getFood();
+            client.health = p.getHealth();
             if (p.getHealth() <= 0)
-            	client.pvp.reset();
+            	client.pvp.endPVP();
             	client.bbm.reset();
             	client.pathfinder.reset();
-            	client.getSession().send(new ClientRequestPacket(ClientRequest.RESPAWN));
+            	BotU.log("h:"+p.getHealth()+" f:"+p.getFood()+" s:"+p.getSaturation());
         
         //server chunks
         
@@ -93,7 +123,7 @@ public class SessionListener extends SessionAdapter {
 			ServerMultiBlockChangePacket packet = (ServerMultiBlockChangePacket) receiveEvent.getPacket();
 			for (BlockChangeRecord data : packet.getRecords()) {
 				client.getWorld().setBlock(data.getPosition(), data.getBlock());
-				if (!client.pathfinder.ignored.contains(VectorUtils.convert(data.getPosition()))) client.pathfinder.func_2(VectorUtils.convert(data.getPosition()));
+				//if (!client.pathfinder.ignored.contains(VectorUtils.convert(data.getPosition()))) client.pathfinder.func_2(VectorUtils.convert(data.getPosition()));
 			}
         } else if (receiveEvent.getPacket() instanceof ServerUnloadChunkPacket) {
 			if ((boolean) Main.gamerule("multiworld")) {
@@ -108,7 +138,7 @@ public class SessionListener extends SessionAdapter {
 		} else if (receiveEvent.getPacket() instanceof ServerBlockChangePacket) {
 			ServerBlockChangePacket packet = (ServerBlockChangePacket) receiveEvent.getPacket();
 			client.getWorld().setBlock(packet.getRecord().getPosition(), packet.getRecord().getBlock());
-			if (!client.pathfinder.ignored.contains(VectorUtils.convert(packet.getRecord().getPosition()))) client.pathfinder.func_2(VectorUtils.convert(packet.getRecord().getPosition()));
+			//if (!client.pathfinder.ignored.contains(VectorUtils.convert(packet.getRecord().getPosition()))) client.pathfinder.func_2(VectorUtils.convert(packet.getRecord().getPosition()));
 			
 		} else if (receiveEvent.getPacket() instanceof LoginSuccessPacket) {
             final LoginSuccessPacket p = (LoginSuccessPacket) receiveEvent.getPacket();
@@ -119,6 +149,7 @@ public class SessionListener extends SessionAdapter {
 			final ServerPlayerListEntryPacket p = (ServerPlayerListEntryPacket) receiveEvent.getPacket();
 			if (p.getAction() == PlayerListEntryAction.ADD_PLAYER) {
 				for (PlayerListEntry entry : p.getEntries()) {
+					//BotU.log(entry.getProfile().getName());
 					client.getWorld().ServerTabPanel.add(entry);
 				}
 			} else if (p.getAction() == PlayerListEntryAction.REMOVE_PLAYER) {
@@ -129,8 +160,19 @@ public class SessionListener extends SessionAdapter {
 				for (PlayerListEntry entry : p.getEntries()) {
 					for (PlayerListEntry pl : client.getWorld().ServerTabPanel) {
 						if (pl.getProfile().getId().equals(entry.getProfile().getId())) {
-							client.getWorld().ServerTabPanel.remove(pl);
+							
 							client.getWorld().ServerTabPanel.add(entry);
+							client.getWorld().ServerTabPanel.remove(pl);
+						}
+					}
+				}
+			} else if (p.getAction() == PlayerListEntryAction.UPDATE_GAMEMODE) {
+				for (PlayerListEntry entry : p.getEntries()) {
+					for (PlayerListEntry pl : client.getWorld().ServerTabPanel) {
+						if (pl.getProfile().getId().equals(entry.getProfile().getId())) {
+							
+							client.getWorld().ServerTabPanel.add(entry);
+							client.getWorld().ServerTabPanel.remove(pl);
 						}
 					}
 				}
@@ -141,14 +183,32 @@ public class SessionListener extends SessionAdapter {
 			ThreadU.sleep(50);
 			client.getSession().send(new ClientResourcePackStatusPacket(ResourcePackStatus.ACCEPTED));
 			client.getSession().send(new ClientResourcePackStatusPacket(ResourcePackStatus.SUCCESSFULLY_LOADED));
-		} 
+		} else if (receiveEvent.getPacket() instanceof ServerPlayerAbilitiesPacket) {
+			ServerPlayerAbilitiesPacket p = (ServerPlayerAbilitiesPacket)receiveEvent.getPacket();
+			client.walkSpeed = p.getWalkSpeed();
+			client.flySpeed = p.getFlySpeed();
+			BotU.log("walkspeed = "+p.getWalkSpeed());
+		} else if (receiveEvent.getPacket() instanceof ServerPlayerChangeHeldItemPacket) {
+			ServerPlayerChangeHeldItemPacket p = (ServerPlayerChangeHeldItemPacket)receiveEvent.getPacket();
+			BotU.SetSlot(client, p.getSlot());
+		} else if (receiveEvent.getPacket() instanceof ServerEntityPropertiesPacket) {
+			ServerEntityPropertiesPacket p = (ServerEntityPropertiesPacket)receiveEvent.getPacket();
+			
+		} else {
+			//if (!(receiveEvent.getPacket() instanceof ServerUpdateTimePacket || receiveEvent.getPacket() instanceof ServerEntityPositionPacket)) BotU.log(receiveEvent.getPacket().getClass().getName());
+		}
     }
     
     @Override
     public void disconnected(DisconnectedEvent event) {
     	if (!client.reconectAvable) return;
     	client.connected = false;
-    	BotU.log(event.getReason().toString());
+    	BotU.log("disconnected");
+    	System.out.println(event.getReason());
+    	Main.write("[dc] ",event.getReason());
+    	if (event.getCause() != null) {
+    		event.getCause().printStackTrace();
+    	}
 		if ((boolean) Main.gamerule("reconect")) {
 			ThreadU.sleep(6000);
 			client.build();

@@ -7,7 +7,6 @@ import java.util.Map;
 import com.github.steveice10.mc.protocol.data.game.window.WindowType;
 
 import net.PRP.MCAI.Main;
-import net.PRP.MCAI.oldMinecraftBlocks;
 
 public class MinecraftData {
 	public enum Type {
@@ -19,10 +18,15 @@ public class MinecraftData {
 	public Map<Integer, BlockData> blockData = new HashMap<>();//key - oldid
 	public Map<String, List<materialsBreakTime>> materialToolMultipliers = new HashMap<>();// key - material
 	public Map<Integer, ItemData> items = new HashMap<>(); // itemid | itemdata
+	public Map<Integer, slabState> slabstates = new HashMap<>(); //newid | slabstate
 	public Map<WindowType, Integer> slotMultipiler = new HashMap<WindowType, Integer>() {
 	private static final long serialVersionUID = 1L;
 	{
 		put(WindowType.CRAFTING, 1);
+		put(WindowType.GENERIC_9X3, 18);
+		put(WindowType.GENERIC_9X4, 27);
+		put(WindowType.GENERIC_9X5, 36);
+		put(WindowType.GENERIC_9X6, 45);
 	}};
 	public static String codecc = "===================1===========1=================21=221==221==221=";
 	public MinecraftData() {

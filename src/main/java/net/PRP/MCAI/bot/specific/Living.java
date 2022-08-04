@@ -9,11 +9,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.github.steveice10.mc.protocol.data.game.ClientRequest;
 import com.github.steveice10.mc.protocol.data.game.PlayerListEntry;
 import com.github.steveice10.mc.protocol.data.game.entity.player.CombatState;
+import com.github.steveice10.mc.protocol.data.game.entity.player.GameMode;
 import com.github.steveice10.mc.protocol.data.game.entity.player.PlayerAction;
 import com.github.steveice10.mc.protocol.data.game.entity.type.EntityType;
 import com.github.steveice10.mc.protocol.data.game.world.block.BlockFace;
+import com.github.steveice10.mc.protocol.packet.ingame.client.ClientRequestPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerActionPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerJoinGamePacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerMapDataPacket;
@@ -49,6 +52,10 @@ public class Living extends SessionAdapter {
 	public short stage = 0;
 	public List<String> tasklist = new ArrayList<>();
 	public List<ServerListener> listeners = new ArrayList<>();
+	Integer pEnemy = null;
+	Integer enemy = null;
+	private int cd = 0;
+	public boolean a = false;
 	
 	public List<EntityType> badentities = new ArrayList<EntityType>() {
 		private static final long serialVersionUID = -6373621458088442703L;
@@ -78,9 +85,10 @@ public class Living extends SessionAdapter {
 		add(EntityType.WITHER);
 		add(EntityType.ENDER_DRAGON);
 		add(EntityType.ENDERMAN);
+		add(EntityType.HUSK);
 	}};
 	int spamticks = 0;
-	int goforwardticks = 0;
+	public int goforwardticks = 0;
 	
 	int degradationLvl = 0;
 	String doubledtask = "";
@@ -122,7 +130,17 @@ public class Living extends SessionAdapter {
 			if (!firstJoin || !client.isOnline()) return;
 			if (!this.trusted) return;
 			if (sleepticks > 0) {sleepticks--;return;}
-		
+			
+			if (client.health <= 0) {
+				client.getSession().send(new ClientRequestPacket(ClientRequest.RESPAWN));
+				return;
+			}
+			
+			if (client.isInWater()) {
+				client.pm.jump();
+			}
+			
+			
 			if ((boolean) Main.gamerule("raidspam") && Main.pasti.size() > 0 && (Main.suc > 5 | (int)Main.gamerule("bots") <= 5)) {
 				spamticks--;
 				if (spamticks <= 0) {
@@ -139,13 +157,22 @@ public class Living extends SessionAdapter {
 				}
 			}
 			
+			if (!listeners.isEmpty()) {
+				for (ServerListener listener : listeners) {
+					listener.tick();
+					if (listener.allGameCapt) return;
+				}
+	
+			}
+			
 			if (state == raidState.IDLE) {
-				
-				if (!listeners.isEmpty()) {
-					listeners.forEach((l)->{
-						l.tick();
-					});
-					return;
+				if (a) {
+					Entity t = client.getWorld().getNearestIfContain("mineflayer");
+					if (t != null) {
+						client.pvp.pvp(t.EntityID);
+						state = raidState.PVP;
+						return;
+					}
 				}
 				
 				if ((boolean) Main.gamerule("isitfollow")) {
@@ -194,7 +221,7 @@ public class Living extends SessionAdapter {
 							}
 						}
 						
-						if (TargetUUID != null) for (Entry<Integer, Entity> entry : client.getWorld().Entites.entrySet()) {
+						if (TargetUUID != null) for (Entry<Integer, Entity> entry : client.getWorld().Entities.entrySet()) {
 							if (entry.getValue().uuid.equals(TargetUUID)) {
 								target = entry.getValue().Position;
 								break;
@@ -214,37 +241,45 @@ public class Living extends SessionAdapter {
 					}
 				}
 				
-				if (client.onGround) {
-					for(Entry<Integer, Entity> entry : client.getWorld().Entites.entrySet()) {
-						if (entry.getValue().type == EntityType.PLAYER && entry.getValue().uuid != client.getUUID() && VectorUtils.equalsInt(entry.getValue().Position, client.getPositionInt())) {
+				/*if (client.onGround) {
+					for(Entry<Integer, Entity> entry : client.getWorld().Entities.entrySet()) {
+						if (entry.getValue().type == EntityType.PLAYER && !entry.getValue().uuid.equals(client.getUUID()) && VectorUtils.equalsInt(entry.getValue().Position, client.getPositionInt())) {
 							Vector3D pos = VectorUtils.func_31(client, client.getPositionInt(), 4);
 							client.pathfinder.setup(pos);
 							return;
 						}
 					}
-				}
-				Integer enemy = null;
-				for(Entry<Integer, Entity> entry : client.getWorld().Entites.entrySet()) {
+				}*/
+				enemy = null;
+				for(Entry<Integer, Entity> entry : client.getWorld().Entities.entrySet()) {
 					if (entry.getValue() != null && badentities.contains(entry.getValue().type)) {
 						//System.out.println(1);
 						if (enemy == null) {
 							//System.out.println(2);
 							enemy = entry.getValue().EntityID;
-						} else if (client.getWorld().Entites.get(enemy) != null && client.getWorld().Entites.get(enemy).alive && VectorUtils.sqrt(client.getWorld().Entites.get(enemy).Position,client.getPosition()) > VectorUtils.sqrt(client.getWorld().Entites.get(entry.getValue().EntityID).Position, client.getPosition())) {
+						} else if (client.getWorld().Entities.get(enemy) != null && client.getWorld().Entities.get(enemy).alive && VectorUtils.sqrt(client.getWorld().Entities.get(enemy).Position,client.getPosition()) > VectorUtils.sqrt(client.getWorld().Entities.get(entry.getValue().EntityID).Position, client.getPosition())) {
 							//System.out.println(3);
 							enemy = entry.getValue().EntityID;
 						}
-					}/* else if (entry.getValue() != null & entry.getValue().type == EntityType.PLAYER) {
-						for (PlayerListEntry ia : client.getWorld().ServerTabPanel) {
-							
-						}
-					}*/
+					}
+				}
+				
+				
+				if ((boolean) Main.gamerule("pvpwithplayers")) {
+					pEnemy = playerForPVP();
+				}
+				
+				if (enemy != null && pEnemy != null) {
+					if (client.distance(client.getWorld().Entities.get(enemy).Position) > client.distance(client.getWorld().Entities.get(pEnemy).Position)) {
+						enemy = pEnemy;
+					}
+				} else if (enemy == null && pEnemy != null) {
+					enemy = pEnemy;
+					pEnemy = null;
 				}
 				
 				if (enemy != null) {
-					//System.out.println(4);
-					if (client.getWorld().Entites.get(enemy) != null && VectorUtils.sqrt(client.getWorld().Entites.get(enemy).Position, client.getPosition()) <= (client.pvp.maxPos*0.7) && client.getWorld().Entites.get(enemy).alive) {
-						//System.out.println(5);
+					if (client.getWorld().Entities.get(enemy) != null && VectorUtils.sqrt(client.getWorld().Entities.get(enemy).Position, client.getPosition()) <= (client.pvp.maxPos*0.7) && client.getWorld().Entities.get(enemy).alive) {
 						client.pvp.pvp(enemy);
 						state = raidState.PVP;
 						enemy = null;
@@ -334,11 +369,9 @@ public class Living extends SessionAdapter {
 							int x = Integer.parseInt(tasklist.get(0).split(" ")[1]);
 							int y = Integer.parseInt(tasklist.get(0).split(" ")[2]);
 							int z = Integer.parseInt(tasklist.get(0).split(" ")[3]);
-							Vector3D to = new Vector3D(x,y,z);
-							if (client.pathfinder.testForPath(to)) {		
-								client.pathfinder.setup(to);
-								state = raidState.GOING;
-							}
+							Vector3D to = new Vector3D(x,y,z);		
+							client.pathfinder.setup(to);
+							state = raidState.GOING;
 							tasklist.remove(0);
 						} else if (tasklist.get(0).toLowerCase().startsWith("craft")) {
 							String item = tasklist.get(0).split(" ")[1];
@@ -495,8 +528,13 @@ public class Living extends SessionAdapter {
 					if (!Main.tomine.isEmpty()) {
 						if (Main.tomine.get(0).isEmpty()) {
 							Main.tomine.remove(0);
+							return;
 						} else {
 							Vector3D rnd = VectorUtils.getNear(client.getPosition(), Main.tomine.get(0));
+							if (rnd == null) {
+								BotU.log("!!!!!!!!!!!!!!!!!!!!!!!null");
+								return;
+							}
 							tasklist.add("minepos "+(int)rnd.x+" "+(int)rnd.y+" "+(int)rnd.z);
 							Main.tomine.get(0).remove(rnd);
 							return;
@@ -504,7 +542,7 @@ public class Living extends SessionAdapter {
 						
 					}
 					if (client.automaticMode) {
-						int i = MathU.rnd(1, 9);
+						int i = MathU.rnd(1, 20);
 						if (i == 1) {
 							client.pathfinder.setup(VectorUtils.randomPointInRaduis(client, 5, 10, (int)Math.floor(client.posX), (int)Math.floor(client.posZ)));
 							state = raidState.GOING;
@@ -541,8 +579,18 @@ public class Living extends SessionAdapter {
 							return;
 						} else if (i == 8) {
 							tasklist.add("goforwardwithangle 20");
-						} else if (i == 9) {
+						} else if (i >= 9 && i <= 12) {
 							VectorUtils.placeBlockNear(client, (String)MathU.random((ArrayList<String>)Main.gamerule("minetargetnames")));
+						} else if (i > 12 && i <= 20) {
+							enemy = playerForPVP();
+							if (enemy != null) {
+								if (client.getWorld().Entities.get(enemy) != null && VectorUtils.sqrt(client.getWorld().Entities.get(enemy).Position, client.getPosition()) <= client.pvp.maxPos && client.getWorld().Entities.get(enemy).alive) {
+									client.pvp.pvp(enemy);
+									state = raidState.PVP;
+									enemy = null;
+									return;
+								}
+							}
 						}
 					}
 					doubledtask = "";
@@ -580,9 +628,9 @@ public class Living extends SessionAdapter {
 				if (goforwardticks > 0) {
 					client.pm.Walk();
 					--goforwardticks;
-					if (MathU.rnd(1, 3) == 1) {
+					/*if (MathU.rnd(1, 3) == 1) {
 						client.pm.jump();
-					}
+					}*/
 				} else {
 					this.state = raidState.IDLE;
 				}
@@ -599,6 +647,55 @@ public class Living extends SessionAdapter {
 					state = raidState.IDLE;
 				}
 			}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public Integer playerForPVP() {
+		List<Entry<Integer, Entity>> targetss = new ArrayList<>();
+		for (PlayerListEntry ia : client.getWorld().ServerTabPanel) {
+			if (!ia.getProfile().getId().equals(client.getUUID()) && ia.getGameMode() == GameMode.SURVIVAL) {
+				Entry<Integer, Entity> entity = client.getWorld().getEntity(ia.getProfile().getId());
+				if (entity != null) {
+					if ((boolean) Main.gamerule("pvpamongthemselves")) {
+						if (ia.getProfile().getName() != null) {
+							if (!StringU.contains((List<String>)Main.gamerule("pvpblacklist"), ia.getProfile().getName())) {
+								targetss.add(entity);
+							}
+						} else if (ia.getDisplayName() != null) {
+							if (!StringU.backwardContains((List<String>)Main.gamerule("pvpblacklist"), ia.getDisplayName().toString())) {
+								targetss.add(entity);
+							}
+						}
+					} else {
+						if (ia.getProfile().getName() != null) {
+							if (!StringU.contains((List<String>)Main.gamerule("pvpblacklist"), ia.getProfile().getName())
+							&&
+							!StringU.contains(Main.nicks, ia.getProfile().getName())
+							) {
+								targetss.add(entity);
+							}
+						} else if (ia.getDisplayName() != null) {
+							if (!StringU.backwardContains((List<String>)Main.gamerule("pvpblacklist"), ia.getDisplayName().toString())
+							&&
+							!StringU.backwardContains(Main.nicks, ia.getProfile().getName())
+							) {
+								targetss.add(entity);
+							}
+						}
+					}
+				}
+			}
+		}
+		if (!targetss.isEmpty()) {
+			
+			if (targetss.size() > 1) {
+				return VectorUtils.getNearE(client.getPosition(), targetss).getKey();
+			} else {
+				return targetss.get(0).getKey();
+			}
+		} else {
+			return null;
+		}
 	}
 	
 	/*if (!client.playerInventory.contain("sticks", 4)) {

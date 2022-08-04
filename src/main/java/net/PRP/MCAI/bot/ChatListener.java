@@ -2,6 +2,7 @@ package net.PRP.MCAI.bot;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -12,15 +13,11 @@ import com.github.steveice10.mc.protocol.data.game.entity.player.PlayerAction;
 import com.github.steveice10.mc.protocol.data.game.world.block.BlockFace;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerActionPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerPlaceBlockPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerSwingArmPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerUseItemPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerChatPacket;
 import com.github.steveice10.packetlib.event.session.PacketReceivedEvent;
 import com.github.steveice10.packetlib.event.session.SessionAdapter;
 import com.github.steveice10.packetlib.packet.Packet;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.bot.specific.Living.raidState;
 import net.PRP.MCAI.bot.specific.Miner.bbmct;
@@ -29,10 +26,7 @@ import net.PRP.MCAI.data.Entity;
 import net.PRP.MCAI.data.MinecraftData.Type;
 import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.utils.*;
-import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
-import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
-import net.minecraft.server.v1_12_R1.Slot;
 
 public class ChatListener extends SessionAdapter {
 
@@ -46,18 +40,13 @@ public class ChatListener extends SessionAdapter {
 	@Override
     public void packetReceived(PacketReceivedEvent receiveEvent) {
 		if (receiveEvent.getPacket() instanceof ServerChatPacket) {
-			//System.out.println(((ServerChatPacket)receiveEvent.getPacket()).getMessage());
 			
-			
-			
-			for (Component cld:((ServerChatPacket)receiveEvent.getPacket()).getMessage().children()) {
-				
-			}
 			List<String> command = messageToCommand(receiveEvent.getPacket());
 			if (command == null || command.size() <= 0) {
 				//System.out.println("eto ne komanda");
 				return;
 			} else {
+				BotU.log("executing command: "+command.get(0));
 				/*if (command.get(0).equalsIgnoreCase("minewood")) {
 		    		Actions.mineWood(client, Integer.parseInt(command.get(1)));
 				} else if (command.get(0).equalsIgnoreCase("mine")) {
@@ -78,16 +67,35 @@ public class ChatListener extends SessionAdapter {
 				} else if (command.get(0).equalsIgnoreCase("tellmestate")) {
 					Vector3D vec = new Vector3D(Integer.parseInt(command.get(1)), Integer.parseInt(command.get(2)), Integer.parseInt(command.get(3)));
 					BotU.chat(client, "state-id: "+vec.getBlock(client).state);
-				} else if (command.get(0).equalsIgnoreCase("come")) {
+				} else if (command.get(0).equalsIgnoreCase("tellmewaterlvl")) {
 					UUID uuid = ((ServerChatPacket) receiveEvent.getPacket()).getSenderUuid();
+					Entry<Integer, Entity> e = client.getWorld().getEntity(uuid);
+					List<Vector3D> list = client.vis.createRay(e.getValue().Position.add(0,1.75,0), e.getValue().Yaw, e.getValue().Pitch, 40, 0.3);
+					for (Vector3D pos : list) {
+						BotU.chat(client, "/particle minecraft:end_rod "+pos.forCommandD()+" 0 0 0 0 1");
+						if (pos.floor().getBlock(client).isWater()) {
+							BotU.chat(client, "state-id: "+pos.getBlock(client).getAsWaterLevel());
+							return;
+						}
+					}
+				} else if (command.get(0).equalsIgnoreCase("come")) {
+					BotU.log("come 1");
+					UUID uuid = ((ServerChatPacket) receiveEvent.getPacket()).getSenderUuid();
+					BotU.log("uuid: "+uuid.toString());
 					Entity en = null;
-					for (Entity entity : client.getWorld().Entites.values()) {
-						if (entity.uuid.toString().equalsIgnoreCase(uuid.toString())) {
+					for (Entity entity : client.getWorld().Entities.values()) {
+						if (entity.uuid.equals(uuid)) {
 							en=entity;
 							break;
 						}
 					}
-					if (en == null) return;
+					if (en == null && command.size() == 2) {
+						en = client.getWorld().getByName(command.get(1));
+					}
+					if (en == null) {
+						BotU.log(2);
+						return;
+					}
 					client.rl.tasklist.add("come "+en.Position.forCommand());
 				} else if (command.get(0).equalsIgnoreCase("goto")) {
 					client.pathfinder.setup(new Vector3D(Integer.parseInt(command.get(1)), Integer.parseInt(command.get(2)), Integer.parseInt(command.get(3))));
@@ -105,11 +113,9 @@ public class ChatListener extends SessionAdapter {
 					}
 				} else if (command.get(0).equalsIgnoreCase("say")) {
 					String mesg = "";
+					command.remove(0);
 					for (String s : command) {
-						if (!s.equalsIgnoreCase("say")) {
-							mesg += s;
-							mesg += " ";
-						}
+						mesg = mesg + s + " ";
 					}
 					BotU.chat(client, mesg);
 				} else if (command.get(0).equalsIgnoreCase("breaktest")) {
@@ -121,7 +127,7 @@ public class ChatListener extends SessionAdapter {
 				} else if (command.get(0).equalsIgnoreCase("youpos")) {
 					BotU.chat(client, client.getPosition().toString()+" onGround:"+client.onGround);
 				} else if (command.get(0).equalsIgnoreCase("settoitem")) {
-					BotU.chat(client, client.setToSlotInHotbarWithItemId(Integer.parseInt(command.get(1))).toString());
+					BotU.SetSlot(client, client.playerInventory.getHotbarContain(command.get(1), 1)-36);
 				} else if (command.get(0).equalsIgnoreCase("calcticks")) {
 					Vector3D pos12 = new Vector3D(Integer.parseInt(command.get(1)),Integer.parseInt(command.get(2)),Integer.parseInt(command.get(3)));
 					client.bbm.setBlockPos(pos12);
@@ -129,7 +135,7 @@ public class ChatListener extends SessionAdapter {
 				} else if (command.get(0).equalsIgnoreCase("mypos")) {
 					UUID uuid = ((ServerChatPacket) receiveEvent.getPacket()).getSenderUuid();
 					Entity en = null;
-					for (Entity entity : client.getWorld().Entites.values()) {
+					for (Entity entity : client.getWorld().Entities.values()) {
 						if (entity.uuid.toString().equalsIgnoreCase(uuid.toString())) {
 							en=entity;
 							break;
@@ -169,13 +175,18 @@ public class ChatListener extends SessionAdapter {
 					UUID uuid = ((ServerChatPacket) receiveEvent.getPacket()).getSenderUuid();
 					if (uuid.equals(client.getUUID())) return;
 					Entity en = null;
-					for (Entity entity : client.getWorld().Entites.values()) {
+					for (Entity entity : client.getWorld().Entities.values()) {
 						if (entity.uuid.toString().equalsIgnoreCase(uuid.toString())) {
 							en=entity;
 							break;
 						}
 					}
-					if (en == null) return;
+					if (en == null && command.size() == 2) {
+						en = client.getWorld().getByName(command.get(1));
+					}
+					if (en == null) {
+						return;
+					}
 					client.pvp.pvp(en.EntityID);
 					client.rl.state = raidState.PVP;
 				} else if (command.get(0).equalsIgnoreCase("isavoid")) {
@@ -277,11 +288,14 @@ public class ChatListener extends SessionAdapter {
 				} else if (command.get(0).equalsIgnoreCase("gimme")) {
 					UUID uuid = ((ServerChatPacket) receiveEvent.getPacket()).getSenderUuid();
 					Entity en = null;
-					for (Entity entity : client.getWorld().Entites.values()) {
+					for (Entity entity : client.getWorld().Entities.values()) {
 						if (entity.uuid.toString().equalsIgnoreCase(uuid.toString())) {
 							en=entity;
 							break;
 						}
+					}
+					if (en == null && command.size() == 3) {
+						en = client.getWorld().getByName(command.get(2));
 					}
 					if (en == null) return;
 					Vector3D pos = VectorUtils.randomPointInRaduis(client, 2,2,(int)en.Position.x,(int)en.Position.z);
@@ -293,7 +307,7 @@ public class ChatListener extends SessionAdapter {
 				} else if (command.get(0).equalsIgnoreCase("cr")) {
 					UUID uuid = ((ServerChatPacket) receiveEvent.getPacket()).getSenderUuid();
 					Entity en = null;
-					for (Entity entity : client.getWorld().Entites.values()) {
+					for (Entity entity : client.getWorld().Entities.values()) {
 						if (entity.uuid.toString().equalsIgnoreCase(uuid.toString())) {
 							en=entity;
 							break;
@@ -303,10 +317,12 @@ public class ChatListener extends SessionAdapter {
 					Vector3D pos = VectorUtils.randomPointInRaduis(client, Integer.parseInt(command.get(1)),Integer.parseInt(command.get(2)),(int)en.Position.x,(int)en.Position.z);
 					client.rl.tasklist.add("come "+(int)pos.x+" "+(int)pos.y+" "+(int)pos.z);
 				} else if (command.get(0).equalsIgnoreCase("printentities")) {
-					System.out.println(client.name+" "+client.getWorld().Entites.toString());
+					for (Entry<Integer, Entity> entity : client.getWorld().Entities.entrySet()) {
+						BotU.log(entity.getValue().toString());
+					}
 				} else if (command.get(0).equalsIgnoreCase("printtab")) {
 					for (PlayerListEntry player : client.getWorld().ServerTabPanel) {
-						System.out.println(((TextComponent)player.getDisplayName()).content());
+						BotU.log("uuid: "+player.getProfile().getId()+" name:"+player.getProfile().getName());
 					}
 				} else if (command.get(0).equalsIgnoreCase("useitem")) {
 					client.getSession().send(new ClientPlayerUseItemPacket(Hand.OFF_HAND));
@@ -319,50 +335,55 @@ public class ChatListener extends SessionAdapter {
 					client.getSession().send(new ClientPlayerActionPacket(PlayerAction.RELEASE_USE_ITEM, new Position(0,0,0),BlockFace.UP));
 				} else if (command.get(0).equalsIgnoreCase("youid")) {
 					BotU.chat(client, "myid: "+client.getId());
+				} else if (command.get(0).equalsIgnoreCase("recon")) {
+					client.disconnect();
+				} else if (command.get(0).equalsIgnoreCase("window")) {
+					BotU.log("winid: "+client.playerInventory.currentWindowId+" wintype:"+client.crafter.windowType==null?"null":client.crafter.windowType.toString());
+				} else if (command.get(0).equalsIgnoreCase("raytrace")) {
+					UUID uuid = ((ServerChatPacket) receiveEvent.getPacket()).getSenderUuid();
+					Entry<Integer, Entity> e = client.getWorld().getEntity(uuid);
+					BotU.LookHead(client, e.getValue().Position);
+					List<Vector3D> list = client.vis.createRay(client.getEyeLocation(), e.getValue().Position, client.yaw, client.pitch, 100, 0.3);
+					for (Vector3D pos : list) {
+						BotU.chat(client, "/particle minecraft:end_rod "+pos.forCommandD()+" 0 0 0 0 1");
+					}
+				} else if (command.get(0).equalsIgnoreCase("rbf")) {
+					VectorUtils.rbf(client, new Vector3D(Integer.parseInt(command.get(1)),Integer.parseInt(command.get(2)),Integer.parseInt(command.get(3))).add(0.5, 0.5, 0.5));
+					
+				} else if (command.get(0).equalsIgnoreCase("walk")) {
+					client.rl.goforwardticks = 20;
+					client.rl.state = raidState.GOFORWARD;
+				} else if (command.get(0).equalsIgnoreCase("zames")) {
+					if (client.rl.a) {
+						client.rl.a = false;
+					} else {
+						client.rl.a = true;
+					}
+				} else if (command.get(0).equalsIgnoreCase("test")) {
+					Vector3D a = new Vector3D(1,228,337);
+					Vector3D ab= new Vector3D(1,228,337);
+					BotU.chat(client, ""+a.equals(ab));
 				}
 			}
 		} 
 	}
 	
-	public static String chatMessageToString(ServerChatPacket packet) {
-		//System.out.println(packet.getMessage().toString());
-		if (packet.getMessage() instanceof TextComponent)  {
-			JsonElement asds = GsonComponentSerializer.gson().serializeToTree((TextComponent)packet.getMessage());
-			String as = "";
-			if (asds.getAsJsonObject().get("content").getAsString() == "" && asds.getAsJsonObject().get("content").getAsString() == null) {
-				//asds.getAsJsonObject().get("children").getAsJsonArray()
-			} else {
-				for (JsonElement asdsa : asds.getAsJsonObject().get("extra").getAsJsonArray()) {
-					as += asdsa.getAsJsonObject().get("text");
-					as += " ";
-				}
-			}
-			as = as.replace("\"", "");
-			return as;
-		} else {
-			JsonElement json = GsonComponentSerializer.gson().serializeToTree(packet.getMessage());
-		    if (json.getAsJsonObject().get("with") == null) return null;
-			JsonArray asd = json.getAsJsonObject().get("with").getAsJsonArray();
-			if (asd.size() == 2) {
-				JsonElement asdasd = asd.get(1);
-				if (asdasd.getAsJsonObject().get("text") != null) return asdasd.getAsJsonObject().get("text").getAsString();
-			}
-			return "";
-		}
-	}
-	
 	public static List<String> messageToCommand(Packet event) {
 		try {
-			String message = chatMessageToString((ServerChatPacket) event);
+			String message = StringU.componentToString(((ServerChatPacket) event).getMessage());
 			//System.out.println(message);
 			boolean sw = false;
 			List<String> cmd = new ArrayList<String>();
 			for (String piece : message.split(" ")) {
-				if (piece.startsWith(">>")) {
-					sw = true;
-					piece = piece.replace(">>", "");
-				}
 				if (sw) {
+					cmd.add(piece);
+				} else if (piece.startsWith(">>")) {//0.82 //0.83 //0.82
+					sw = true;
+					piece = piece.replace(">>", "");//0.5 0.5 0.49 0.5
+					cmd.add(piece);
+				} else if (piece.contains(">>")) {
+					sw = true;
+					piece = piece.substring(piece.indexOf(">>")).replace(">>", "");
 					cmd.add(piece);
 				}
 			}

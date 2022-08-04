@@ -140,4 +140,59 @@ public class AABB {
 	           this.minY < other.maxY && this.maxY > other.minY &&
 	           this.minZ < other.maxZ && this.maxZ > other.minZ;
 	}
+
+	public double getMinX() {
+		return minX;
+	}
+
+	public void setMinX(double minX) {
+		this.minX = minX;
+	}
+
+	public double getMinY() {
+		return minY;
+	}
+
+	public void setMinY(double minY) {
+		this.minY = minY;
+	}
+
+	public double getMinZ() {
+		return minZ;
+	}
+
+	public void setMinZ(double minZ) {
+		this.minZ = minZ;
+	}
+
+	public double getMaxX() {
+		return maxX;
+	}
+
+	public void setMaxX(double maxX) {
+		this.maxX = maxX;
+	}
+
+	public double getMaxY() {
+		return maxY;
+	}
+
+	public void setMaxY(double maxY) {
+		this.maxY = maxY;
+	}
+
+	public double getMaxZ() {
+		return maxZ;
+	}
+
+	public void setMaxZ(double maxZ) {
+		this.maxZ = maxZ;
+	}
+
+	@Override
+	public String toString() {
+		return "AABB [minX=" + minX + ", minY=" + minY + ", minZ=" + minZ + ", maxX=" + maxX + ", maxY=" + maxY + ", maxZ=" + maxZ + "]";
+	}
+	
+	
 }

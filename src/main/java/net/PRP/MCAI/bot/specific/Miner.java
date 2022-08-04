@@ -1,25 +1,20 @@
 package net.PRP.MCAI.bot.specific;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
-
 import com.github.steveice10.mc.protocol.data.game.entity.player.CombatState;
 import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
 import com.github.steveice10.mc.protocol.data.game.entity.player.PlayerAction;
-import com.github.steveice10.mc.protocol.data.game.entity.type.EntityType;
-import com.github.steveice10.mc.protocol.data.game.world.block.BlockFace;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerActionPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerSwingArmPacket;
+import com.github.steveice10.opennbt.tag.builtin.CompoundTag;
+import com.github.steveice10.opennbt.tag.builtin.IntTag;
+import com.github.steveice10.opennbt.tag.builtin.ShortTag;
+import com.github.steveice10.opennbt.tag.builtin.StringTag;
+import com.github.steveice10.opennbt.tag.builtin.Tag;
 
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.bot.Bot;
-import net.PRP.MCAI.bot.pathfinder.PathExecutor.State;
 import net.PRP.MCAI.data.BlockData;
-import net.PRP.MCAI.data.Entity;
-import net.PRP.MCAI.data.MinecraftData;
 import net.PRP.MCAI.data.MinecraftData.Type;
 import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.data.materialsBreakTime;
@@ -31,11 +26,7 @@ public class Miner {
 	private Bot client;
 	private Vector3D pos;
 	public bbmct state = bbmct.ENDED;
-	private int d1 = 0;
 	public int ticksToBreak = 0;
-	private Entity droppedItem = null;
-	private Vector3D beforePos = null;
-	private Map<Integer, Entity> te = new HashMap<>();
 	
 	public Miner(Bot client) {
 		setBlockPos(new Vector3D(0,0,0));
@@ -43,16 +34,14 @@ public class Miner {
 	}
 	
 	public enum bbmct {
-		STARTED, IN_PROGRESS, WAITFORDROPITEM, PATHINGTODROP, GOINGTODROPEDITEM, ENDED;
+		STARTED, IN_PROGRESS, ENDED;
 	}
 	
 	public void reset() {
+		client.getSession().send(new ClientPlayerActionPacket(PlayerAction.CANCEL_DIGGING, pos.translate(), VectorUtils.rbf(client, pos.add(0.5, 0.5, 0.5))));
 		pos = new Vector3D(0,0,0);
-		d1 = 0;
 		ticksToBreak = 0;
 		state = bbmct.ENDED;
-		droppedItem = null;
-		beforePos = null;
 	}
 	
 	@SuppressWarnings("deprecation")
@@ -68,11 +57,11 @@ public class Miner {
 				state = bbmct.ENDED;
 				return;
 			}
-			client.pathfinder.ignored.add(pos);
+			//client.pathfinder.ignored.add(pos);
 			BotU.LookHead(client, pos);
 			prepareitem();
-			client.getSession().send(new ClientPlayerSwingArmPacket(Hand.MAIN_HAND));
-			client.getSession().send(new ClientPlayerActionPacket(PlayerAction.START_DIGGING, pos.translate(), BlockFace.UP));
+			client.cursor.swingArm();
+			client.getSession().send(new ClientPlayerActionPacket(PlayerAction.START_DIGGING, pos.translate(), VectorUtils.rbf(client, pos.add(0.5, 0.5, 0.5))));
 			ticksToBreak = (int) Math.floor(calculateBreakTime());
 			if (ticksToBreak == 1.0) {
 				FinishDiggingAGTI();
@@ -87,14 +76,11 @@ public class Miner {
 				endDigging();
 				return;
 			}
-			d1++;
-			if (d1 >= 3) {
-				client.getSession().send(new ClientPlayerSwingArmPacket(Hand.MAIN_HAND));
-				d1 = 0;
-			}
+			BotU.LookHead(client, pos);
+			client.cursor.swingArm();
 			
 			if (pos.getBlock(client).type == Type.AIR || pos.getBlock(client).type == Type.LIQUID || pos.getBlock(client).type == Type.UNBREAKABLE) {
-				client.getSession().send(new ClientPlayerActionPacket(PlayerAction.CANCEL_DIGGING, pos.translate(), BlockFace.UP));
+				client.getSession().send(new ClientPlayerActionPacket(PlayerAction.CANCEL_DIGGING, pos.translate(), VectorUtils.rbf(client, pos.add(0.5, 0.5, 0.5))));
 				state = bbmct.ENDED;
 				return;
 			}
@@ -104,69 +90,21 @@ public class Miner {
 				FinishDiggingAGTI();
 				return;
 			}
-		} else if (state == bbmct.WAITFORDROPITEM) {
-			te.clear();
-			te.putAll(client.getWorld().Entites);
-			if (droppedItem == null) {
-				for (Entry<Integer, Entity> entry : te.entrySet()) {
-					if (entry.getValue().type == EntityType.ITEM && Math.floor(entry.getValue().Position.x) == Math.floor(pos.x) && Math.floor(entry.getValue().Position.z) == Math.floor(pos.z)) {
-						droppedItem = entry.getValue();
-						return;
-					}
-				}
-			} else {
-				if (beforePos == null) {
-					beforePos = droppedItem.Position;
-					return;
-				} else {
-					if (beforePos.y == droppedItem.Position.y) {
-						state = bbmct.PATHINGTODROP;
-					}
-				}
-			}
-			
-		} else if (state == bbmct.PATHINGTODROP) {
-			if (client.pathfinder.testForPath(beforePos)) {
-				state = bbmct.GOINGTODROPEDITEM;
-				client.pathfinder.setup(beforePos);
-				return;
-			} else {
-				Vector3D poss = VectorUtils.func_31(client, beforePos, (int)Main.gamerule("maxpostoblock"));
-				if (pos == null) {
-					state = bbmct.ENDED;
-					return;
-				}
-				state = bbmct.GOINGTODROPEDITEM;
-				client.pathfinder.setup(poss);
-				return;
-			}
-		} else if (state == bbmct.GOINGTODROPEDITEM) {
-			if (client.pathfinder.state == State.FINISHED) {state = bbmct.ENDED; droppedItem = null; beforePos = null; return;}
 		}
 	}
 	
 	@SuppressWarnings("deprecation")
 	public void endDigging() {
 		if (Main.debug) System.out.println("mining ended");
-		client.getSession().send(new ClientPlayerActionPacket(PlayerAction.FINISH_DIGGING, pos.translate(), BlockFace.UP));
+		client.getSession().send(new ClientPlayerActionPacket(PlayerAction.FINISH_DIGGING, pos.translate(), VectorUtils.rbf(client, pos.add(0.5, 0.5, 0.5))));
 		state = bbmct.ENDED;
-		droppedItem = null;
-		beforePos = null;
 	}
 	
 	@SuppressWarnings("deprecation")
 	public void FinishDiggingAGTI() {
 		if (Main.debug) System.out.println("mining ended");
-		client.getSession().send(new ClientPlayerActionPacket(PlayerAction.FINISH_DIGGING, pos.translate(), BlockFace.UP));
+		client.getSession().send(new ClientPlayerActionPacket(PlayerAction.FINISH_DIGGING, pos.translate(), VectorUtils.rbf(client, pos.add(0.5, 0.5, 0.5))));
 		state = bbmct.ENDED;
-		droppedItem = null;
-		beforePos = null;
-		/*System.out.println(3);
-		if (Main.debug) System.out.println("mining ended");
-		client.getSession().send(new ClientPlayerActionPacket(PlayerAction.FINISH_DIGGING, pos.translate(), BlockFace.UP));
-		state = bbmct.WAITFORDROPITEM;
-		droppedItem = null;
-		beforePos = null;*/
 	}
 	
 	public void setup(Vector3D block) {
@@ -194,26 +132,44 @@ public class Miner {
 		pos = blockPos;
 	}
 	
+	@SuppressWarnings("unchecked")
 	public Double calculateBreakTime() {
 		BlockData blockdata = Main.getMCData().blockData.get(pos.getBlock(client).id);
 		List<materialsBreakTime> mtm = Main.getMCData().materialToolMultipliers.get(blockdata.material);
+		
 		double materialToolMultipliers = getToolMultipiler(mtm);
-		//boolean isBestTool = client.getItemInHand() == null && materialToolMultipliers != 0 && materialToolMultipliers[heldItemType]
+		//BotU.log("mtm: "+materialToolMultipliers);
 		
 		double blockBreakingSpeed = 1.0;//default
+		
+		//boolean isBestTool = client.getItemInHand() != null && materialToolMultipliers > 0 && materialToolMultipliers[heldItemType];
 		
 		if (materialToolMultipliers > 0) {
 			blockBreakingSpeed = materialToolMultipliers;
 		}
-		/*if (isBestTool) {
-		      blockBreakingSpeed = 
-		}*/
 		
-		int efficiencyLevel = 0;//getEnchantmentLevel();
+		int efficiencyLevel = 0;
+		if (client.getItemInHand().getNbt() != null) {
+			for (Tag nbt : client.getItemInHand().getNbt()) {
+				if (nbt.getName().equals("Enchantments")) {
+					List<CompoundTag> val = (List<CompoundTag>)nbt.getValue();
+					for (CompoundTag ct : val) {
+						StringTag st = (StringTag) ct.getValue().get("id");
+						if (st.getValue().contains("efficiency")) {
+							if (ct.getValue().get("lvl") instanceof ShortTag) {
+								efficiencyLevel = ((ShortTag) ct.getValue().get("lvl")).getValue();
+							} else if (ct.getValue().get("lvl") instanceof IntTag) {
+								efficiencyLevel = ((IntTag) ct.getValue().get("lvl")).getValue();
+							}
+						}
+					}
+				}
+			}
+		}
 		if (efficiencyLevel > 0 && blockBreakingSpeed > 1.0) {
 		      blockBreakingSpeed += efficiencyLevel * efficiencyLevel + 1;
 		}
-		
+		//BotU.log("bbs after eff: "+blockBreakingSpeed);
 		int hasteLevel = Math.max(
         client.effects.haste,
         client.effects.conduitPower);
@@ -229,18 +185,21 @@ public class Miner {
 	    int aquaAffinityLevel = 0;//getEnchantmentLevel('aqua_affinity', enchantments)
 
 	    if (client.isInWater() && aquaAffinityLevel == 0) {
+	    	//BotU.log("client in water");
 	      blockBreakingSpeed /= 5.0;
 	    }
 	    
 	    if (!client.onGround) {
+	    	//BotU.log("client not on ground");
 	        blockBreakingSpeed /= 5.0;
 	    }
 	    
 	    double blockHardness = blockdata.hardness;
+	    //BotU.log("hardness: "+blockHardness);
 	    double matchingToolMultiplier = canHarvest(blockdata, mtm) ? 30.0 : 100.0;
-	    
+	    //BotU.log("matchingToolMultiplier: "+matchingToolMultiplier);
 	    double blockBreakingDelta = blockBreakingSpeed / blockHardness / matchingToolMultiplier;
-	    
+	    //BotU.log("blockBreakingDelta: "+blockBreakingDelta);
 	    if (blockHardness == -1.0) {
 	        blockBreakingDelta = 0.0;
 	    }
@@ -254,17 +213,16 @@ public class Miner {
 	    }
 	    
 	    double ticksToBreakBlock = Math.ceil(1.0 / blockBreakingDelta);
-	    return ticksToBreakBlock / 3;
+	    
+	    return ticksToBreakBlock;
 	}
 	
-	public boolean isItRightTool(List<materialsBreakTime> asd) {
-		if (client.getItemInHand() == null) return false;
-		for (materialsBreakTime a : asd) {
-			if (client.getItemInHand().getId() == a.toolId) {
-				return true;
-			}
+	public boolean isItRightTool(BlockData data) {
+		if (data.harvestTools.get(client.getItemInHand().getId())) {
+			return true;
+		} else {
+			return false; 
 		}
-		return false;
 	}
 	
 	public double getToolMultipiler(List<materialsBreakTime> asd) {
@@ -279,8 +237,14 @@ public class Miner {
 	}
 	
 	public boolean canHarvest(BlockData data, List<materialsBreakTime> mtm) {
-		if (data.material.equalsIgnoreCase("default")) return true;
-		return client.getItemInHand() == null && !data.material.equalsIgnoreCase("default") && isItRightTool(mtm);
+		//BotU.log("material: "+data.material);
+		if (data.harvestTools == null) {
+			//BotU.log("can harvest: true");
+			return true;
+		}
+		return client.getItemInHand() == null && data.harvestTools != null && isItRightTool(data);
+		//BotU.log("can harvest: "+a);
+		//return a;
 	}
 	
 }

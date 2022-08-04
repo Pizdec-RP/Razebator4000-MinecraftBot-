@@ -92,7 +92,7 @@ public class PVP {
 				return;
 			}
 			
-			Entity tempenemy = client.getWorld().Entites.get(enemy);
+			Entity tempenemy = client.getWorld().Entities.get(enemy);
 			if (tempenemy == null || !tempenemy.alive || enemy == -1) {
 				endPVP();
 				return;
@@ -103,10 +103,13 @@ public class PVP {
 				if (client.pathfinder.state == net.PRP.MCAI.bot.pathfinder.PathExecutor.State.FINISHED) {
 					folowEnemy = false;
 					return;
+				} else if (client.pathfinder.state == net.PRP.MCAI.bot.pathfinder.PathExecutor.State.SEARCHING) {
+					BotU.LookHead(client, tempenemy.Position);
+					client.pm.Walk();
 				}
 				
 				if (VectorUtils.sqrt(client.pathfinder.end, tempenemy.Position) > 5) {
-					client.pathfinder.finish();
+					client.pathfinder.finish("pvp-not relevant pos");
 				}
 			} else {
 				BotU.LookHead(client, tempenemy.Position);
@@ -131,7 +134,7 @@ public class PVP {
 						return;
 					} else {
 						Vector3D pos = VectorUtils.randomPointInRaduis(client, 1, 2);
-						if (pos == null) {
+						if (pos == null || VectorUtils.sqrt(pos, tempenemy.Position) > 4) {
 							endPVP();
 							return;
 						} else {
@@ -172,7 +175,6 @@ public class PVP {
 	}
 	
 	public void holdShield() {
-		BotU.log("sm:"+shieldmode+" hold");
 		if (!shieldmode || client.isHoldSlowdownItem) return;
 		client.getSession().send(new ClientPlayerUseItemPacket(Hand.OFF_HAND));
 		client.isHoldSlowdownItem = true;

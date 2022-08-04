@@ -1,16 +1,21 @@
 package net.PRP.MCAI;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.Proxy;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.yaml.snakeyaml.Yaml;
@@ -28,6 +33,8 @@ import net.PRP.MCAI.data.ItemData;
 import net.PRP.MCAI.data.MinecraftData;
 import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.data.materialsBreakTime;
+import net.PRP.MCAI.data.oldMinecraftBlocks;
+import net.PRP.MCAI.data.slabState;
 import net.PRP.MCAI.data.MinecraftData.Type;
 import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.StringU;
@@ -50,13 +57,17 @@ public class Main {
 	public static int suc = 0;
 	public static int bad = 0;
 	public static List<List<Vector3D>> tomine = new CopyOnWriteArrayList<>();
+	public static List<String> nicks;
+	public static int allVec = 0;
 	
     public static void main(String[] args) {
     	initializeBlockType();
     	updateSettings();
     	proxies = ProxyScraper.ab();
     	updatePasti();
-    	if (debug) {
+    	nicks = getnicksinit();
+    	//boolean a = true;
+    	if (debug) {//mc.dexland.su:25565
     		new Thread(new Bot("tpa282", "localhost:25565", Proxy.NO_PROXY, false)).start();
     	} else {
     		new Thread(()->{
@@ -70,7 +81,7 @@ public class Main {
     				}
     				suc = tsuc;
     				bad = tbad;
-    				System.out.println("{ suc:"+suc+" bad:"+bad+" all:"+bots.size()+" }");
+    				if (!debug) System.out.println("{ suc:"+suc+" bad:"+bad+" all:"+bots.size()+" }");
         			updateSettings();
         			ThreadU.sleep(1000);
     			}
@@ -78,13 +89,14 @@ public class Main {
 	    	if ((boolean) gamerule("window")) {
 	    		new SteeringWheel();
 	    	} else {
+	    		int botcount = (int)gamerule("bots") == -1 ? proxies.size() : (int)gamerule("bots");
 		    	String ip = (String)gamerule("host");
-		    	for (int i = 0; i < (int)gamerule("bots"); i++) {
+		    	for (int i = 0; i < botcount; i++) {
 			        String USERNAME = nextNick();
 			        nextProxy();
 			        new Thread(() -> {
 				        //System.out.println("created bot name: "+USERNAME+" proxy: "+proxy.toString());
-						new Thread(new Bot(USERNAME, ip, proxy,true)).start();
+						new Thread(new Bot(USERNAME, ip, proxy,(boolean)gamerule("chetodelat"))).start();
 			        }).start();
 				    ThreadU.sleep((int) gamerule("enterrange"));
 		    	}
@@ -101,10 +113,10 @@ public class Main {
     }
     
     public static String nextNick() {
-    	if (++nicksnumb >= getnicksinit().size()) {
+    	if (++nicksnumb >= nicks.size()) {
             nicksnumb = 0;
         }
-        return getnicksinit().get(nicksnumb);
+        return nicks.get(nicksnumb);
     }
     
     public static Proxy nextProxy() {
@@ -119,6 +131,37 @@ public class Main {
     	return proxy;
     }
     
+    public static String read() {
+    	String text = "";
+		File file = new File("test.txt");
+		if (file.exists()) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                while (reader.ready()) {
+                    text = text+reader.readLine()+"\n";
+                }
+                reader.close();
+            } catch (Exception ignd) {}
+		} else {
+			
+		}
+		return text;                   
+    }
+    
+    public static void write(String prefix, String text) {
+    	//if (!debug) return;
+    	File file = new File("test.txt");
+    	if (file.exists()) {
+    		try {
+    			text = read() + prefix + text;
+    			BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+    			writer.write(text);
+				writer.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+    	}
+    }
+    
     public static List<String> getnicksinit() {
 		List<String> nicks = new CopyOnWriteArrayList<>();
 		File file = new File("nicks.txt");
@@ -127,6 +170,7 @@ public class Main {
                 while (reader.ready()) {
                     nicks.add(reader.readLine());
                 }
+                reader.close();
                 return nicks;
             } catch (Exception ignd) {}
 		} else {
@@ -234,6 +278,15 @@ public class Main {
             
             for (oldMinecraftBlocks oldBlock : omb) {
             	JsonObject newBlockState = obj.get(oldBlock.name).getAsJsonObject();
+            	if (oldBlock.name.contains("slab")) {
+            		JsonArray states = newBlockState.get("states").getAsJsonArray();
+            		for (JsonElement state : states) {
+            			slabState ss = new slabState();
+            			ss.type = state.getAsJsonObject().get("properties").getAsJsonObject().get("type").getAsString();
+            			ss.waterlogged = Boolean.parseBoolean(state.getAsJsonObject().get("properties").getAsJsonObject().get("waterlogged").getAsString());
+            			getMCData().slabstates.put(state.getAsJsonObject().get("id").getAsInt(), ss);
+            		}
+            	}
             	for (JsonElement state : newBlockState.get("states").getAsJsonArray()) {
             		int newid = state.getAsJsonObject().get("id").getAsInt();
             		getMCData().blockStates.put(newid, oldBlock);
@@ -251,6 +304,14 @@ public class Main {
             	f1.name = d2.get("name").getAsString();
             	f1.hardness = d2.get("hardness").getAsDouble();
             	f1.diggable = d2.get("diggable").getAsBoolean();
+            	if (d2.get("harvestTools") != null) {
+            		f1.harvestTools = new HashMap<>();
+            		for (Entry<String, JsonElement> ht : d2.get("harvestTools").getAsJsonObject().entrySet()) {
+            			f1.harvestTools.put(Integer.parseInt(ht.getKey()), ht.getValue().getAsBoolean());
+            		}
+            	} else {
+            		f1.harvestTools = null;
+            	}
             	if (d2.get("material") == null) {
             		//System.out.println("unhandled material of:"+f1.name);
             		f1.material = "default";

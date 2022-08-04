@@ -1,4 +1,4 @@
-package net.PRP.MCAI;
+package net.PRP.MCAI.data;
 
 public class oldMinecraftBlocks {
 	public String name;

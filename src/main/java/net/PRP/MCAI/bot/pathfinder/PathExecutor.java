@@ -19,15 +19,8 @@ public class PathExecutor {
 	public Bot client;
 	public State state = State.FINISHED;
 	public int sleepticks = 0;
-	
 	private Vector3D from;
 	private Vector3D to;
-	
-	public List<Vector3D> ignored = new CopyOnWriteArrayList<Vector3D>();
-	
-	private int curMoveTick = 0;
-	private final int MaxMoveTicks = 500;
-	
 	public BadAStar path = null;
 	private int err;
 	int pticks = 0;
@@ -63,7 +56,7 @@ public class PathExecutor {
 			this.sleepticks = path.sleepticks;
 			this.to = path.toWalk.get(0);
 		} else {
-			finish();
+			finish("bpf1");
 		}
 	}
 	
@@ -80,7 +73,7 @@ public class PathExecutor {
 			this.sleepticks = path.sleepticks;
 			this.to = path.toWalk.get(0);
 		} else {
-			finish();
+			finish("bpf2");
 		}
 	}
 	
@@ -124,52 +117,57 @@ public class PathExecutor {
 			if (state == State.FINISHED) return;
 			if (state == State.SEARCHING) {
 				this.path = new BadAStar(client, this.end);
-				if (path.buildPath(true)) {
+				if (path.buildPath(false)) {
 					state = State.WALKING;
 					if (path.toWalk.isEmpty()) return;
 					this.sleepticks = path.sleepticks;
 					this.to = path.toWalk.get(0);
 					tick();
 				} else {
-					finish();
+					if ((boolean)Main.gamerule("visualizePath")) {
+						if (path.toWalk.isEmpty()) {
+							return;
+						}
+						state = State.WALKING;
+						this.to = path.toWalk.get(0);
+						tick();
+					} else {
+						finish("cant build path");
+					}
+					
 				}
 			} else if (state == State.WALKING) {
 				if (path == null) {
-					finish();
+					finish("null");
 					return;
 				}
 				moveEntity();
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			finish();
+			finish("tick exception");
 		}
 	}
 	
-	public void finish() {
+	public void finish(String reason) {
 		this.state = State.FINISHED;
-		curMoveTick = 0;
 		pticks = 0;
 		err = 0;
-		if (Main.debug) System.out.println("ended from"+this.start+" to:"+this.end);
+		if (Main.debug) System.out.println("ended, ref:("+reason+"). from"+this.start+" to:"+this.end);
 		this.start = null;
 		this.end = null;
-		ignored.clear();
-		client.pm.setVelX(0);
-		client.pm.setVelZ(0);
+		//client.pm.Back();
 	}
 	
 	public void reset() {
 		this.state = State.FINISHED;
 		path = null;
-		curMoveTick = 0;
 		pticks = 0;
 		err = 0;
 		this.start = client.getPositionInt();
-		ignored.clear();
-		client.pm.setVelX(0);
-		client.pm.setVelZ(0);
+		//client.pm.Back();
 	}
+	
 	
 	private boolean testBuildPath(boolean addsleepticks, Vector3D starta, Vector3D enda) {
 		BadAStar temp = new BadAStar(client, starta, enda);
@@ -177,7 +175,7 @@ public class PathExecutor {
 	}
 	
 	public boolean botinpos(Vector3D pos) {
-		return client.getPosX() >= pos.x+0.3 && client.getPosX() <= pos.x+0.6 && client.getPosZ() >= pos.z+0.3 && client.getPosZ() <= pos.z+0.6 && client.getPosY() >= pos.y-1 && client.getPosY() <= pos.y+1.5;
+		return client.getPosX() >= pos.x+0.2 && client.getPosX() <= pos.x+0.7 && client.getPosZ() >= pos.z+0.2 && client.getPosZ() <= pos.z+0.7 && client.getPosY() >= pos.y-1 && client.getPosY() <= pos.y+1.5;
 		//System.out.println(a+" x: "+client.getPosX() +" >= "+ (pos.x+0.3) +" and "+ client.getPosX() +"<="+ (pos.x+0.6) +" and "+ client.getPosZ() +">="+ (pos.z+0.3) +" and "+ client.getPosZ() +"<="+ (pos.z+0.6) +" and "+ client.getPosY() +">="+ (pos.y-1) +" and "+ client.getPosY() +"<="+ (pos.y+1.5));
 		//return a;
 	}
@@ -186,27 +184,23 @@ public class PathExecutor {
 		return new Vector3D(to.x-from.x, to.y-from.y, to.z-from.z);
 	}
 	
-	
-	
 	public void moveEntity() {
-		
-		if (botinpos(to)) {
+		if (botinpos(to) || (boolean)Main.gamerule("visualizePath")) {
+			if ((boolean)Main.gamerule("visualizePath")) BotU.chat(client, "/particle minecraft:barrier "+to.forCommand()+" 0 0 0 200 1");
 			pticks = 0;
-			if (!e(to, client.getPositionInt())) {
+			/*if (!e(to, client.getPositionInt())) {
 				err++;
 				if (err > 8) {
-					finish();
-					//BotU.log("2");
+					finish("err1");
 				}
 				return;
 			} else {
 				err=0;
-			}
-			curMoveTick = 0;
+			}*/
 			path.toWalk.remove(to);
 			if (path.toWalk.size() == 0) {
 				//BotU.log("1");
-				finish();
+				finish("end");
 				return;
 			}
 			from = to;
@@ -214,10 +208,11 @@ public class PathExecutor {
 		} else {
 			pticks++;
 			if (pticks > 100) {
-				this.reset();
-				//BotU.log("3");
+				finish("err1");
 			}
 		}
+		
+		if ((boolean)Main.gamerule("visualizePath")) return;
 		
 		if (to.hasheddata > 0) {
 			if (client.bbm.state != bbmct.ENDED) return;
@@ -260,17 +255,7 @@ public class PathExecutor {
 		}
 		
 		BotU.LookHead(client, to.add(0.5, 1, 0.5));
-		client.pm.Walk();
-		if (client.getPitch() < -85) {
-			client.pm.jump();
-		} /*else if (client.isInWater() && to.y - client.posY >= 1) {
-			client.pm.inWaterJump(10);
-		}*/
-		//System.out.println(playerSpeed +" | "+ to.toString() +" | "+ client.getPosition());
-		
-		
-		curMoveTick++;
-		
+		client.pm.Sprint();
 	}
 	
 	public boolean e(Vector3D one, Vector3D two) {

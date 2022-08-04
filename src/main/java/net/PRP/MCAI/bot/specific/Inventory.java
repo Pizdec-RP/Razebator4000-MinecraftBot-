@@ -50,10 +50,7 @@ public class Inventory extends SessionAdapter {
 	
 	@Override
     public void packetReceived(PacketReceivedEvent receiveEvent) {
-		if (receiveEvent.getPacket() instanceof ServerJoinGamePacket) {
-			ThreadU.sleep(1000);
-			BotU.SetSlot(client, 0);
-		} else if (receiveEvent.getPacket() instanceof ServerWindowItemsPacket) {
+		if (receiveEvent.getPacket() instanceof ServerWindowItemsPacket) {
 			final ServerWindowItemsPacket p = (ServerWindowItemsPacket) receiveEvent.getPacket();
 			client.playerInventory.setup(p.getItems());
 			
@@ -67,7 +64,7 @@ public class Inventory extends SessionAdapter {
 	}
 	
 	public void tick() {
-		armorTickTest++;
+		if (currentWindowId == 0) armorTickTest++;
 		if (!ActionPool.isEmpty()) {
 			invTask act = ActionPool.get(0);
 			if (act instanceof finvtohb) {
@@ -76,7 +73,7 @@ public class Inventory extends SessionAdapter {
 				ActionPool.remove(0);
 			}
 		} else {
-			if (armorTickTest >= 100) {
+			if (currentWindowId == 0 && armorTickTest >= 100) {
 				armorTickTest = 0;
 				for (Entry<Integer, ItemStack> p : getAllInventory().entrySet()) {
 					if (p.getValue() != null && client.crafter.windowType == null) {

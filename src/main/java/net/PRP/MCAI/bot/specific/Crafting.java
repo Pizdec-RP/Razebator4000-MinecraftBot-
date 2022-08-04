@@ -36,6 +36,7 @@ public class Crafting extends SessionAdapter {
 	private Bot client;
 	public crState state = crState.ENDED;
 	public WindowType windowType = null;
+	public Vector3D lastWindowPos = new Vector3D(0,0,0);
 	public int actionId = 1;
 	public int lastactionid = 0;
 	public Vector3D craftingBlock = null;
@@ -84,6 +85,7 @@ public class Crafting extends SessionAdapter {
 			client.playerInventory.currentWindowId = p.getWindowId();
 			windowType = p.getType();
 			windowName = p.getName();
+			lastWindowPos = client.getPosition();
 			/*if (state == crState.ENDED) {
 				ThreadU.sleep(1000);
 				client.getSession().send(new ClientCloseWindowPacket(client.playerInventory.currentWindowId));
@@ -95,12 +97,16 @@ public class Crafting extends SessionAdapter {
 			
 		} else if (receiveEvent.getPacket() instanceof ServerConfirmTransactionPacket) {
             final ServerConfirmTransactionPacket p = (ServerConfirmTransactionPacket) receiveEvent.getPacket();
+            /*if (p.getActionId() < 0) {
+            	BotU.log("bruh actionid < 0, skipaem nahuy. winid:"+p.getWindowId());
+            	return;
+            }*/
             if (Main.debug) System.out.println("confirmed: "+p.getActionId()+"/"+actionId);
             lastactionid = p.getActionId();
             client.getSession().send(new ClientConfirmTransactionPacket(p.getWindowId(), p.getActionId(), true));
 		} else if (receiveEvent.getPacket() instanceof ServerCloseWindowPacket) {
 			final ServerCloseWindowPacket p = (ServerCloseWindowPacket) receiveEvent.getPacket();
-			//System.out.println("scwp");
+			BotU.log("scwp");
 			client.playerInventory.currentWindowId = p.getWindowId();
 			windowType = null;
 		}
@@ -252,6 +258,16 @@ public class Crafting extends SessionAdapter {
 		));
 	}
 	
+	public void click(int slot) {
+		client.getSession().send(new ClientWindowActionPacket(client.playerInventory.currentWindowId,
+			client.crafter.nextActionId(),
+			slot,
+			client.playerInventory.getSlot(slot),
+			WindowAction.CLICK_ITEM,
+			ClickItemParam.LEFT_CLICK
+		));
+	}
+	
 	@SuppressWarnings("deprecation")
 	public void tick() {
 		if (totaltimeouterrors >= 2) {
@@ -296,7 +312,7 @@ public class Crafting extends SessionAdapter {
 					}
 					if (VectorUtils.sqrt(client.getEyeLocation(), craftingBlock) <= (int)Main.gamerule("maxpostoblock")) {
 						BotU.LookHead(client, craftingBlock);
-						client.getSession().send(new ClientPlayerPlaceBlockPacket(craftingBlock.translate(), BlockFace.UP, Hand.MAIN_HAND, 0.5F, 1F, 0.5F, false));
+						client.getSession().send(new ClientPlayerPlaceBlockPacket(craftingBlock.translate(), VectorUtils.rbf(client, craftingBlock), Hand.MAIN_HAND, 0.5F, 1F, 0.5F, false));
 						client.getSession().send(new ClientPlayerSwingArmPacket(Hand.MAIN_HAND));
 						state = crState.WAITFOROPEN;
 					} else {

@@ -9,29 +9,41 @@ import net.PRP.MCAI.Main;
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.data.Vector3D;
 public class BotU {
-	public static void log(String f) {
-    	if (Main.debug) System.out.println("[log] "+f);
+	public static void log(Object f) {
+    	if (Main.debug) System.out.println("[log] "+f.toString());
+    }
+	public static void wn(Object f) {
+    	System.out.println("[warn] "+f.toString());
     }
 	public static void ts(Object p) {
 		System.out.println(p);
 	}
 	public static void chat (Bot client, String text) {
 		client.getSession().send(new ClientChatPacket(text));
+		//log("message sended, content: "+text);
 	}
 	
-	public static void calibratePosition(Bot client) {
+	/*public static void calibratePosition(Bot client) {
 		client.setPosX((int) Math.floor(client.getPosX())+0.5);
 		client.setPosZ((int) Math.floor(client.getPosZ())+0.5);
 	}
 	
 	public static void calibrateY(Bot client) {
 		client.setPosY(Math.floor(client.getPosY()));
-	}
+	}*/
 
-	
 	public static void SetSlot(Bot client, int slot) {
-        client.getSession().send(new ClientPlayerChangeHeldItemPacket(slot));
-        client.currentHotbarSlot = 36+slot;
+		if (slot >= 0 && slot <=8) {
+			if (client.currentHotbarSlot != 36+slot) {
+				client.getSession().send(new ClientPlayerChangeHeldItemPacket(slot));
+		        client.currentHotbarSlot = 36+slot;
+			}
+		} else if (slot >= 36 && slot <= 44) {
+			if (client.currentHotbarSlot != slot) {
+				client.getSession().send(new ClientPlayerChangeHeldItemPacket(slot-36));
+		        client.currentHotbarSlot = slot;
+			}
+		}
     }
 	
 	public static void LookHead(Bot client, Vector3D p) {

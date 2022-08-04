@@ -2,8 +2,10 @@ package net.PRP.MCAI.data;
 
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
 
+import net.PRP.MCAI.Main;
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.data.MinecraftData.Type;
+import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.NumberConversions;
 import net.PRP.MCAI.utils.VectorUtils;
 
@@ -18,6 +20,8 @@ public class Vector3D {
 		this.x = x;
 		this.y = y;
 		this.z = z;
+		//Main.allVec++;
+		//BotU.log(Main.allVec+" vectors created lol");
 	}
 	
 	@Override
@@ -201,6 +205,10 @@ public class Vector3D {
 	
 	public String forCommand() {
 		return (int)Math.floor(x)+" "+(int)Math.floor(y)+" "+(int)Math.floor(z);
+	}
+	
+	public String forCommandD() {
+		return x+" "+y+" "+z;
 	}
 	
 	public double distanceSq(double toX, double toY, double toZ) {

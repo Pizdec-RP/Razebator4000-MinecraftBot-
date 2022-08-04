@@ -2,7 +2,7 @@ package net.PRP.MCAI.data;
 
 public class physics {
 	public static final double gravity = 0.08; // blocks/tick^2 https://minecraft.gamepedia.com/Entity#Motion_of_entities
-	public final static double airdrag = Math.round(1 - 0.02); // actually (1 - drag)
+	public final static double airdrag = 0.9800000190734863D;
 	public static final double yawSpeed = 3.0;
 	public static final double pitchSpeed = 3.0;
 	public static final double playerSpeed = 0.1;
@@ -28,6 +28,8 @@ public class physics {
     public static final double slowFalling = 0.125;
     public static final double movementSpeedAttribute = 0.1;
     public static final String sprintingUUID = "662a6b8d-da3e-4c1c-8813-96ea6097278d"; // SPEED_MODIFIER_SPRINTING_UUID is from LivingEntity.java
+    public static final double physicsSlowDown = 0.900000999999412;
+    public static final float speedInAir = 0.02F;
     
     public static final double waterGravity = gravity / 16;
     public static final double lavaGravity = gravity / 4;

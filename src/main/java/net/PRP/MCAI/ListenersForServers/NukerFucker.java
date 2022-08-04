@@ -18,6 +18,7 @@ import net.PRP.MCAI.utils.VectorUtils;
 
 public class NukerFucker implements ServerListener{
 
+	public static final boolean allGameCapt = true;
 	Bot client;
 	boolean run = false;
 	Vector3D startpos = null;
@@ -40,11 +41,10 @@ public class NukerFucker implements ServerListener{
 			client.posZ+=nextvel.z;
 			client.getSession().send(new ClientPlayerPositionRotationPacket(client.onGround, client.posX, client.posY, client.posZ, client.getYaw(), client.getPitch()));
 			nukeBlocks(4);
-			client.pm.velocity.origin();
+			client.pm.vel.origin();
 			playerSpeed+=0.04;
 		} else {
 			run = true;
-			client.pm.fly = true;
 			BotU.log("runing");
 			this.startpos = client.getPosition();
 			return;

@@ -1,5 +1,7 @@
 package net.PRP.MCAI.data;
 
+import java.util.Map;
+
 public class BlockData {
 	public BlockData() {
 		
@@ -10,4 +12,5 @@ public class BlockData {
 	public boolean diggable;
 	public String material;
 	public double resistance;
+	public Map<Integer, Boolean> harvestTools;
 }

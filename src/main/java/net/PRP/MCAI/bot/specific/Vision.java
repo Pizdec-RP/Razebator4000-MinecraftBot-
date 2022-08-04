@@ -6,6 +6,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.data.Block;
 import net.PRP.MCAI.data.Vector3D;
+import net.PRP.MCAI.utils.VectorUtils;
 import net.PRP.MCAI.data.MinecraftData.Type;
 
 public class Vision {
@@ -30,6 +31,29 @@ public class Vision {
 				}
 			}
 		}
+		return blocks;
+	}
+	
+	public List<Vector3D> createRay(Vector3D from, Vector3D to, float yaw, float pitch, int dist, double amp) {
+		List<Vector3D> blocks = new CopyOnWriteArrayList<>();
+        final Vector3D v = getDirection(yaw, pitch).normalize();
+        for (int i = 1; i <= dist; i++) {
+            from = from.add(v.multiply(amp));
+            blocks.add(from);
+            if (VectorUtils.equalsInt(to, from) || !from.getBlock(client).isAvoid()) {
+            	return blocks;
+            }
+        }
+		return blocks;
+	}
+	
+	public List<Vector3D> createRay(Vector3D from, float yaw, float pitch, int dist, double amp) {
+		List<Vector3D> blocks = new CopyOnWriteArrayList<>();
+        final Vector3D v = getDirection(yaw, pitch).normalize();
+        for (int i = 1; i <= dist; i++) {
+            from = from.add(v.multiply(amp));
+            blocks.add(from);
+        }
 		return blocks;
 	}
 	

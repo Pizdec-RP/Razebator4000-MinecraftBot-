@@ -6,6 +6,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.data.Vector3D;
+import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.MathU;
 import net.PRP.MCAI.utils.VectorUtils;
 public class BadAStar implements IPathfinder{
@@ -15,6 +16,7 @@ public class BadAStar implements IPathfinder{
 	public Vector3D end;
 	public Bot client;
 	public int sleepticks = 0;
+	private boolean skipused = false;
 	
 	public BadAStar(Bot client, Vector3D end) {
 		this.start = client.getPositionInt();
@@ -50,19 +52,27 @@ public class BadAStar implements IPathfinder{
 		toWalk.clear();
 		used.clear();
 		sleepticks = 0;
-		Vector3D cursor = this.start;
-		int l = 0;
+		Vector3D cursor = start;
+		toWalk.add(start);
+		boolean shortcuted = false;
 		while (true) {
-			l++; if (l>maxpath) {
-				return false;
+			if (toWalk.size() > maxpath) {
+				BotU.log("maxpath1");
+				if (!shortcuted) {
+					shortcuted = true;
+				} else {
+					return false;
+				}
 			}
 			if (VectorUtils.equalsInt(cursor, end)) {
+				shortcut();
 				if (addsleepticks) sleepticks = 10;
 				return true;
 			}
 			List<Vector3D> neighbors;
 			neighbors = getNeighbors(cursor,1);
 			if (neighbors.isEmpty()) {
+				if (Main.debug) System.out.println("pizdec1");
 				return false;
 			}
 			cursor = pickCloser(neighbors);
@@ -76,21 +86,22 @@ public class BadAStar implements IPathfinder{
 		toWalk.clear();
 		used.clear();
 		sleepticks = 0;
-		Vector3D cursor = this.start;
-		int l = 0;
+		Vector3D cursor = start;
+		toWalk.add(start);
 		while (true) {
-			l++; if (l>maxpath) {
-				//if (Main.debug) System.out.println("maxpath");
+			if (toWalk.size() > maxpath) {
+				if (Main.debug) System.out.println("maxpath2");
 				return false;
 			}
 			if (VectorUtils.equalsInt(cursor, end)) {
 				if (addsleepticks) sleepticks = 10;
+				shortcut();
 				return true;
 			}
 			List<Vector3D> neighbors;
 			neighbors = getNeighbors(cursor,2);
 			if (neighbors.isEmpty()) {
-				//if (Main.debug) System.out.println("pizdec");
+				if (Main.debug) System.out.println("pizdec2");
 				return false;
 			}
 			cursor = pickCloser(neighbors);
@@ -109,6 +120,101 @@ public class BadAStar implements IPathfinder{
 		return a;
 	}
 	
+	public void shortcut() {
+		skipused = true;
+		for (int i = 0; i <= toWalk.size()-1; i++) {
+			Vector3D curs = toWalk.get(i);
+			List<Vector3D> rawn = getNeighbors(curs,1);
+			int i1 = i+1;
+			for (; i1 <= toWalk.size()-1; i1++) {
+				Vector3D afcu = toWalk.get(i1);
+				if (rawn.contains(afcu)) {
+					boolean b = false;
+					for (Vector3D p : toWalk) {
+						if (b) {
+							if (VectorUtils.equalsInt(p, afcu)) {
+								b = false;
+							} else {
+								toWalk.remove(p);
+								used.remove(p);
+							}
+						} else {
+							if (VectorUtils.equalsInt(curs, p)) {
+								b = true;
+							}
+						}
+					}
+				}
+			}
+		}
+		skipused = false;
+	}
+	
+	public Vector3D getLastPoint() {
+		return toWalk.get(toWalk.size()-1==-1?0:toWalk.size()-1);
+	}
+	
+	public void deleteLastSilent() {
+		toWalk.remove(toWalk.size()-1==-1?0:toWalk.size()-1);
+	}
+	
+	public boolean sfwPATTERN(Vector3D pos) {
+		return pos.getBlock(client).isAvoid()
+				&&
+				pos.add(0,1,0).getBlock(client).isAvoid()
+				&&
+				pos.add(0,-1,0).getBlock(client).ishard();
+	}
+	
+	public boolean sfsPATTERN(Vector3D pos) {
+		//BotU.log(pos.getBlock(client).isWater()+" "+pos.add(0,1,0).getBlock(client).isAvoid()+" "+pos.add(0,2,0).getBlock(client).isAvoid());
+		return pos.getBlock(client).isWater() 
+				&& 
+				pos.add(0,1,0).getBlock(client).isAvoid()
+				&& 
+				pos.add(0,2,0).getBlock(client).isAvoid();
+	}
+	
+	public boolean sfsdPATTERN(Vector3D pos) {
+		return pos.getBlock(client).isAvoid()
+				&& 
+				pos.add(0,1,0).getBlock(client).isAvoid()
+				&& 
+				pos.add(0,2,0).getBlock(client).isAvoid()
+				&&
+				pos.add(0,-1,0).getBlock(client).isWater();
+	}
+	
+	public boolean sdsPATTERN(Vector3D pos) {
+		return pos.getBlock(client).isAvoid()
+				&&
+				pos.add(0,1,0).getBlock(client).isAvoid()
+				&&
+				pos.add(0,2,0).getBlock(client).isAvoid()
+				&&
+				pos.add(0,-1,0).getBlock(client).ishard();
+	}
+	
+	public boolean susPATTERN(Vector3D pos) {
+		return pos.getBlock(client).isAvoid()
+				&&
+				pos.add(0,-1,0).getBlock(client).ishard()
+				&&
+				pos.add(0,1,0).getBlock(client).isAvoid();
+	}
+	
+	public boolean sdiwPATTERN(Vector3D pos) {
+		return pos.getBlock(client).isAvoid()
+				&&
+				pos.add(0,1,0).getBlock(client).isAvoid()
+				&&
+				pos.add(0,-1,0).getBlock(client).isWater();
+	}
+	
+	public boolean stepupIsFromWater(Vector3D pos) {
+		return sfsPATTERN(getLastPoint()) && sfwPATTERN(pos);
+	}
+	
 	public List<Vector3D> getNeighbors(Vector3D ps, int method) {
 		List<Vector3D> neighbors = new CopyOnWriteArrayList<>();
 		neighbors.add(ps.add(1, 0, 0));
@@ -116,8 +222,19 @@ public class BadAStar implements IPathfinder{
 		neighbors.add(ps.add(-1, 0, 0));
 		neighbors.add(ps.add(0, 0, -1));
 		for (Vector3D n : neighbors) {
-			if (pointIsUsed(n) && !VectorUtils.positionIsSafe(n, client)) {
+			if (pointIsUsed(n)) {
 				neighbors.remove(n);
+			} else {
+				if (sfwPATTERN(n)) {
+					
+				} else if (sfsPATTERN(n)) {
+					
+				} else if (sdiwPATTERN(n)) {
+					neighbors.remove(n);
+					neighbors.add(n.add(0,-1,0));
+				} else {
+					neighbors.remove(n);
+				}
 			}
 		}
 		
@@ -129,10 +246,19 @@ public class BadAStar implements IPathfinder{
 		temp.add(ps.add(0,-1,-1));
 		
 		for (Vector3D n : temp) {
-			if (VectorUtils.waterroad(client, n)) {
-				
-			} else if (func_1(ps,n)) {
+			//if (VectorUtils.equalsInt(new Vector3D(-81,65,-1488),n)) BotU.log("test");
+			if (pointIsUsed(n)) {
 				temp.remove(n);
+			} else {
+				if (sdsPATTERN(n)) {
+					
+				} else if (sfsdPATTERN(n)) {
+					
+				} else if (sfsPATTERN(n)) {
+					
+				} else {
+					temp.remove(n);
+				}
 			}
 		}
 		
@@ -146,16 +272,24 @@ public class BadAStar implements IPathfinder{
 		
 		
 		for (Vector3D n : temp) {
-			if (func_1(ps,n)) {
+			
+			if (pointIsUsed(n)) {
+				temp.remove(n);
+			} else if (sdsPATTERN(ps)) {
+				if (susPATTERN(n)) {
+					
+				} else {
+					temp.remove(n);
+				}
+			} else {
 				temp.remove(n);
 			}
 		}
-		neighbors.addAll(temp);
 		
-		if (!neighbors.isEmpty() && method != 2) {
-			/*for (Vector3D n : neighbors) {
-				if (n.getBlock(client).touchLiquid(client)) neighbors.remove(n);
-			}*/
+		neighbors.addAll(temp);
+		temp.clear();
+		
+		if (!neighbors.isEmpty()) {
 			return neighbors;
 		}
 		
@@ -216,10 +350,12 @@ public class BadAStar implements IPathfinder{
 		for (Vector3D n : neighbors) {
 			if (n.getBlock(client).touchLiquid(client)) neighbors.remove(n);
 		}
+		
 		return neighbors;
 	}
 	
 	public boolean pointIsUsed(Vector3D wp) {
+		if (skipused) return false;
 		return used.contains(wp);
 	}
 	

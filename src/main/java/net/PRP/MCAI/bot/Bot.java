@@ -3,13 +3,18 @@ package net.PRP.MCAI.bot;
 import com.github.steveice10.mc.auth.data.GameProfile;
 import com.github.steveice10.mc.protocol.MinecraftProtocol;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.ItemStack;
+import com.github.steveice10.mc.protocol.data.game.entity.player.GameMode;
 import com.github.steveice10.mc.protocol.packet.ingame.client.ClientChatPacket;
 import com.github.steveice10.packetlib.ProxyInfo;
 import com.github.steveice10.packetlib.ProxyInfo.Type;
 import com.github.steveice10.packetlib.Session;
 import com.github.steveice10.packetlib.tcp.TcpClientSession;
+
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.ListenersForServers.NukerFucker;
+import net.PRP.MCAI.ListenersForServers.dexland;
+import net.PRP.MCAI.ListenersForServers.holyworld;
+import net.PRP.MCAI.ListenersForServers.mst;
 import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.ThreadU;
 import net.PRP.MCAI.utils.VectorUtils;
@@ -20,6 +25,7 @@ import net.PRP.MCAI.bot.specific.Inventory;
 import net.PRP.MCAI.bot.specific.Living;
 import net.PRP.MCAI.bot.specific.PVP;
 import net.PRP.MCAI.bot.specific.Physics;
+import net.PRP.MCAI.bot.specific.VirtualMouse;
 import net.PRP.MCAI.bot.specific.Vision;
 import net.PRP.MCAI.data.AABB;
 import net.PRP.MCAI.data.EntityEffects;
@@ -50,6 +56,7 @@ public class Bot implements Runnable {
     //private boolean inAction;
     private boolean mainhost;
     public Inventory playerInventory;
+    public VirtualMouse cursor;
     private int id;
     public EntityListener entityListener;
     public Living rl;
@@ -58,7 +65,7 @@ public class Bot implements Runnable {
     public boolean onGround = true;
     public Miner bbm;
     public EntityEffects effects;
-    public int currentHotbarSlot = 0;
+    public int currentHotbarSlot = 36;
     public PathExecutor pathfinder;
     public PVP pvp;
     public Vision vis = new Vision(this, 120, 80);
@@ -72,6 +79,13 @@ public class Bot implements Runnable {
 	public boolean automaticMode = false;
 	private boolean running = true;
 	public boolean isHoldSlowdownItem = false;//shield, bow, eating
+	public boolean catchedRegister = (boolean)Main.gamerule("catchreg");
+	public GameMode gamemode;
+	private int needtocompensate = 0;
+	public float health = 20;
+	//ABILITIES
+	public float walkSpeed = 0;
+	public float flySpeed = 0;
     
     public Bot(String name, String ip, Proxy proxy, boolean automaticMode) {
     	if (proxy == null)
@@ -101,15 +115,27 @@ public class Bot implements Runnable {
 			if (isOnline()) tick();
 			long timetwo = System.currentTimeMillis();
 			int raznica = (int) (timetwo - timeone);
-			
+			if (needtocompensate > 5000) {
+				needtocompensate = 0;
+				BotU.log("client overloaded, skiped "+needtocompensate/tickrate+" ticks");
+			}
 			if (raznica > 0 && raznica < tickrate) {
 				curcomp = tickrate-raznica;
 				if (Main.debug) System.out.println("comp "+raznica+"ms");
-				ThreadU.sleep(curcomp);
+				if (needtocompensate <= 0) {
+					ThreadU.sleep(curcomp);
+				} else {
+					needtocompensate-=curcomp;
+				}
 			} else if (raznica == 0){
-				ThreadU.sleep(tickrate);
+				if (needtocompensate <= 0) {
+					ThreadU.sleep(tickrate);
+				} else {
+					needtocompensate-=tickrate;
+				}
 			} else {
-				if (Main.debug) System.out.println("passing "+raznica+"ms");
+				if (Main.debug) System.out.println("pass "+raznica+"ms");
+				needtocompensate += raznica-tickrate;
 			}
 		}
 	}
@@ -126,8 +152,8 @@ public class Bot implements Runnable {
     	this.rl = null;
     	this.bbm = null;
     	this.pathfinder = null;
+    	this.cursor = null;
     	Thread.currentThread().interrupt();
-    	
     }
 
     public void build() {
@@ -151,9 +177,10 @@ public class Bot implements Runnable {
         } else {
         	client = new TcpClientSession(host, port, account);
         }
+		this.session = client;
         //client.setFlag(MinecraftConstants.SESSION_SERVICE_KEY, sessionService);
         client.addListener(new SessionListener(this));
-        client.addListener(new Shit());
+        if ((boolean) Main.gamerule("KeepAlivePackets")) client.addListener(new Shit());
         client.addListener(new Inventory(this));
         if ((boolean) Main.gamerule("listenEntities")) {
         	this.entityListener = new EntityListener(this);
@@ -165,7 +192,7 @@ public class Bot implements Runnable {
     	client.addListener(rl);
     	
         this.bbm = new Miner(this);
-        
+        this.cursor = new VirtualMouse(this);
         this.pm = new Physics(this);
         client.addListener(pm);
         this.pvp = new PVP(this);
@@ -176,9 +203,14 @@ public class Bot implements Runnable {
         	rl.listeners.add(new NukerFucker(this));
         	BotU.log("nuke");
         }
+        if (host.contains("holyworld")) {
+        	rl.listeners.add(new holyworld(this));
+        } else if (host.contains("dexland")) {
+        	rl.listeners.add(new dexland(this));
+        } else if (host.contains("mstnw")) {
+        	rl.listeners.add(new mst(this));
+        }
         
-        
-        this.session = client;
         this.playerInventory = new Inventory(this);
     }
     
@@ -188,6 +220,7 @@ public class Bot implements Runnable {
 	}
 
     public void register() {
+    	if (catchedRegister) return;
         session.send(new ClientChatPacket("/register 112233asdasd 112233asdasd"));
         ThreadU.sleep(100);
         session.send(new ClientChatPacket("/login 112233asdasd"));
@@ -201,6 +234,7 @@ public class Bot implements Runnable {
     	this.pm.reset();
     	this.pvp.reset();
     	this.crafter.reset();
+    	this.cursor.reset();
     	this.onGround = true;
     }
     
@@ -219,10 +253,12 @@ public class Bot implements Runnable {
 	    	this.crafter.tick();
 	    	this.pm.tick();
 	    	this.playerInventory.tick();
+	    	this.cursor.tick();
     	} catch (Exception e) {
     		this.pvp.reset();
     		this.bbm.reset();
     		this.pathfinder.reset();
+    		this.cursor.reset();
     		e.printStackTrace();
     	}
     }
@@ -339,22 +375,36 @@ public class Bot implements Runnable {
 	
 	public boolean isInLiquid() {
 		for (Vector3D corner : getHitbox().getCorners()) {
-			//System.out.println(corner.toStringInt()+" isLiq: "+corner.getBlock(this).type.toString());
 			if (corner.floor().getBlock(this).type == net.PRP.MCAI.data.MinecraftData.Type.LIQUID) return true;
+		}
+		return false;
+	}
+	
+	public boolean isinWeb() {
+		for (Vector3D corner : getHitbox().getCorners()) {
+			if (corner.floor().getBlock(this).id == 94) return true;
 		}
 		return false;
 	}
 	
 	public boolean isInWater() {
 		for (Vector3D corner : getHitbox().getCorners()) {
-			if (corner.floor().getBlock(this).id == 26) return true;
+			if (corner.floor().getBlock(this).id == 26) {
+				if (corner.floor().getBlock(this).hitbox.collide(getHitbox())) {
+					return true;
+				}
+			}
 		}
 		return false;
 	}
 	
 	public boolean isInLava() {
 		for (Vector3D corner : getHitbox().getCorners()) {
-			if (corner.floor().getBlock(this).id == 27) return true;
+			if (corner.floor().getBlock(this).id == 27) {
+				if (corner.floor().getBlock(this).hitbox.collide(getHitbox())) {
+					return true;
+				}
+			}
 		}
 		return false;
 	}
@@ -422,7 +472,7 @@ public class Bot implements Runnable {
 	}
 
 	public Vector3D getEyeLocation() {
-		return getPositionInt().add(0, 1.95, 0);
+		return getPositionInt().add(0.5, 1.75, 0.5);
 	}
 	
 	public AABB getHitbox() {

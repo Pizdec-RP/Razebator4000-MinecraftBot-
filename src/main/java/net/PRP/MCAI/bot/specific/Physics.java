@@ -11,7 +11,6 @@ import net.PRP.MCAI.utils.VectorUtils;
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.data.AABB;
 import net.PRP.MCAI.data.Block;
-import net.PRP.MCAI.data.MinecraftData.Type;
 import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.data.physics;
 import net.PRP.MCAI.utils.BotU;
@@ -19,19 +18,18 @@ import net.PRP.MCAI.utils.MathU;
 
 public class Physics extends SessionAdapter {
 	public Vector3D before;
-	private float beforeYaw;
-    private float beforePitch;
-	private Bot client;
-	public Vector3D velocity = new Vector3D(0,0,0);
+	public float beforeYaw;
+	public float beforePitch;
+	public Bot client;
+	public Vector3D vel = new Vector3D(0,0,0);
 	public int sleepticks = 0;
 	private int autojumpcooldown = 0;
-	private Block nexttickblock = null;
-	
+	private Block blockUnder = null;
 	private boolean WALK = false;
 	private boolean RUN = false;
-	private double playerSpeed = 0;
-	private int cd = 0;
-	public boolean fly = false;
+	private boolean SNEAK = false;
+	boolean xzcollided = false;
+	private boolean jumpQueued;
 	
 	public Physics(Bot client) {
 		this.client = client;
@@ -46,193 +44,236 @@ public class Physics extends SessionAdapter {
 	}
 	
 	private void airfall() {
-		//int slowFalling = 0;//client.effects.slowFalling
-        //double gravityMultiplier = (vel.y <= 0 && slowFalling > 0) ? physics.slowFalling : 1;
-		if (!client.isInLiquid()) client.onGround = false;
-		velocity.y -= physics.gravity;// * gravityMultiplier;
-		velocity.y *= physics.airdrag;
-	}
-	
-	private double calcnextairfall() {
-        //double gravityMultiplier = 1;
-    	double y = velocity.y;
-		y -= physics.gravity;// * gravityMultiplier;
-    	y *= physics.airdrag;
-    	return y;
-	}
-	
-	private Block calcnexttickblock() {
-		return client.getWorld().getBlock(client.getPosition().floorXZ().add(0, calcnextairfall(), 0));
+		vel.y -= physics.gravity;
+		vel.y *= physics.airdrag;
 	}
 	
 	private void waterfall() {
-		if (!client.isInLiquid()) client.onGround = false;
-		//int slowFalling = 0;//client.effects.slowFalling
-        //double gravityMultiplier = (velocity.y <= 0 && slowFalling > 0) ? physics.slowFalling : 1;
-		velocity.y *= client.isInWater() ? physics.waterInertia : physics.lavaInertia;
-		velocity.y -= client.isInWater() ? physics.waterGravity : physics.lavaGravity;// * gravityMultiplier;
+		vel.y *= client.isInWater() ? physics.waterInertia : physics.lavaInertia;
+		vel.y -= client.isInWater() ? physics.waterGravity : physics.lavaGravity;
 	}
 	
 	private AABB nexttickX() {
-		return client.getHitbox().offset(velocity.x, 0, 0);
+		return client.getHitbox().offset(vel.x, 0, 0);
 	}
 	
 	private AABB nexttickZ() {
-		return client.getHitbox().offset(0, 0, velocity.z);
+		return client.getHitbox().offset(0, 0, vel.z);
 	}
 	
 	private AABB nexttickY() {
-		return client.getHitbox().offset(0, velocity.y, 0);
+		return client.getHitbox().offset(0, vel.y, 0);
 	}
 	
 	public void jump() {
-		if (client.onGround && autojumpcooldown <= 0 && velocity.y <= 0) {
-			if (!client.isInLiquid())autojumpcooldown = 10;
-			client.onGround = false;
-			velocity.y = 0.53;
-		}
+		this.jumpQueued = true;
 	}
-		
-	public void inWaterJump(int cd) {
-		//System.out.println(client.onGround +" "+ autojumpcooldown +" "+ velocity.y);
-		if (autojumpcooldown <= 0 && velocity.y <= 0) {
-			if (!client.isInLiquid())autojumpcooldown = cd;
-			client.onGround = false;
-			velocity.y = 0.53;
-		}
+	
+	public Block getBlockPosBelowThatAffectsMyMovement() {
+		return client.getWorld().getBlock(client.posX, client.posY-0.5000001, client.posZ);
 	}
 	
 	public void Walk() {
 		WALK = true;
 	}
 	
-	private void PhysicsUpdate() {
-		if (!client.isOnline()) return;
+	public void Sprint() {
+		WALK = true;
+		RUN = true;
+	}
+	
+	private double getMoveSpeed() {
+		if (RUN) return 0.38985D;
+		else if (WALK) return 0.3473D;
+		else return 0D;
+    }
+	
+	public void moveRelative(double forward, double strafe, double friction) {
+        double distance = strafe * strafe + forward * forward;
+
+        if (distance >= 1.0E-4F) {
+            distance = Math.sqrt(distance);
+
+            if (distance < 1.0F) {
+                distance = 1.0F;
+            }
+
+            distance = friction / distance;
+            strafe = strafe * distance;
+            forward = forward * distance;
+
+            double yawRadians = Math.toRadians(client.getYaw());
+            double sin = Math.sin(yawRadians);
+            double cos = Math.cos(yawRadians);
+
+            vel.x += strafe * cos - forward * sin;
+            vel.z += forward * cos + strafe * sin;
+        }
+    }
+	
+	public void moveEntityWithHeading(double forward, double strafe) {
+		float prevSlipperiness = (float) physics.airborneInertia;//inertia
+        double value = physics.airborneAcceleration;//acceleration
+        
+        if (!client.isInLiquid()) {
+            if (client.onGround) {
+            	prevSlipperiness = (blockUnder.getfriction() == 0.6F ? getBlockPosBelowThatAffectsMyMovement().getfriction() : blockUnder.getfriction()) * 0.91F;//inertiа
+        		value = getMoveSpeed() * (0.1627714F / (prevSlipperiness * prevSlipperiness * prevSlipperiness));//acceleration
+            }
+            
+            vel.x *= prevSlipperiness;
+            vel.z *= prevSlipperiness;
+
+            moveRelative(forward, strafe, value);//apply heading
+            
+        } else {
+        	double acceleration = physics.liquidAcceleration;
+        	double inertia = client.isInWater() ? physics.waterInertia : physics.lavaInertia;
+        	double horizontalInertia = inertia;
+        	
+        	moveRelative(strafe, forward, acceleration);
+            
+        	vel.y *= inertia;
+	        vel.y -= client.isInWater() ? physics.waterGravity : physics.lavaGravity;// * gravityMultiplier;
+	        vel.x *= horizontalInertia;
+	        vel.z *= horizontalInertia;
+        }
+       
+	}
+	
+	public void walksAndOtherShit() {
+		if (Math.abs(vel.x) < physics.negligeableVelocity) vel.x = 0;
+		if (Math.abs(vel.y) < physics.negligeableVelocity) vel.y = 0;
+		if (Math.abs(vel.z) < physics.negligeableVelocity) vel.z = 0;
 		
+		if (jumpQueued && autojumpcooldown <= 0) {
+			if (client.isInLiquid()) {
+				vel.y += 0.03999999910593033F;
+				autojumpcooldown = 1;
+			} else {
+				if (client.onGround) {
+					vel.y = 0.5099999904632568F;
+					if (client.effects.jumpBoost > 0) {
+			            vel.y += 0.1f * (float)(client.effects.jumpBoost + 1);
+			        }
+					if (RUN) {
+						float yaw = client.getYaw() * 0.017453292f;
+			            vel.add(-Math.sin(yaw) * 0.2f, 0.0, Math.cos(yaw) * 0.2f);
+					}
+				}
+			}
+			jumpQueued = false;
+		}
+		
+		double strafe = 0;
+		double forward = (RUN || WALK) ? getMoveSpeed() : 0 * 0.98;
+		
+		if (SNEAK || client.isHoldSlowdownItem) {
+			strafe *= physics.sneakSpeed;
+			forward *= physics.sneakSpeed;
+		}
+		
+		moveEntityWithHeading(forward,strafe);
+	}
+	
+	private void PhysicsUpdate() {
 		if (sleepticks > 0) {
 			sleepticks--;
 			return;
 		}
-		if (client.isInWater()) {
-			cd--;
-			if (cd<=0) {
-				velocity.y += 0.3;
-				cd = 20;
-			}
-		}
+		xzcollided = false;
 		
-		if (RUN) {
-			
-		} else if (WALK) {
-			if (client.isInLiquid()) {
-				if (playerSpeed <= 0) playerSpeed = physics.playerSpeed;
-				Vector3D nextvel = VectorUtils.vector(client.getYaw(), client.getPitch(), playerSpeed,client);
-				setVelX(nextvel.x);
-				setVelZ(nextvel.z);
-				playerSpeed += 0.098;
-				playerSpeed *= 0.666;
-				WALK = false;
-			} else {
-				if (playerSpeed <= 0) playerSpeed = physics.playerSpeed;
-				Vector3D nextvel = VectorUtils.vector(client.getYaw(), client.getPitch(), playerSpeed,client);
-				setVelX(nextvel.x);
-				setVelZ(nextvel.z);
-				playerSpeed += 0.098;
-				playerSpeed *= 0.7;
-				WALK = false;
-			}
+		blockUnder = client.getWorld().getBlock(client.getPosition().floor().add(0,-1,0));
+		if (client.foodlvl <= 6) RUN = false;
+		
+		walksAndOtherShit();
+		
+		RUN = false;
+		WALK = false;
+		SNEAK = false;
+		
+		if (client.isInLiquid()) {
+			waterfall();
 		} else {
-			playerSpeed = 0;
+			airfall();
 		}
+		client.onGround = false;
 		
-		nexttickblock = calcnexttickblock();
-        if (nexttickblock.isAvoid() || nexttickblock.type == Type.CARPET) {
-        	if (!fly) airfall();
-        	//if (client.getPosX() != ((int)client.getPosX()+0.5) || client.getPosZ() != ((int)client.getPosZ()+0.5)) BotU.calibratePosition(client);
-        } else if (nexttickblock.isLiquid()) {
-        	if (!fly) waterfall();
-        } else {
-        	
-        	if (velocity.y < 0) {
-        		if (nexttickblock.getHitbox() != null && nexttickblock.getHitbox().maxY > client.posY+velocity.y) {
-        			velocity.y = 0;
-        			client.setPosY(nexttickblock.getHitbox().maxY);
-        			client.onGround = true;
-        		}
-        	}
-        }
-        
-        
-        
-        if (velocity.x != 0) {
-        	for (Vector3D a : client.getHitbox(velocity.x,0,0).getCorners()) {
+		if (vel.y != 0) {
+        	for (Vector3D a : client.getHitbox(0,vel.y,0).getCorners()) {
         		Block n = a.func_vf().getBlock(client);
-        		if (n.getHitbox() != null) {
-        			if (n.getHitbox().collide(nexttickX())) {
-        				//System.out.println(n.getHitbox().maxY - Math.floor(client.posY));
-        				if (n.getHitbox().maxY - Math.floor(client.posY)<=physics.stepHeight) {
-        					velocity.y = 0;
-        					client.setPosY(n.getHitbox().maxY);
-        				} else if (a.up().getBlock(client).isAvoid() && Math.floor(a.y) == Math.floor(client.posY)) {
-        					velocity.x = 0;
-        					jump();
-        				} else {
-        					velocity.x = 0;
-        				}
-        			}
-        		}
-        	}
-        }
-        
-        if (velocity.z != 0) {
-        	for (Vector3D a : client.getHitbox(0,0,velocity.z).getCorners()) {
-        		Block n = a.func_vf().getBlock(client);
-        		if (n.getHitbox() != null) {
-        			if (n.getHitbox().collide(nexttickZ())) {
-        				
-        				if (n.getHitbox().maxY - Math.floor(client.posY) <= physics.stepHeight) {
-        					velocity.y = 0;
-        					client.setPosY(n.getHitbox().maxY);
-        				} else if (a.up().getBlock(client).isAvoid() && Math.floor(a.y) == Math.floor(client.posY)) {
-        					velocity.z = 0;
-        					jump();
-        				} else {
-        					velocity.z = 0;
-        				}
-        			}
-        		}
-        	}
-        }
-        
-        if (velocity.y != 0) {
-        	for (Vector3D a : client.getHitbox(0,velocity.y,0).getCorners()) {
-        		Block n = a.func_vf().getBlock(client);
-        		if (n.getHitbox() != null) {
+        		if (n.getHitbox() != null && !n.isLiquid()) {
         			if (n.getHitbox().collide(nexttickY())) {
-        				if (velocity.y > 0) {
-        					velocity.y = n.getHitbox().minY-(client.posY+1.8);
+        				if (vel.y > 0) {
+        					if (n.getHitbox().minY < client.getHitbox(vel).maxY) {
+        						vel.y = 0;
+        						client.setPosY(client.getPosY()+(n.getHitbox().minY-client.getHitbox().maxY));
+        					}
         				} else {
-        					if (fly) {
-        						velocity.y = 0;
+        					if (n.getHitbox().maxY > client.posY+vel.y) {
+        						vel.y = 0;
+        						client.setPosY(n.getHitbox().maxY);
+        						client.onGround = true;
         					} else {
-	        					if (n.getHitbox().maxY > client.posY+velocity.y) {
-	        						velocity.y = 0;
-	        						client.setPosY(n.getHitbox().maxY);
-	        						client.onGround = true;
-	        					} else {
-		        					velocity.y = 0;
-			        				client.onGround = true;
-	        					}
+	        					vel.y = 0;
+		        				client.onGround = true;
         					}
         				}
+        				break;
         			}
         		} 
         	}
         }
         
-        if (velocity.x == 0 && velocity.y == 0 && velocity.z == 0) return;
-        //System.out.println(client.name+" pos: "+client.getPosition()+" velocity: "+velocity.toString()+" onGround:"+client.onGround+" ajc"+autojumpcooldown);
-        client.setposto(client.getPosition().add(velocity.x, velocity.y, velocity.z));
+        //bad
+        if (vel.x != 0) {
+        	for (Vector3D a : client.getHitbox(vel.x,0,0).getCorners()) {
+        		Block n = a.func_vf().getBlock(client);
+        		if (n.getHitbox() != null && !n.isLiquid()) {
+        			if (n.getHitbox().collide(nexttickX())) {
+        				xzcollided = true;
+        				//System.out.println(n.getHitbox().maxY - Math.floor(client.posY));
+        				if (n.getHitbox().maxY - Math.floor(client.posY)<=physics.stepHeight) {
+        					vel.y = 0;
+        					client.setPosY(n.getHitbox().maxY);
+        				} else if (a.up().getBlock(client).isAvoid() && Math.floor(a.y) == Math.floor(client.posY)) {
+        					vel.x = 0;
+        					jump();
+        				} else {
+        					vel.x = 0;
+        				}
+        				break;
+        			}
+        		}
+        	}
+        }
+        
+        if (vel.z != 0) {
+        	for (Vector3D a : client.getHitbox(0,0,vel.z).getCorners()) {
+        		Block n = a.func_vf().getBlock(client);
+        		if (n.getHitbox() != null && !n.isLiquid()) {
+        			if (n.getHitbox().collide(nexttickZ())) {
+        				xzcollided = true;
+        				if (n.getHitbox().maxY - Math.floor(client.posY) <= physics.stepHeight) {
+        					vel.y = 0;
+        					client.setPosY(n.getHitbox().maxY);
+        				} else if (a.up().getBlock(client).isAvoid() && Math.floor(a.y) == Math.floor(client.posY)) {
+        					vel.z = 0;
+        					jump();
+        				} else {
+        					vel.z = 0;
+        				}
+        				break;
+        			}
+        		}
+        	}
+        }
+        
+        
+        
+        if (vel.x == 0 && vel.y == 0 && vel.z == 0) return;
+        //System.out.println(client.name+" velocity: "+vel.toString()+" onGround:"+client.onGround+" ajc"+autojumpcooldown);
+        client.setposto(client.getPosition().add(vel.x, vel.y, vel.z));
     }
 	
 	public void tick() {
@@ -243,14 +284,18 @@ public class Physics extends SessionAdapter {
 		float nowYaw = client.getYaw();
 	    float nowPitch = client.getPitch();
 	    if (before == null) return;
+	    
 		if (!VectorUtils.equals(before, nowPos)) {
 			if (nowYaw != beforeYaw || nowPitch != beforePitch) {
-				client.getSession().send(new ClientPlayerPositionRotationPacket(client.onGround, client.posX, client.posY, client.posZ, client.getYaw(), client.getPitch()));
+				client.getSession().send(new ClientPlayerPositionRotationPacket(client.onGround, (float)client.posX, (float)client.posY, (float)client.posZ, client.getYaw(), client.getPitch()));
+				//BotU.log("cpprp x"+client.posX+" y"+client.posY+" z"+client.posZ+" yaw"+client.getYaw()+" pitch"+client.getPitch());
 			} else {
-				client.getSession().send(new ClientPlayerPositionPacket(client.onGround, client.posX, client.posY, client.posZ));
+				client.getSession().send(new ClientPlayerPositionPacket(client.onGround, (float)client.posX, (float)client.posY, (float)client.posZ));
+				//BotU.log("cppp x"+client.posX+" y"+client.posY+" z"+client.posZ);
 			}
 		} else if (nowYaw != beforeYaw || nowPitch != beforePitch) {
 			client.getSession().send(new ClientPlayerRotationPacket(client.onGround, client.getYaw(), client.getPitch()));
+			//BotU.log("cprp yaw"+client.getYaw()+" pitch"+client.getPitch());
 		}
 		before = nowPos;
 		beforePitch = nowPitch;
@@ -261,20 +306,36 @@ public class Physics extends SessionAdapter {
 		before = client.getPosition();
 		beforePitch = 0;
 		beforeYaw = 0;
-		velocity.origin();
+		vel.origin();
 	}
 	
 	public void resetVel() {
-		velocity.origin();
+		vel.origin();
 	}
 	
 	public void setVelX(double i) {
-		velocity.x = i;
+		vel.x = i;
 	}
 	public void setVelY(double i) {
-		velocity.y = i;
+		vel.y = i;
 	}
 	public void setVelZ(double i) {
-		velocity.z = i;
+		vel.z = i;
+	}
+	
+	public Vector3D getVel() {
+		return vel;
+	}
+	
+	public Vector3D getDeltaMovement() {
+		return vel;
+	}
+	
+	public void setVel(Vector3D v) {
+		this.vel = v;
+	}
+	
+	public void setDeltaMovement(Vector3D v) {
+		this.vel = v;
 	}
 }

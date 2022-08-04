@@ -6,6 +6,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.data.MinecraftData.Type;
+import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.VectorUtils;
 
 public class Block {
@@ -14,13 +15,15 @@ public class Block {
 	public Type type;
 	public int state;
 	public String name = "";
+	public AABB hitbox;
+	public boolean waterlogged = false;
 	
 	public Block() {
 		this.id = 0;
 		this.subid = 0;
 		this.pos = null;
 		this.type = Type.VOID;
-		//setupShapes();
+		setHitbox();
 	}
 	
 	public Block(int state, int id, Vector3D pos, Type type) {
@@ -31,7 +34,7 @@ public class Block {
 		this.state = state;
 		String nm = Main.getMCData().blockData.get(id).name;
 		if (nm != null) this.name = nm;
-		//setupShapes();
+		setHitbox();
 	}
 	
 	public Block(int state, Vector3D pos) {
@@ -41,7 +44,7 @@ public class Block {
 		this.type = Main.getMCData().bt(this.id);
 		String nm = Main.getMCData().blockData.get(id).name;
 		if (nm != null) this.name = nm;
-		//setupShapes();
+		setHitbox();
 	}
 	
 	public String getName() {
@@ -54,6 +57,77 @@ public class Block {
 		return client.getWorld().getBlock(new Vector3D(pos.x+x,pos.y+y,pos.z+z));
 	}
 	
+	private void setHitbox() {
+		if (isSlab()) {
+			slabState ss = Main.getMCData().slabstates.get(state);
+			if (ss.type.equals("top")) {
+				hitbox = new AABB(Math.floor(pos.x), Math.floor(pos.y)+0.5, Math.floor(pos.z), Math.floor(pos.x)+1, Math.floor(pos.y)+1, Math.floor(pos.z)+1);
+			} else if (ss.type.equals("bottom")) {
+				hitbox = new AABB(Math.floor(pos.x), Math.floor(pos.y), Math.floor(pos.z), Math.floor(pos.x)+1, Math.floor(pos.y)+0.5, Math.floor(pos.z)+1);
+			} else if (ss.type.equals("double")) {
+				hitbox = new AABB(pos.x, pos.y, pos.z, Math.floor(pos.x)+1, Math.floor(pos.y)+1, Math.floor(pos.z)+1).floor();
+			}
+			waterlogged = ss.waterlogged;
+		} else if (isWater()) {
+			hitbox = new AABB(Math.floor(pos.x), Math.floor(pos.y), Math.floor(pos.z), Math.floor(pos.x)+1, Math.floor(pos.y)+waterLvlToMaxY(getAsWaterLevel()), Math.floor(pos.z)+1);
+			//BotU.log(hitbox.toString());
+		} else if (isLava()) {
+			hitbox = new AABB(Math.floor(pos.x), Math.floor(pos.y), Math.floor(pos.z), Math.floor(pos.x)+(getAsLavaLevel()*0.1), Math.floor(pos.y)+1, Math.floor(pos.z)+1);
+		} else {
+			if (type == Type.VOID ||type == Type.AIR || type == Type.AVOID) {
+				hitbox = null;
+			} else if (type == Type.DOOR || type == Type.GATE || type == Type.GOAWAY || type == Type.HARD || type == Type.UNBREAKABLE || type == Type.UNKNOWN) {
+				hitbox = new AABB(pos.x, pos.y, pos.z, Math.floor(pos.x)+1, Math.floor(pos.y)+1, Math.floor(pos.z)+1).floor();
+			} else if (type == Type.CARPET) {
+				hitbox = new AABB(Math.floor(pos.x), Math.floor(pos.y), Math.floor(pos.z), Math.floor(pos.x)+1, Math.floor(pos.y)+0.0625, Math.floor(pos.z)+1);
+			} else if (type == Type.LIQUID) {
+				hitbox = null;
+			} else {
+				hitbox = new AABB(pos.x, pos.y, pos.z, Math.floor(pos.x)+1, Math.floor(pos.y)+1, Math.floor(pos.z)+1).floor();
+			}
+		}
+	}
+	
+	public float getfriction() {
+		if (id == 377) {
+			return 0.8F;
+		} else if (id == 409) {
+			return 0.98F;
+		} else if (id == 619) {
+			return 0.989F;
+		} else if (id == 185) {
+			return 0.98F;
+		} else if (id == 502) {
+			return 0.98F;
+		} else {
+			return 0.6F;
+		}
+	}
+	
+	public double waterLvlToMaxY(int lvl) {
+		return 1;
+	}
+	
+	public int getAsLavaLevel() {
+		if (state >= 50 && state <= 65) {
+			return state - 50;
+		} else {
+			return -1;
+		}
+	}
+	
+	public int getAsWaterLevel() {
+		if (state >= 34 && state <= 49) {
+			return state - 34;
+		} else {
+			return -999;
+		}
+	}
+	
+	public boolean isSlab() {
+		return name.contains("slab");
+	}
+	
 	@Override
 	public int hashCode() {
 		int hash = 7;
@@ -64,18 +138,7 @@ public class Block {
 	}
 	
 	public AABB getHitbox() {
-		//System.out.println(pos.toStringInt());
-		if (type == Type.VOID ||type == Type.AIR || type == Type.AVOID) {
-			return null;
-		} else if (type == Type.DOOR || type == Type.GATE || type == Type.GOAWAY || type == Type.HARD || type == Type.UNBREAKABLE || type == Type.UNKNOWN) {
-			return new AABB(pos.x, pos.y, pos.z, Math.floor(pos.x)+1, Math.floor(pos.y)+1, Math.floor(pos.z)+1).floor();
-		} else if (type == Type.CARPET) {
-			return new AABB(Math.floor(pos.x), Math.floor(pos.y), Math.floor(pos.z), Math.floor(pos.x)+1, Math.floor(pos.y)+0.0625, Math.floor(pos.z)+1);
-		} else if (type == Type.LIQUID) {
-			return null;
-		} else {
-			return new AABB(pos.x, pos.y, pos.z, Math.floor(pos.x)+1, Math.floor(pos.y)+1, Math.floor(pos.z)+1).floor();
-		}
+		return hitbox;
 	}
 	
 	@Override
@@ -154,6 +217,14 @@ public class Block {
 	
 	public boolean isLiquid() {
 		return type == Type.LIQUID;
+	}
+	
+	public boolean isWater() {
+		return id == 26;
+	}
+	
+	public boolean isLava() {
+		return id == 27;
 	}
 
 	public int getId() {
