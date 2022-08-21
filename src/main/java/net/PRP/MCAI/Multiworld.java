@@ -95,4 +95,8 @@ public class Multiworld {
 			return new Block();
 		}
 	}
+
+	public static Chunk getCurrentChunk(int chunkX, int chunkY, int chunkZ) {
+		return columns.get(new ChunkCoordinates(chunkX, chunkZ)).getChunks()[chunkY];
+	}
 }

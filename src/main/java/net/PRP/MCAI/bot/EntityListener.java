@@ -2,14 +2,8 @@ package net.PRP.MCAI.bot;
 
 import java.util.UUID;
 
-import com.github.steveice10.mc.protocol.data.game.entity.metadata.EntityMetadata;
-import com.github.steveice10.mc.protocol.data.game.entity.metadata.MetadataType;
-import com.github.steveice10.mc.protocol.data.game.entity.player.InteractAction;
 import com.github.steveice10.mc.protocol.data.game.entity.type.EntityType;
-import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerInteractEntityPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.ServerEntityDestroyPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.server.entity.ServerEntityMetadataPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.server.entity.ServerEntityMovementPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.ServerEntityPositionPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.ServerEntityPositionRotationPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.ServerEntityRotationPacket;
@@ -25,7 +19,6 @@ import com.github.steveice10.packetlib.event.session.SessionAdapter;
 
 import net.PRP.MCAI.data.Entity;
 import net.PRP.MCAI.data.Vector3D;
-import net.PRP.MCAI.utils.BotU;
 
 public class EntityListener extends SessionAdapter {
 	

@@ -29,15 +29,17 @@ import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.MapUtils;
 import net.PRP.MCAI.utils.StringU;
+import net.PRP.MCAI.utils.ThreadU;
 
 public class holyworld extends SessionAdapter implements ServerListener {
 	
 	public static final boolean allGameCapt = false;
 	Bot client;
 	private mode mod = mode.NON;
+	private String windowname = "";
 	
 	public enum mode {
-		NON,PICKMODE, PICKSERVER, IDLE
+		NON,PICKMODE, PICKSERVER, IDLE, getitem
 	}
 	
 	
@@ -85,17 +87,33 @@ public class holyworld extends SessionAdapter implements ServerListener {
 	        
 	        frame.setVisible(true);
 		} else if (receiveEvent.getPacket() instanceof ServerSetSlotPacket) {
-			if (mod == mode.IDLE) return;
-			ServerSetSlotPacket p = (ServerSetSlotPacket) receiveEvent.getPacket();
 			
-			if (mod == mode.PICKMODE) {
+			ServerSetSlotPacket p = (ServerSetSlotPacket) receiveEvent.getPacket();
+			if (mod == mode.IDLE) {
+				if (this.windowname.contains("Предметы для грифа")) {
+					mod = mode.getitem;
+					client.crafter.click(p.getSlot());
+				}
+			}else if (mod == mode.PICKMODE) {
 				if (p.getSlot() == 11) {
 					client.crafter.click(11);
 				}
+			} else if (mod == mode.getitem) {
+				if (Main.getMCData().items.get(p.getItem().getId()).name.contains("netherite_ingot")) {
+					client.crafter.click(p.getSlot());
+				}
 			} else if (mod == mode.PICKSERVER) {
 				if (p.getSlot() == 11) {
-					client.crafter.click(11);
-					mod = mode.IDLE;
+					new Thread(()->{
+						client.crafter.click(11);
+						mod = mode.IDLE;
+						ThreadU.sleep(3000);
+						BotU.chat(client, "/call __Flashback__");
+						/*ThreadU.sleep(8000);
+						BotU.log("gtjnjvajjj11111111111111111111111111111111111111111111111111");
+						BotU.chat(client, "/code vups");
+						BotU.chat(client, "/shop");*/
+					}).start();
 				}
 			}
 			
@@ -112,6 +130,7 @@ public class holyworld extends SessionAdapter implements ServerListener {
 			if (mod == mode.IDLE) return;
 			final ServerOpenWindowPacket p = (ServerOpenWindowPacket) receiveEvent.getPacket();
 			BotU.log("name: "+p.getName());
+			this.windowname = p.getName();
 			if (p.getName().contains("Выберите режим:")) {
 				mod = mode.PICKMODE;
 			} else if (p.getName().contains("Выберите сервер Анархии:")) {

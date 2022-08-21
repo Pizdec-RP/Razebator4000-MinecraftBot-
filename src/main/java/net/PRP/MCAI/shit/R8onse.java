@@ -1,11 +1,13 @@
 package net.PRP.MCAI.shit;
 
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
 
@@ -63,7 +65,7 @@ public class R8onse {
 	}
 	
 	public void addIntent(String pattern, String response) throws IOException {
-		/*
+		
 		if (added) return;
 		added = true;
 		System.out.println("6");
@@ -83,6 +85,6 @@ public class R8onse {
 			writer.write(data.toString());
 			writer.close();
 			System.out.println("8");
-		}*/
+		}
 	}
 }

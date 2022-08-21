@@ -3,9 +3,11 @@ package net.PRP.MCAI.bot.specific;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import net.PRP.MCAI.Main;
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.data.Block;
 import net.PRP.MCAI.data.Vector3D;
+import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.VectorUtils;
 import net.PRP.MCAI.data.MinecraftData.Type;
 
@@ -13,19 +15,20 @@ public class Vision {
 	public int width, height; // width-yaw-left/right height-pitch-up/down
 	public double amplifer;
 	public Bot client;
+	private double modifer = 0.2D;
 
 	public Vision(Bot client, int width, int height) {
 		this.width = width;
 		this.height = height;
 		this.client = client;
-		this.amplifer = 0.5;
+		this.amplifer = 5;
 	}
 	
 	public List<Block> getVisibleBlocks() {
 		List<Block> blocks = new CopyOnWriteArrayList<>();
 		for (int y = -width; y <= width; y++) {
 			for (int p = -height; p <= height; p++) {
-				Block a = getLookingBlock(128, y*amplifer, p*amplifer);
+				Block a = getLookingBlock(64, client.getYaw()+y*amplifer, client.getPitch()+p*amplifer);
 				if (a != null) {
 					if (!blocks.contains(a) && a.type != Type.VOID) blocks.add(a);
 				}
@@ -47,6 +50,15 @@ public class Vision {
 		return blocks;
 	}
 	
+	public void createParticleRay(Vector3D from, float yaw, float pitch, int dist, double amp) {
+		
+        final Vector3D v = getDirection(yaw, pitch).normalize();
+        for (int i = 1; i <= dist; i++) {
+            from = from.add(v.multiply(amp));
+            BotU.chat(client, "/particle minecraft:end_rod "+from.forCommandD()+" 0 0 0 0 1");
+        }
+	}
+	
 	public List<Vector3D> createRay(Vector3D from, float yaw, float pitch, int dist, double amp) {
 		List<Vector3D> blocks = new CopyOnWriteArrayList<>();
         final Vector3D v = getDirection(yaw, pitch).normalize();
@@ -59,12 +71,22 @@ public class Vision {
 	
 	public Block getLookingBlock(final int distance,double yaw, double pitch) {
         Vector3D loc = client.getEyeLocation();
-        final Vector3D v = getDirection(yaw, pitch).normalize();
+        final Vector3D v = getDirection(yaw, pitch).normalize().multiply(modifer);
         for (int i = 1; i <= distance; i++) {
-            loc = loc.add(v);
-            Block b = loc.getBlock(client);
-            if (b.type != Type.AIR) return b;
-            else if (b.type != Type.AIR) return null;
+            loc.setX(loc.x+v.x);
+            loc.setY(loc.y+v.y);
+            loc.setZ(loc.z+v.z);
+            //BotU.chat(client, "/particle minecraft:end_rod "+loc.forCommandD()+" 0 0 0 0 1");
+            if (Main.getMCData().bt(
+            		Main.getMCData().blockStates.get(
+            				client.getWorld().getState(
+            						Math.floor(loc.x), Math.floor(loc.y), Math.floor(loc.z)
+            				)
+            		).id
+            	) != Type.AIR
+            ) {
+            	return loc.floor().getBlock(client);
+            }
         }
         return null;
     }

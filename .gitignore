@@ -1,0 +1,10 @@
+target/
+.project
+.classpath
+.settings/
+logs/
+data.json
+hs_err_pid6404.log
+memory.json
+Nicks1.txt
+test.txt

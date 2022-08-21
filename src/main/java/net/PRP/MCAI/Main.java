@@ -60,7 +60,7 @@ public class Main {
 	public static List<String> nicks;
 	public static int allVec = 0;
 	
-    public static void main(String[] args) {
+    public static void main(String... args) {
     	initializeBlockType();
     	updateSettings();
     	proxies = ProxyScraper.ab();
@@ -68,7 +68,7 @@ public class Main {
     	nicks = getnicksinit();
     	//boolean a = true;
     	if (debug) {//mc.dexland.su:25565
-    		new Thread(new Bot("tpa282", "localhost:25565", Proxy.NO_PROXY, false)).start();
+    		new Thread(new Bot("_niggapidor1488", "localhost:25565", Proxy.NO_PROXY, false)).start();
     	} else {
     		new Thread(()->{
     			int tsuc = 0;
@@ -83,6 +83,7 @@ public class Main {
     				bad = tbad;
     				if (!debug) System.out.println("{ suc:"+suc+" bad:"+bad+" all:"+bots.size()+" }");
         			updateSettings();
+        			updatePasti();
         			ThreadU.sleep(1000);
     			}
     		}).start();
@@ -103,6 +104,10 @@ public class Main {
 	    	}
     	}
 	}
+    
+    public static void яеблан() {
+    	яеблан();
+    }
     
     public static void updateSettings() {
     	try {
@@ -211,7 +216,8 @@ public class Main {
         }
     }
     
-    public static void initializeBlockType() {
+    @SuppressWarnings("deprecation")
+	public static void initializeBlockType() {
     	hash = MinecraftData.codecc;
         JsonObject obj = null;
         try {

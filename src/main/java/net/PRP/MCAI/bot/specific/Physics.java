@@ -14,7 +14,6 @@ import net.PRP.MCAI.data.Block;
 import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.data.physics;
 import net.PRP.MCAI.utils.BotU;
-import net.PRP.MCAI.utils.MathU;
 
 public class Physics extends SessionAdapter {
 	public Vector3D before;

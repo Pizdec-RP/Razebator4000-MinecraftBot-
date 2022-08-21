@@ -13,9 +13,14 @@ import com.github.steveice10.mc.protocol.data.game.entity.player.PlayerAction;
 import com.github.steveice10.mc.protocol.data.game.world.block.BlockFace;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerActionPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerInteractEntityPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.client.window.ClientCreativeInventoryActionPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerJoinGamePacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.window.ServerSetSlotPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.window.ServerWindowItemsPacket;
+import com.github.steveice10.opennbt.tag.builtin.CompoundTag;
+import com.github.steveice10.opennbt.tag.builtin.ListTag;
+import com.github.steveice10.opennbt.tag.builtin.ShortTag;
+import com.github.steveice10.opennbt.tag.builtin.Tag;
 import com.github.steveice10.packetlib.event.session.PacketReceivedEvent;
 import com.github.steveice10.packetlib.event.session.SessionAdapter;
 
@@ -23,6 +28,7 @@ import net.PRP.MCAI.Main;
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.MathU;
+import net.PRP.MCAI.utils.TagU;
 import net.PRP.MCAI.utils.ThreadU;
 
 public class Inventory extends SessionAdapter {
@@ -305,14 +311,38 @@ public class Inventory extends SessionAdapter {
 	//--------------------------MOMENTAL-RESPONSE-------------------------------
 	//--------------------------------------------------------------------------
 	
-	@SuppressWarnings("deprecation")
+	public void superItem() {
+		Map<String, Tag> elements = new HashMap<>();
+		ArrayList<Tag> enchs = new ArrayList<Tag>();
+		
+		enchs.add(TagU.createEnchant((short) 32767, "fire_aspect"));
+		enchs.add(TagU.createEnchant((short) 32767, "bane_of_arthropods"));
+		enchs.add(TagU.createEnchant((short) 32767, "mending"));
+		enchs.add(TagU.createEnchant((short) 32767, "looting"));
+		enchs.add(TagU.createEnchant((short) 32767, "sweeping"));
+		enchs.add(TagU.createEnchant((short) 32767, "unbreaking"));
+		enchs.add(TagU.createEnchant((short) 32767, "power"));
+		
+		ListTag enchlist = new ListTag("Enchantments", enchs);
+		
+		elements.put("Enchantments", enchlist);
+		
+		
+		CompoundTag nbt = new CompoundTag("nbt", elements);
+		ItemStack item = new ItemStack(405,64,nbt);
+		
+		//item.getNbt().get("Enchantments")           //test
+		client.getSession().send(new ClientCreativeInventoryActionPacket(-1, item));
+	}
+	
+	//@SuppressWarnings("deprecation")
 	public void dropItem(boolean stack, int slot) {
 		if (stack) {
 			client.crafter.fromSlotToSlotStack(slot, -999);
-			client.getSession().send(new ClientPlayerActionPacket(PlayerAction.DROP_ITEM_STACK, client.getPosition().translate(), BlockFace.UP));
+			//client.getSession().send(new ClientPlayerActionPacket(PlayerAction.DROP_ITEM_STACK, client.getPosition().translate(), BlockFace.UP));
 		} else {
 			client.crafter.fromSlotToSlot(slot, -999);
-			client.getSession().send(new ClientPlayerActionPacket(PlayerAction.DROP_ITEM, client.getPosition().translate(), BlockFace.UP));
+			//client.getSession().send(new ClientPlayerActionPacket(PlayerAction.DROP_ITEM, client.getPosition().translate(), BlockFace.UP));
 		}
 	}
 	

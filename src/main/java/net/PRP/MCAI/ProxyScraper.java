@@ -12,8 +12,6 @@ import java.net.Proxy.Type;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import net.PRP.MCAI.utils.BotU;
-
 public class ProxyScraper {
 	static String an = "\n3=3=3=(13=35=5==25=31)=3=(13=3=33=(1)=3=3====421==4=315=54=315=54=315=5\n313==42,152142131.25=42,13424215313========3154215==4215==4215=";
 	public static List<Proxy> ab() {

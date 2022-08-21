@@ -37,6 +37,55 @@ public class MinecraftData {
 		return Main.getMCData().bt(Main.getMCData().blockStates.get(state).id);
 	}
 	
+	public short TypeToInt(Type t) {
+		short i = 0;
+		switch (t) {
+		case AIR:
+			i = 1;
+			break;
+		case AVOID:
+			i = 1;
+			break;
+		case CARPET:
+			i = 2;
+			break;
+		case DOOR:
+			i = 3;
+			break;
+		case DOOR_GATE:
+			i = 4;
+			break;
+		case GATE:
+			i = 5;
+			break;
+		case GOAWAY:
+			i = 6;
+			break;
+		case HARD:
+			i = 7;
+			break;
+		case LADDER:
+			i = 8;
+			break;
+		case LIQUID:
+			i = 9;
+			break;
+		case UNBREAKABLE:
+			i = 10;
+			break;
+		case UNKNOWN:
+			i = 11;
+			break;
+		case VOID:
+			i = 12;
+			break;
+		default:
+			i = 11;
+			break;
+		}
+		return i;
+	}
+	
 	public Type bt(int id) {
 		Type aye = null;
 		aye = bts.get(id);

@@ -4,7 +4,6 @@ import com.github.steveice10.mc.protocol.packet.ingame.client.ClientKeepAlivePac
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerKeepAlivePacket;
 import com.github.steveice10.packetlib.event.session.PacketReceivedEvent;
 import com.github.steveice10.packetlib.event.session.SessionAdapter;
-import net.PRP.MCAI.Main;
 
 public class Shit extends SessionAdapter {
 	boolean ns = true;

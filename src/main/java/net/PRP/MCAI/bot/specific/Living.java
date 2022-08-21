@@ -579,9 +579,9 @@ public class Living extends SessionAdapter {
 							return;
 						} else if (i == 8) {
 							tasklist.add("goforwardwithangle 20");
-						} else if (i >= 9 && i <= 12) {
+						} else if (i >= 9 && i <= 18) {
 							VectorUtils.placeBlockNear(client, (String)MathU.random((ArrayList<String>)Main.gamerule("minetargetnames")));
-						} else if (i > 12 && i <= 20) {
+						} else if (i > 18 && i <= 20) {
 							enemy = playerForPVP();
 							if (enemy != null) {
 								if (client.getWorld().Entities.get(enemy) != null && VectorUtils.sqrt(client.getWorld().Entities.get(enemy).Position, client.getPosition()) <= client.pvp.maxPos && client.getWorld().Entities.get(enemy).alive) {

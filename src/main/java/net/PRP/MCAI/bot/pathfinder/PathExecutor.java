@@ -1,15 +1,12 @@
 package net.PRP.MCAI.bot.pathfinder;
 
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.bot.specific.Miner.bbmct;
 import net.PRP.MCAI.data.Vector3D;
-import net.PRP.MCAI.data.physics;
 import net.PRP.MCAI.utils.*;
 
+//@SuppressWarnings("static-access")
 public class PathExecutor {
 	public enum State {
 		SEARCHING, WALKING, FINISHED;
@@ -22,7 +19,6 @@ public class PathExecutor {
 	private Vector3D from;
 	private Vector3D to;
 	public BadAStar path = null;
-	private int err;
 	int pticks = 0;
 	
 	public PathExecutor(Bot client) {
@@ -53,7 +49,6 @@ public class PathExecutor {
 		this.path = new BadAStar(client, this.end);
 		if (path.buildPath(true)) {
 			if (path.toWalk.isEmpty()) return;
-			this.sleepticks = path.sleepticks;
 			this.to = path.toWalk.get(0);
 		} else {
 			finish("bpf1");
@@ -70,7 +65,6 @@ public class PathExecutor {
 		this.path = new BadAStar(client, this.end);
 		if (path.buildPath(true)) {
 			if (path.toWalk.isEmpty()) return;
-			this.sleepticks = path.sleepticks;
 			this.to = path.toWalk.get(0);
 		} else {
 			finish("bpf2");
@@ -120,7 +114,6 @@ public class PathExecutor {
 				if (path.buildPath(false)) {
 					state = State.WALKING;
 					if (path.toWalk.isEmpty()) return;
-					this.sleepticks = path.sleepticks;
 					this.to = path.toWalk.get(0);
 					tick();
 				} else {
@@ -152,7 +145,6 @@ public class PathExecutor {
 	public void finish(String reason) {
 		this.state = State.FINISHED;
 		pticks = 0;
-		err = 0;
 		if (Main.debug) System.out.println("ended, ref:("+reason+"). from"+this.start+" to:"+this.end);
 		this.start = null;
 		this.end = null;
@@ -163,14 +155,13 @@ public class PathExecutor {
 		this.state = State.FINISHED;
 		path = null;
 		pticks = 0;
-		err = 0;
 		this.start = client.getPositionInt();
 		//client.pm.Back();
 	}
 	
 	
 	private boolean testBuildPath(boolean addsleepticks, Vector3D starta, Vector3D enda) {
-		BadAStar temp = new BadAStar(client, starta, enda);
+		IPathfinder temp = new BadAStar(client, starta, enda);
 		return temp.buildPath(addsleepticks);
 	}
 	

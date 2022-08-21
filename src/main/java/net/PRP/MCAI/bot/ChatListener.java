@@ -6,7 +6,10 @@ import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import com.github.steveice10.mc.protocol.MinecraftConstants;
 import com.github.steveice10.mc.protocol.data.game.PlayerListEntry;
+import com.github.steveice10.mc.protocol.data.game.chunk.Chunk;
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.ItemStack;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
 import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
 import com.github.steveice10.mc.protocol.data.game.entity.player.PlayerAction;
@@ -19,6 +22,7 @@ import com.github.steveice10.packetlib.event.session.PacketReceivedEvent;
 import com.github.steveice10.packetlib.event.session.SessionAdapter;
 import com.github.steveice10.packetlib.packet.Packet;
 import net.PRP.MCAI.Main;
+import net.PRP.MCAI.TestServer.Server;
 import net.PRP.MCAI.bot.specific.Living.raidState;
 import net.PRP.MCAI.bot.specific.Miner.bbmct;
 import net.PRP.MCAI.data.Block;
@@ -26,7 +30,7 @@ import net.PRP.MCAI.data.Entity;
 import net.PRP.MCAI.data.MinecraftData.Type;
 import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.utils.*;
-import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.Component;
 
 public class ChatListener extends SessionAdapter {
 
@@ -270,7 +274,7 @@ public class ChatListener extends SessionAdapter {
 					Vector3D min = new Vector3D(Integer.parseInt(command.get(1)), Integer.parseInt(command.get(2)), Integer.parseInt(command.get(3)));
 					Vector3D max = new Vector3D(Integer.parseInt(command.get(4)), Integer.parseInt(command.get(5)), Integer.parseInt(command.get(6)));
 					List<Vector3D> temp = new ArrayList<>();
-					int i = 0;
+					
 					for (int y = (int) Math.max(min.y, max.y); y >= Math.min(min.y, max.y); y--) {
 						for (int x = (int) Math.min(min.x, max.x); x <= Math.max(min.x, max.x); x++) {
 							for (int z = (int) Math.min(min.z, max.z); z <= Math.max(min.z, max.z); z++) {
@@ -363,6 +367,63 @@ public class ChatListener extends SessionAdapter {
 					Vector3D a = new Vector3D(1,228,337);
 					Vector3D ab= new Vector3D(1,228,337);
 					BotU.chat(client, ""+a.equals(ab));
+				} else if (command.get(0).equalsIgnoreCase("visiontest")) {
+					long st = System.currentTimeMillis();
+					List<Block> a = client.vis.getVisibleBlocks();
+					long et = System.currentTimeMillis();
+					BotU.chat(client, a.size()+" points returned, time: "+(et-st));
+				} else if (command.get(0).equalsIgnoreCase("airun")) {
+					UUID uuid = ((ServerChatPacket) receiveEvent.getPacket()).getSenderUuid();
+					Vector3D to = client.getWorld().getEntity(uuid).getValue().Position.floor();
+					client.lpe.start(to);
+				} else if (command.get(0).equalsIgnoreCase("aistop")) {
+					client.lpe.stop(false);
+				} else if (command.get(0).equalsIgnoreCase("ailearnfrommetoyou")) {
+					UUID uuid = ((ServerChatPacket) receiveEvent.getPacket()).getSenderUuid();
+					Vector3D from = client.getWorld().getEntity(uuid).getValue().Position.floor();
+					Vector3D to = client.getPositionInt();
+					int x = (int) (to.x-from.x);
+					int y = (int) (to.y-from.y);
+					int z = (int) (to.z-from.z);
+					String pattern = x+" "+y+" "+z;
+					double[] data = new double[37];
+					int i = 0;
+					for (double d : client.lpe.formAround(from)) {
+						data[i] = d;
+						i++;
+					}
+					data[36] = 1.0D;
+					List<Vector3D> list = client.vis.createRay(from.floor().add(0.5, 0.5, 0.5), to.floor().add(0.5, 0.5, 0.5), client.getYaw(), client.getPitch(), 10, 0.1);
+					for (Vector3D pos : list) {
+						BotU.chat(client, "/particle minecraft:end_rod "+pos.forCommandD()+" 0 0 0 0 1");
+						BotU.log(pos.forCommandD());
+					}
+					client.lpe.pcts.get(pattern).learning(data);
+				} else if (command.get(0).equalsIgnoreCase("dropinv")) {
+					for (Entry<Integer, ItemStack> i : client.playerInventory.getHotbar().entrySet()) {
+						if (i.getValue() != null) {
+							BotU.SetSlot(client, i.getKey());
+							client.getSession().send(new ClientPlayerActionPacket(PlayerAction.DROP_ITEM_STACK, client.getPosition().translate(), BlockFace.UP));
+						} else {
+							BotU.log("slot "+i.getKey()+" is empty");
+						}
+					}
+				} else if (command.get(0).equalsIgnoreCase("cpserver")) {
+					Chunk ch = client.getWorld().getCurrentChunk();
+					new Thread(()->{
+						Server.createServer(
+				        		"localhost",
+				        		228,
+				    			"1.16.5",
+				    			MinecraftConstants.PROTOCOL_VERSION, 
+				    			0,
+				        		666,
+				    			Component.text("общение с искусственным интеллектом"),
+				    			ch
+				        );
+					}).start();
+				} else if (command.get(0).equalsIgnoreCase("dropsuperitem")) {
+					client.playerInventory.superItem();
 				}
 			}
 		} 

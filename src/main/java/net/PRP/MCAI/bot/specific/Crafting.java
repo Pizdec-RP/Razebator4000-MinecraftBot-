@@ -101,7 +101,7 @@ public class Crafting extends SessionAdapter {
             	BotU.log("bruh actionid < 0, skipaem nahuy. winid:"+p.getWindowId());
             	return;
             }*/
-            if (Main.debug) System.out.println("confirmed: "+p.getActionId()+"/"+actionId);
+            //if (Main.debug) System.out.println("confirmed: "+p.getActionId()+"/"+actionId);
             lastactionid = p.getActionId();
             client.getSession().send(new ClientConfirmTransactionPacket(p.getWindowId(), p.getActionId(), true));
 		} else if (receiveEvent.getPacket() instanceof ServerCloseWindowPacket) {

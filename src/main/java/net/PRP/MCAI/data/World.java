@@ -99,6 +99,17 @@ public class World {
 		}
 	}
 	
+	public Chunk getCurrentChunk() {
+		int chunkX = (int)Math.floor(client.getPosX()) >> 4;
+        int chunkY = (int)Math.floor(client.getPosY()) >> 4;
+        int chunkZ = (int)Math.floor(client.getPosZ()) >> 4;
+		if ((boolean) Main.gamerule("multiworld")) {
+			return Multiworld.getCurrentChunk(chunkX, chunkY, chunkZ);
+		} else {
+			return columns.get(new ChunkCoordinates(chunkX, chunkZ)).getChunks()[chunkY];
+		}
+	}
+	
 	public void setBlock(Position pos, int state) {
 		if ((boolean) Main.gamerule("multiworld")) {
 			Multiworld.setBlock(pos, state);

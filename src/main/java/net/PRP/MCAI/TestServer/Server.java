@@ -1,31 +1,24 @@
 package net.PRP.MCAI.TestServer;
 
 import com.github.steveice10.mc.auth.data.GameProfile;
-import com.github.steveice10.mc.auth.exception.request.RequestException;
-import com.github.steveice10.mc.auth.service.AuthenticationService;
 import com.github.steveice10.mc.auth.service.SessionService;
 import com.github.steveice10.mc.protocol.MinecraftConstants;
 import com.github.steveice10.mc.protocol.MinecraftProtocol;
 import com.github.steveice10.mc.protocol.ServerLoginHandler;
-import com.github.steveice10.mc.protocol.data.SubProtocol;
 import com.github.steveice10.mc.protocol.data.game.ClientRequest;
 import com.github.steveice10.mc.protocol.data.game.PlayerListEntry;
-import com.github.steveice10.mc.protocol.data.game.PlayerListEntryAction;
-import com.github.steveice10.mc.protocol.data.game.TitleAction;
 import com.github.steveice10.mc.protocol.data.game.chunk.Chunk;
 import com.github.steveice10.mc.protocol.data.game.chunk.Column;
-import com.github.steveice10.mc.protocol.data.game.entity.metadata.ItemStack;
+import com.github.steveice10.mc.protocol.data.game.chunk.NibbleArray3d;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
 import com.github.steveice10.mc.protocol.data.game.entity.player.GameMode;
 import com.github.steveice10.mc.protocol.data.game.entity.player.PositionElement;
-import com.github.steveice10.mc.protocol.data.game.entity.type.EntityType;
+import com.github.steveice10.mc.protocol.data.game.setting.Difficulty;
 import com.github.steveice10.mc.protocol.data.game.world.block.BlockChangeRecord;
 import com.github.steveice10.mc.protocol.data.status.PlayerInfo;
 import com.github.steveice10.mc.protocol.data.status.ServerStatusInfo;
 import com.github.steveice10.mc.protocol.data.status.VersionInfo;
 import com.github.steveice10.mc.protocol.data.status.handler.ServerInfoBuilder;
-import com.github.steveice10.mc.protocol.data.status.handler.ServerInfoHandler;
-import com.github.steveice10.mc.protocol.data.status.handler.ServerPingTimeHandler;
 import com.github.steveice10.mc.protocol.packet.ingame.client.ClientChatPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.ClientKeepAlivePacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.ClientPluginMessagePacket;
@@ -33,19 +26,19 @@ import com.github.steveice10.mc.protocol.packet.ingame.client.ClientRequestPacke
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerPositionPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerPositionRotationPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerRotationPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.client.window.ClientCreativeInventoryActionPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerChatPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.server.ServerDifficultyPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerDisconnectPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerJoinGamePacket;
-import com.github.steveice10.mc.protocol.packet.ingame.server.ServerPlayerListDataPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.server.ServerPlayerListEntryPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.server.ServerTitlePacket;
+import com.github.steveice10.mc.protocol.packet.ingame.server.entity.player.ServerPlayerAbilitiesPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.player.ServerPlayerHealthPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.player.ServerPlayerPositionRotationPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.server.entity.spawn.ServerSpawnEntityPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.server.window.ServerSetSlotPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerBlockChangePacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerChunkDataPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerSpawnPositionPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerUpdateLightPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerUpdateTimePacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerUpdateViewPositionPacket;
 import com.github.steveice10.mc.protocol.packet.login.client.LoginStartPacket;
 import com.github.steveice10.opennbt.tag.builtin.ByteTag;
@@ -58,14 +51,12 @@ import com.github.steveice10.opennbt.tag.builtin.LongTag;
 import com.github.steveice10.opennbt.tag.builtin.StringTag;
 import com.github.steveice10.opennbt.tag.builtin.Tag;
 import com.github.steveice10.packetlib.ProxyInfo;
-import com.github.steveice10.packetlib.Session;
 import com.github.steveice10.packetlib.event.server.ServerAdapter;
 import com.github.steveice10.packetlib.event.server.ServerClosedEvent;
 import com.github.steveice10.packetlib.event.server.SessionAddedEvent;
 import com.github.steveice10.packetlib.event.server.SessionRemovedEvent;
 import com.github.steveice10.packetlib.event.session.PacketReceivedEvent;
 import com.github.steveice10.packetlib.event.session.SessionAdapter;
-import com.github.steveice10.packetlib.tcp.TcpClientSession;
 import com.github.steveice10.packetlib.tcp.TcpServer;
 
 import net.PRP.MCAI.Main;
@@ -75,15 +66,10 @@ import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.MathU;
 import net.PRP.MCAI.utils.StringU;
 import net.PRP.MCAI.utils.ThreadU;
-import net.PRP.MCAI.utils.VectorUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
-
 import java.net.Proxy;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -201,18 +187,19 @@ public class Server {
 			Component.text("§l§aDi§bVerzium §f- §r§6CAM�� �O����PH�� CEPBEP B CH�\n").append(Component.text("§b§oC HAM� M����OH� ��POKOB, �P�COE��H��C�"))
     	);*/
     	createServer(
-        		"192.168.0.104",
+        		"localhost",
         		228,
     			"1.16.5",
     			MinecraftConstants.PROTOCOL_VERSION, 
     			0,
         		666,
-    			Component.text("общение с искусственным интеллектом")
-        	);
+    			Component.text("общение с искусственным интеллектом"),
+    			null
+        );
     }
     
 
-    public static void createServer(String HOST, int PORT, String version, int protocol, int online, int maxonline, TextComponent name) {
+    public static void createServer(String HOST, int PORT, String version, int protocol, int online, int maxonline, TextComponent name, Chunk cha) {
     	Main.nicks = Main.getnicksinit();
     	dct.put(new ByteTag("piglin_safe",(byte) 0));
     	dct.put(new FloatTag("ambient_light",15.0F));
@@ -226,6 +213,23 @@ public class Server {
     	dct.put(new ByteTag("ultrawarm",(byte)0));
     	dct.put(new ByteTag("has_ceiling",(byte)0));
     	dct.put(new ByteTag("has_skylight",(byte)1));
+    	Chunk ch;
+    	if (cha == null ) {
+    		ch = new Chunk();
+        	for (int x = 0; x < 16; x++) {
+        		for (int z = 0; z < 16; z++) {
+        			for (int y = 0; y < 16; y++) {
+        				if (y == 1) {
+        					ch.set(x, y, z, 1);
+        				} else {
+        					ch.set(x, y, z, 0);
+        				}
+                	}
+            	}
+        	}
+    	} else {
+    		ch = cha;
+    	}
     			
         if(SPAWN_SERVER) {
             SessionService sessionService = new SessionService();
@@ -281,7 +285,7 @@ public class Server {
                 	event.getSession().addListener(new SessionAdapter() {
                         @Override
                         public void packetReceived(PacketReceivedEvent event) {
-                        	//if (!(event.getPacket() instanceof ClientKeepAlivePacket)) System.out.println(event.getPacket().getClass().getName());
+                        	if (!(event.getPacket() instanceof ClientKeepAlivePacket)) System.out.println(event.getPacket().getClass().getName());
                             if(event.getPacket() instanceof ClientChatPacket) {
                                 ClientChatPacket packet = event.getPacket();
                                 GameProfile profile = event.getSession().getFlag(MinecraftConstants.PROFILE_KEY);
@@ -313,8 +317,8 @@ public class Server {
 	                            	event.getSession().send(new ServerJoinGamePacket(
 	                            			eid,
 	                            			false,
-	                            			GameMode.SURVIVAL,
-	                            			GameMode.SURVIVAL, 
+	                            			GameMode.CREATIVE,
+	                            			GameMode.CREATIVE, 
 	                            			1,
 	                            			new String[] {"minecraft:world"},
 	                            			getDimensionTag(),
@@ -328,115 +332,42 @@ public class Server {
 	                            			false,
 	                            			false
 	                            	));
-	                            	Chunk ch = new Chunk();
-	                            	for (int x = 0; x < 16; x++) {
-	                            		for (int z = 0; z < 16; z++) {
-	                            			for (int y = 0; y < 16; y++) {
-	                            				ch.set(x, y, z, 0);
-	    	                            	}
-		                            	}
-	                            	}
+	                            	
 	                            	//Chunk downch = new Chunk();
 	                            	Chunk[] chunks = new Chunk[] {ch,ch,ch,ch,ch,ch,ch,ch,ch,ch,ch,ch,ch,ch,ch,ch};
-	                            	CompoundTag[] tags = new CompoundTag[] {getPlainsTag()};
+	                            	
 	                            	int[] bd = new int[1024];
 	                            	for (int i = 0; i < bd.length; i++) {
-	                            		bd[i] = 1;
+	                            		bd[i] = 129;
 	                            	}
+	                            	CompoundTag[] tags = new CompoundTag[] {getPlainsTag()};
 	                            	
+	                            	int i = 0;
+	                            	NibbleArray3d[] skyLight = new NibbleArray3d[18];
+	                            	for (i = 0; i<18;i++) {
+	                            		skyLight[i] = new NibbleArray3d(4096);
+	                            		skyLight[i].fill(5);
+	                            	}
+	                            	NibbleArray3d[] blockLight = new NibbleArray3d[18];
+	                            	for (i = 0; i<18;i++) {
+	                            		blockLight[i] = new NibbleArray3d(4096);
+	                            		blockLight[i].fill(5);
+	                            	}
+	                            	//event.getSession().send(new ClientPluginMessagePacket("minecraft:brand", new byte[] {7,118,97,110,105,108,108,97}));
+	                            	event.getSession().send(new ServerDifficultyPacket(Difficulty.EASY, true));
+	                            	
+	                            	event.getSession().send(new ServerPlayerAbilitiesPacket(true,true,true,true,0.3F,0.1F));
 	                            	event.getSession().send(new ServerSpawnPositionPacket(new Position(2,246,2)));
-	                            	event.getSession().send(new ServerPlayerPositionRotationPacket(0,999999,0,0,0,0,new ArrayList<PositionElement>()));
-	                            	event.getSession().send(new ServerUpdateViewPositionPacket(1,1));
-	                            	event.getSession().send(new ServerChunkDataPacket(new Column(1,1,chunks,tags, getPlainsTag(), bd)));
-	                            	event.getSession().send(new ServerChunkDataPacket(new Column(1,0,chunks,tags, getPlainsTag(), bd)));
-	                            	event.getSession().send(new ServerChunkDataPacket(new Column(0,1,chunks,tags, getPlainsTag(), bd)));
+	                            	event.getSession().send(new ServerPlayerPositionRotationPacket(0,256,0,0,0,0,new ArrayList<PositionElement>()));
+	                            	event.getSession().send(new ServerUpdateViewPositionPacket(0,0));
 	                            	event.getSession().send(new ServerChunkDataPacket(new Column(0,0,chunks,tags, getPlainsTag(), bd)));
-	                            	event.getSession().send(new ServerChunkDataPacket(new Column(-1,-1,chunks,tags, getPlainsTag(), bd)));
-	                            	event.getSession().send(new ServerChunkDataPacket(new Column(-1,0,chunks,tags, getPlainsTag(), bd)));
-	                            	event.getSession().send(new ServerChunkDataPacket(new Column(0,-1,chunks,tags, getPlainsTag(), bd)));
+	                            	event.getSession().send(new ServerUpdateLightPacket(0,0,true, skyLight, blockLight));
+	                            	event.getSession().send(new ServerChunkDataPacket(new Column(1,1,chunks,tags, getPlainsTag(), bd)));
+	                            	event.getSession().send(new ServerUpdateLightPacket(1,1,true, skyLight, blockLight));
+	                            	event.getSession().send(new ServerUpdateTimePacket(1,1));
 	                            	event.getSession().send(new ServerBlockChangePacket(new BlockChangeRecord(new Position(0,103,0),9)));
-	                            	event.getSession().send(new ServerChatPacket(Component.text("<mamkoeb bot> привет хуесос. Я робот который ебет твою мать. Вопросы нахуй?")));
-	                            	/*
-	                            	event.getSession().send(new ServerPlayerListEntryPacket(
-                            			PlayerListEntryAction.ADD_PLAYER,
-                            			getPlayersLE()
-                            		));
-	                            	/*
-	                            	event.getSession().send(new ServerPlayerListDataPacket(
-	                            			Component.text("сосай ботик"),
-	                            			Component.text("мамаша твоя прошмандовка")
-	                            			));
-	                            	event.getSession().send(new ServerPlayerPositionRotationPacket(0,100,0,0,0,0,new ArrayList<PositionElement>()));
-	                            	event.getSession().send(new ServerBlockChangePacket(new BlockChangeRecord(new Position(0,100,5),9)));
-	                            	event.getSession().send(new ServerBlockChangePacket(new BlockChangeRecord(new Position(0,101,5),9)));
-	                            	event.getSession().send(new ServerBlockChangePacket(new BlockChangeRecord(new Position(-1,100,5),9)));
-	                            	event.getSession().send(new ServerBlockChangePacket(new BlockChangeRecord(new Position(1,100,5),9)));
-	                            	event.getSession().send(new ServerBlockChangePacket(new BlockChangeRecord(new Position(0,102,5),9)));
-	                            	event.getSession().send(new ServerBlockChangePacket(new BlockChangeRecord(new Position(0,103,5),9)));
-	                            	event.getSession().send(new ServerBlockChangePacket(new BlockChangeRecord(new Position(0,104,5),65)));
+	                            	//event.getSession().send(new ServerChatPacket(Component.text("<mamkoeb bot> привет хуесос. Я робот который ебет твою мать. Вопросы нахуй?")));
 	                            	
-	                            	
-	                            	event.getSession().send(new ServerChatPacket(Component.text("§2[Pizdec RP]§f §cМАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ")));
-	                            	event.getSession().send(new ServerTitlePacket(TitleAction.TITLE, Component.text("соси хуй лол")));
-	                            	event.getSession().send(new ServerChatPacket(Component.text("§2[Pizdec RP]§f §cМАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ")));
-	                            	event.getSession().send(new ServerChatPacket(Component.text("§2[Pizdec RP]§f §cМАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ")));
-	                            	ThreadU.sleep(500);
-	                            	event.getSession().send(new ServerChatPacket(Component.text("§2[Pizdec RP]§f §cМАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ")));
-	                            	event.getSession().send(new ServerChatPacket(Component.text("§2[Pizdec RP]§f §cМАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ")));
-	                            	ThreadU.sleep(500);
-	                            	event.getSession().send(new ServerChatPacket(Component.text("§2[Pizdec RP]§f §cМАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ")));
-	                            	event.getSession().send(new ServerChatPacket(Component.text("§2[Pizdec RP]§f §cМАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ")));
-	                            	ThreadU.sleep(500);
-	                            	event.getSession().send(new ServerChatPacket(Component.text("§2[Pizdec RP]§f §cМАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ")));
-	                            	event.getSession().send(new ServerChatPacket(Component.text("§2[Pizdec RP]§f §cМАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ")));
-	                            	ThreadU.sleep(500);
-	                            	event.getSession().send(new ServerChatPacket(Component.text("§2[Pizdec RP]§f §cМАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ")));
-	                            	event.getSession().send(new ServerChatPacket(Component.text("§2[Pizdec RP]§f §cМАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ")));
-	                            	ThreadU.sleep(500);
-	                            	event.getSession().send(new ServerChatPacket(Component.text("§2[Pizdec RP]§f §cМАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ")));
-	                            	event.getSession().send(new ServerChatPacket(Component.text("§2[Pizdec RP]§f §cМАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ")));
-	                            	ThreadU.sleep(500);
-	                            	event.getSession().send(new ServerChatPacket(Component.text("§2[Pizdec RP]§f §cМАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ")));
-	                            	event.getSession().send(new ServerChatPacket(Component.text("§2[Pizdec RP]§f §cМАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ МАМКУ ЕБАЛ")));
-	                            	ThreadU.sleep(500);
-	                            	event.getSession().send(new ServerChatPacket(Component.text("Pizdec RP#0706 <-- напиши ему в дс что он пидор")));
-	                            	event.getSession().send(new ServerChatPacket(Component.text("Pizdec RP#0706 <-- напиши ему в дс что он пидор")));
-	                            	event.getSession().send(new ServerChatPacket(Component.text("Pizdec RP#0706 <-- напиши ему в дс что он пидор")));
-	                            	event.getSession().send(new ServerChatPacket(Component.text("Pizdec RP#0706 <-- напиши ему в дс что он пидор")));
-	                            	event.getSession().send(new ServerChatPacket(Component.text("Pizdec RP#0706 <-- напиши ему в дс что он пидор")));
-	                            	ThreadU.sleep(1500);
-	                            	event.getSession().send(new ServerTitlePacket(TitleAction.TITLE, Component.text("иди нахуй отсюдапидр")));
-	                            	event.getSession().send(new ServerChatPacket(Component.text("§2[VRL]§f §cПлагин VoiceReadLines не обнаружил з.у. на вашем клиенте")));
-	                            	event.getSession().send(new ServerPlayerHealthPacket(5,10,0));
-	                            	ThreadU.sleep(1000);
-	                            	event.getSession().send(new ServerChatPacket(Component.text("§e[DV]§f похоже вы используете очень старую версию протокола: "+MinecraftConstants.PROTOCOL_VERSION)));
-	                            	ThreadU.sleep(1000);
-	                            	event.getSession().send(new ServerChatPacket(Component.text("§e[DV]§f сервер поддерживает версии minecraft 2.10+ а так же версии с 3.1 по 3.2.6. Ваша версия (1.16)")));
-	                            	ThreadU.sleep(3000);
-	                            	event.getSession().send(new ServerChatPacket(Component.text("§e[DV]§f закрываю соединение...")));
-	                            	ThreadU.sleep(1000);
-	                            	event.getSession().send(new ServerChatPacket(Component.text("§3use /q to disconnect")));
-	                            	*/
-	                            	//event.getSession().send(new ServerTitlePacket(TitleAction.TITLE,Component.text("похоже вы используете")));
-	                            	
-	                            	
-	                            	
-	                            	/*ThreadU.sleep(2000);
-	                            	event.getSession().send(new ServerTitlePacket(TitleAction.TITLE,Component.text("3")));
-	                            	ThreadU.sleep(800);
-	                            	event.getSession().send(new ServerTitlePacket(TitleAction.TITLE,Component.text("2")));
-	                            	ThreadU.sleep(800);
-	                            	event.getSession().send(new ServerTitlePacket(TitleAction.TITLE,Component.text("1")));
-	                            	
-	                            	for (int i = 0; i <= 1000; i++) {
-	                            		event.getSession().send(new ServerSpawnEntityPacket(i+1, UUID.randomUUID(), EntityType.ENDER_DRAGON, 0,999999,0, 0, 0, 0, -10, 0));
-	                            		if (i % 10 == 0)event.getSession().send(new ServerTitlePacket(TitleAction.SUBTITLE,Component.text("нагрузка "+i+"lvl ну как тебе сосется?")));
-	                            		ThreadU.sleep(10);
-	                            	}
-	                            	/*starttime = System.currentTimeMillis();
-	                            	starty = 100;
-	                            	beforetime = System.currentTimeMillis();
-	                            	event.getSession().send(new ServerPlayerHealthPacket(0,10,0));*/
                             	}).start();
                             } else if (event.getPacket() instanceof ClientPlayerPositionRotationPacket) {
                             	ClientPlayerPositionRotationPacket packet = (ClientPlayerPositionRotationPacket) event.getPacket();
@@ -468,9 +399,18 @@ public class Server {
                             		event.getSession().send(new ServerPlayerHealthPacket(5,10,0));
                             		event.getSession().send(new ServerPlayerPositionRotationPacket(0,372,0,0,0,0,new ArrayList<PositionElement>()));
                             	}
+                            } else if (event.getPacket() instanceof ClientCreativeInventoryActionPacket) {
+                            	ClientCreativeInventoryActionPacket p = (ClientCreativeInventoryActionPacket) event.getPacket();
+                            	BotU.log(p.getClickedItem().toString());
+                            	BotU.log("slot:"+p.getSlot());
                             }
                         }
                     });
+                }
+                
+                public void sendChunk() {
+                	/*event.getSession().send(new ServerChunkDataPacket(new Column(1,1,chunks,tags, getPlainsTag(), bd)));
+                	event.getSession().send(new ServerUpdateLightPacket());*/
                 }
                 
                 public void HandlePos(Vector3D a) {

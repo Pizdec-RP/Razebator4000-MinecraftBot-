@@ -1,25 +1,19 @@
 package net.PRP.MCAI.bot;
 
-import com.github.steveice10.mc.protocol.data.game.ClientRequest;
 import com.github.steveice10.mc.protocol.data.game.PlayerListEntry;
 import com.github.steveice10.mc.protocol.data.game.PlayerListEntryAction;
 import com.github.steveice10.mc.protocol.data.game.ResourcePackStatus;
-import com.github.steveice10.mc.protocol.data.game.entity.attribute.Attribute;
+import com.github.steveice10.mc.protocol.data.game.chunk.NibbleArray3d;
 import com.github.steveice10.mc.protocol.data.game.entity.player.HandPreference;
 import com.github.steveice10.mc.protocol.data.game.setting.ChatVisibility;
 import com.github.steveice10.mc.protocol.data.game.setting.SkinPart;
 import com.github.steveice10.mc.protocol.packet.ingame.client.ClientPluginMessagePacket;
-import com.github.steveice10.mc.protocol.packet.ingame.client.ClientRequestPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.ClientResourcePackStatusPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.ClientSettingsPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerPositionRotationPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerStatePacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.window.ClientCloseWindowPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.world.ClientTeleportConfirmPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.server.ServerChatPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerJoinGamePacket;
-import com.github.steveice10.mc.protocol.packet.ingame.server.entity.ServerEntityPositionPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.server.entity.ServerEntityPropertiesPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.player.ServerPlayerAbilitiesPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.player.ServerPlayerChangeHeldItemPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.player.ServerPlayerHealthPacket;
@@ -28,8 +22,9 @@ import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerBlockC
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerChunkDataPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerMultiBlockChangePacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerUnloadChunkPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerUpdateTimePacket;
+import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerUpdateLightPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerPlayerListEntryPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.server.ServerPluginMessagePacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerResourcePackSendPacket;
 import com.github.steveice10.mc.protocol.packet.login.server.LoginSuccessPacket;
 import com.github.steveice10.packetlib.event.session.DisconnectedEvent;
@@ -43,7 +38,6 @@ import net.PRP.MCAI.utils.*;
 import com.github.steveice10.mc.protocol.data.game.world.block.BlockChangeRecord;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 public class SessionListener extends SessionAdapter {
@@ -56,6 +50,7 @@ public class SessionListener extends SessionAdapter {
     
     @Override
     public void packetReceived(PacketReceivedEvent receiveEvent) {
+    	//System.out.println(receiveEvent.getPacket().getClass().getName());
         if (receiveEvent.getPacket() instanceof ServerJoinGamePacket) {
         	//System.out.println("(" + client.getGameProfile().getName() + ") Подлючился");
         	ServerJoinGamePacket p = (ServerJoinGamePacket) receiveEvent.getPacket();
@@ -133,8 +128,17 @@ public class SessionListener extends SessionAdapter {
 		} else if (receiveEvent.getPacket() instanceof ServerChunkDataPacket) {
 			
 			ServerChunkDataPacket data = (ServerChunkDataPacket) receiveEvent.getPacket();
+
 			client.getWorld().addChunkColumn(new ChunkCoordinates(data.getColumn().getX(), data.getColumn().getZ()), data.getColumn());
-		
+		} else if (receiveEvent.getPacket() instanceof ServerPluginMessagePacket) {
+			
+			ServerPluginMessagePacket data = (ServerPluginMessagePacket) receiveEvent.getPacket();
+			BotU.log(data.getChannel());
+			
+			for (byte b:data.getData()) {
+				BotU.log(b);
+			}
+			
 		} else if (receiveEvent.getPacket() instanceof ServerBlockChangePacket) {
 			ServerBlockChangePacket packet = (ServerBlockChangePacket) receiveEvent.getPacket();
 			client.getWorld().setBlock(packet.getRecord().getPosition(), packet.getRecord().getBlock());
@@ -191,11 +195,6 @@ public class SessionListener extends SessionAdapter {
 		} else if (receiveEvent.getPacket() instanceof ServerPlayerChangeHeldItemPacket) {
 			ServerPlayerChangeHeldItemPacket p = (ServerPlayerChangeHeldItemPacket)receiveEvent.getPacket();
 			BotU.SetSlot(client, p.getSlot());
-		} else if (receiveEvent.getPacket() instanceof ServerEntityPropertiesPacket) {
-			ServerEntityPropertiesPacket p = (ServerEntityPropertiesPacket)receiveEvent.getPacket();
-			
-		} else {
-			//if (!(receiveEvent.getPacket() instanceof ServerUpdateTimePacket || receiveEvent.getPacket() instanceof ServerEntityPositionPacket)) BotU.log(receiveEvent.getPacket().getClass().getName());
 		}
     }
     

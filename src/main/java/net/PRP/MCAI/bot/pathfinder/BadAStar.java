@@ -24,7 +24,7 @@ public class BadAStar implements IPathfinder{
 		this.client = client;
 	}
 	
-	public BadAStar(Bot client, Vector3D start,Vector3D end) {
+	public BadAStar(Bot client, Vector3D start, Vector3D end) {
 		this.start = start;
 		this.end = end;
 		this.client = client;

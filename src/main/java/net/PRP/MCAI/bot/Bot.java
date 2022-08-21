@@ -18,6 +18,7 @@ import net.PRP.MCAI.ListenersForServers.mst;
 import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.ThreadU;
 import net.PRP.MCAI.utils.VectorUtils;
+import net.PRP.MCAI.bot.pathfinder.LivePathExec;
 import net.PRP.MCAI.bot.pathfinder.PathExecutor;
 import net.PRP.MCAI.bot.specific.Miner;
 import net.PRP.MCAI.bot.specific.Crafting;
@@ -68,7 +69,7 @@ public class Bot implements Runnable {
     public int currentHotbarSlot = 36;
     public PathExecutor pathfinder;
     public PVP pvp;
-    public Vision vis = new Vision(this, 120, 80);
+    public Vision vis = new Vision(this, 11, 7);
     public Crafting crafter;
     public boolean listencaptcha = false;
 	public String name;
@@ -81,6 +82,7 @@ public class Bot implements Runnable {
 	public boolean isHoldSlowdownItem = false;//shield, bow, eating
 	public boolean catchedRegister = (boolean)Main.gamerule("catchreg");
 	public GameMode gamemode;
+	public LivePathExec lpe;
 	private int needtocompensate = 0;
 	public float health = 20;
 	//ABILITIES
@@ -212,6 +214,8 @@ public class Bot implements Runnable {
         }
         
         this.playerInventory = new Inventory(this);
+        
+        //this.lpe = new LivePathExec(this);
     }
     
     public void disconnect() {
@@ -246,6 +250,7 @@ public class Bot implements Runnable {
     	if (!isOnline()) return;
     	try {
     		if (!this.connected) return;
+    		//this.lpe.tick();
 	    	this.pathfinder.tick();
 	    	this.pvp.tick();
 	    	this.bbm.tick();
