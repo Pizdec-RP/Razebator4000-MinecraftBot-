@@ -79,7 +79,6 @@ public class Server {
 	
 	private static final boolean SPAWN_SERVER = true;
     private static final boolean VERIFY_USERS = false;
-    private static final ProxyInfo PROXY = null;
     private static final Proxy AUTH_PROXY = Proxy.NO_PROXY;
     private static List<GameProfile> players = new CopyOnWriteArrayList<GameProfile>() {
 		private static final long serialVersionUID = 1L;
@@ -290,7 +289,7 @@ public class Server {
                                 ClientChatPacket packet = event.getPacket();
                                 GameProfile profile = event.getSession().getFlag(MinecraftConstants.PROFILE_KEY);
                                 if (packet.getMessage().equals("/q")) {
-                                	event.getSession().send(new ServerDisconnectPacket(Component.text("Client closed the connection. Code: -1")));
+                                	event.getSession().send(new ServerDisconnectPacket(Component.text("Server closed the connection. Fuck you dumbass")));
                                 	Main.write("[tsm] "+profile.getName()+" ", packet.getMessage());
                                 } else {
                                 	event.getSession().send(new ServerChatPacket(Component.text("<"+profile.getName()+"> "+packet.getMessage())));
@@ -366,7 +365,7 @@ public class Server {
 	                            	event.getSession().send(new ServerUpdateLightPacket(1,1,true, skyLight, blockLight));
 	                            	event.getSession().send(new ServerUpdateTimePacket(1,1));
 	                            	event.getSession().send(new ServerBlockChangePacket(new BlockChangeRecord(new Position(0,103,0),9)));
-	                            	//event.getSession().send(new ServerChatPacket(Component.text("<mamkoeb bot> привет хуесос. Я робот который ебет твою мать. Вопросы нахуй?")));
+	                            	
 	                            	
                             	}).start();
                             } else if (event.getPacket() instanceof ClientPlayerPositionRotationPacket) {
