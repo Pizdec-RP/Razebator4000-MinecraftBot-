@@ -9,6 +9,7 @@ import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
 
 import net.PRP.MCAI.data.Block;
 import net.PRP.MCAI.data.ChunkCoordinates;
+import net.PRP.MCAI.data.Entity;
 import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.utils.VectorUtils;
 import net.PRP.MCAI.data.MinecraftData.Type;
@@ -16,6 +17,7 @@ import net.PRP.MCAI.data.MinecraftData.Type;
 public class Multiworld {
 	public static Map<Vector3D, Block> blocks = new ConcurrentHashMap<>();
 	public static Map<ChunkCoordinates, Column> columns = new ConcurrentHashMap<>();
+	public static Map<Integer, Entity> Entities = new ConcurrentHashMap<>();//for net.PRP.MCAI.TestServer.Server only
 	
 	public static void addChunkColumn(ChunkCoordinates coords, Column column) {
 		if (columns.containsKey(coords)) {

@@ -177,10 +177,31 @@ public class World {
 	}
 	
 	public int getState(double x, double y, double z) {
-		if ((boolean) Main.gamerule("multiworld")) {
-			return Multiworld.columns.get(new ChunkCoordinates((int)Math.floor(x) >> 4, (int)Math.floor(z) >> 4)).getChunks()[(int)Math.floor(y) >> 4].get((int)x & 15, (int)y & 15, (int)z & 15);
-		} else {
-			return columns.get(new ChunkCoordinates((int)Math.floor(x) >> 4, (int)Math.floor(z) >> 4)).getChunks()[(int)Math.floor(y) >> 4].get((int)x & 15, (int)y & 15, (int)z & 15);
+		x = Math.floor(x);
+		y = Math.floor(y);
+		z = Math.floor(z);
+		int blockX = (int)x & 15;
+        int blockY = (int)y & 15;
+        int blockZ = (int)z & 15;
+
+        int chunkX = (int)x >> 4;
+        int chunkY = (int)y >> 4;
+        int chunkZ = (int)z >> 4;
+		try {
+			if ((boolean) Main.gamerule("multiworld")) {
+				return Multiworld.columns.get(
+						new ChunkCoordinates(chunkX, chunkZ))
+						.getChunks()[chunkY]
+						.get(blockX, blockY, blockZ
+				);
+			} else {
+				return columns.get(new ChunkCoordinates((int)Math.floor(x) >> 4, (int)Math.floor(z) >> 4)).getChunks()[(int)Math.floor(y) >> 4].get((int)x & 15, (int)y & 15, (int)z & 15);
+			}
+		} catch (Exception e) {
+			//System.out.println("err while geting state x:"+x+" y:"+y+" z:"+z);
+			//e.printStackTrace();
+			//cause a server problems
+			return 0;
 		}
 	}
 	

@@ -112,6 +112,24 @@ public class VectorUtils {
 		return bf;
 	}
 	
+	public static Vector3D BFtoVec(BlockFace bf) {
+		if (bf == BlockFace.EAST) {
+			return new Vector3D(1,0,0);
+		} else if (bf == BlockFace.WEST) {
+			return new Vector3D(-1,0,0);
+		} else if (bf == BlockFace.SOUTH) {
+			return new Vector3D(0,0,1);
+		} else if (bf == BlockFace.NORTH) {
+			return new Vector3D(0,0,-1);
+		} else if (bf == BlockFace.UP) {
+			return new Vector3D(0,1,0);
+		} else if (bf == BlockFace.DOWN) {
+			return new Vector3D(0,-1,0);
+		} else {
+			return null;
+		}
+	}
+	
 	public static boolean equals(Vector3D one, Vector3D two) {
 		if (one == null || two == null) return false;
 		//System.out.println(one.toString() + " <<>> " + two.toString());

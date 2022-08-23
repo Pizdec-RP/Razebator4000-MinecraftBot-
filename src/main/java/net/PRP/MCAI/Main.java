@@ -48,7 +48,7 @@ public class Main {
 	static List<Proxy> proxies;
 	static int proxyNumb = 0;
 	static String hash;
-	public static boolean debug = false;
+	public static boolean debug = true;
 	public static List<Bot> bots = new CopyOnWriteArrayList<Bot>();
 	public static Proxy proxy = Proxy.NO_PROXY;
 	public static List<String> pasti = new CopyOnWriteArrayList<String>();
@@ -325,7 +325,7 @@ public class Main {
             		f1.material = d2.get("material").getAsString();
             	}
             	f1.resistance = d2.get("resistance").getAsDouble();
-            	getMCData().blockData.put(d2.get("id").getAsInt(), f1);
+            	getMCData().blockData.put(d2.get("id").getAsInt(), f1);//oldid as key
             }
             
             JsonReader reader4 = new JsonReader(new FileReader("data/materials.json"));

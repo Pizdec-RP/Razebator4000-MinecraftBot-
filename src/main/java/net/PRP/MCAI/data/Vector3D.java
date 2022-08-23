@@ -145,12 +145,10 @@ public class Vector3D {
 		return new Vector3D((int)Math.floor(x),(int)Math.floor(y),(int)Math.floor(z));
 	}
 	
-	@Deprecated
 	public Vector3D(Position pos) {
 		this(pos.getX(), pos.getY(), pos.getZ());
 	}
 	
-	@Deprecated
 	public Position translate() {
 		return new Position((int)Math.floor(x),(int)Math.floor(y),(int)Math.floor(z));
 	}

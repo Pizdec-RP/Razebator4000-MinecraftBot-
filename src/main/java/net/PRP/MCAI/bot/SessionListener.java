@@ -27,6 +27,7 @@ import com.github.steveice10.mc.protocol.packet.ingame.server.ServerPlayerListEn
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerPluginMessagePacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerResourcePackSendPacket;
 import com.github.steveice10.mc.protocol.packet.login.server.LoginSuccessPacket;
+import com.github.steveice10.opennbt.tag.builtin.CompoundTag;
 import com.github.steveice10.packetlib.event.session.DisconnectedEvent;
 import com.github.steveice10.packetlib.event.session.PacketReceivedEvent;
 import com.github.steveice10.packetlib.event.session.SessionAdapter;
@@ -50,7 +51,7 @@ public class SessionListener extends SessionAdapter {
     
     @Override
     public void packetReceived(PacketReceivedEvent receiveEvent) {
-    	//System.out.println(receiveEvent.getPacket().getClass().getName());
+    	System.out.println(receiveEvent.getPacket().getClass().getName());
         if (receiveEvent.getPacket() instanceof ServerJoinGamePacket) {
         	//System.out.println("(" + client.getGameProfile().getName() + ") Подлючился");
         	ServerJoinGamePacket p = (ServerJoinGamePacket) receiveEvent.getPacket();
@@ -128,6 +129,9 @@ public class SessionListener extends SessionAdapter {
 		} else if (receiveEvent.getPacket() instanceof ServerChunkDataPacket) {
 			
 			ServerChunkDataPacket data = (ServerChunkDataPacket) receiveEvent.getPacket();
+			//BotU.log(data.getColumn().getBiomeData().length);
+			
+			//System.exit(0);
 
 			client.getWorld().addChunkColumn(new ChunkCoordinates(data.getColumn().getX(), data.getColumn().getZ()), data.getColumn());
 		} else if (receiveEvent.getPacket() instanceof ServerPluginMessagePacket) {

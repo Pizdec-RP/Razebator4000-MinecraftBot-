@@ -1,0 +1,8 @@
+{
+    "host": "localhost",
+    "port": 25565,
+    "maxPlayers": 1000,
+    "serverName": "Pizdec RP's test server\nsuck my pp",
+    "worldfile": "world.json",
+    "spawnpoint": "4.0,7.0,17.0"
+}

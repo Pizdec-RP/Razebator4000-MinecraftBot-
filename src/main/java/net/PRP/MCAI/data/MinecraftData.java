@@ -14,7 +14,7 @@ public class MinecraftData {
 	}
 	
 	public Map<Integer, Type> bts = new HashMap<>();
-	public Map<Integer, oldMinecraftBlocks> blockStates = new HashMap<>();// key - newid
+	public Map<Integer, oldMinecraftBlocks> blockStates = new HashMap<>();// key - state, value - newid,name
 	public Map<Integer, BlockData> blockData = new HashMap<>();//key - oldid
 	public Map<String, List<materialsBreakTime>> materialToolMultipliers = new HashMap<>();// key - material
 	public Map<Integer, ItemData> items = new HashMap<>(); // itemid | itemdata

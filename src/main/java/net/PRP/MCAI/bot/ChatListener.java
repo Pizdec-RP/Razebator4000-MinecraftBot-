@@ -408,20 +408,6 @@ public class ChatListener extends SessionAdapter {
 							BotU.log("slot "+i.getKey()+" is empty");
 						}
 					}
-				} else if (command.get(0).equalsIgnoreCase("cpserver")) {
-					Chunk ch = client.getWorld().getCurrentChunk();
-					new Thread(()->{
-						Server.createServer(
-				        		"localhost",
-				        		228,
-				    			"1.16.5",
-				    			MinecraftConstants.PROTOCOL_VERSION, 
-				    			0,
-				        		666,
-				    			Component.text("общение с искусственным интеллектом"),
-				    			ch
-				        );
-					}).start();
 				} else if (command.get(0).equalsIgnoreCase("dropsuperitem")) {
 					client.playerInventory.superItem();
 				}
