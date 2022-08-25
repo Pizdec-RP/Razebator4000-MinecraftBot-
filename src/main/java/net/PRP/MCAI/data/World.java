@@ -69,7 +69,7 @@ public class World {
 		for (Entity en : list) {
 			if (near == null) {
 				near = en;
-			} else if (VectorUtils.sqrt(to, en.Position) < VectorUtils.sqrt(to, near.Position)) {
+			} else if (VectorUtils.sqrt(to, en.pos) < VectorUtils.sqrt(to, near.pos)) {
 				near = en;
 			}
 		}

@@ -13,4 +13,5 @@ public class BlockData {
 	public String material;
 	public double resistance;
 	public Map<Integer, Boolean> harvestTools;
+	public int[] drops;
 }

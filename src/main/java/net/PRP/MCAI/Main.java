@@ -310,6 +310,12 @@ public class Main {
             	f1.name = d2.get("name").getAsString();
             	f1.hardness = d2.get("hardness").getAsDouble();
             	f1.diggable = d2.get("diggable").getAsBoolean();
+            	JsonArray drops = d2.get("drops").getAsJsonArray();
+            	int[] temp = new int[drops.size()];
+            	for (int i = 0; i < drops.size();i++) {
+            		temp[i]=drops.get(i).getAsInt();
+            	}
+            	f1.drops = temp;
             	if (d2.get("harvestTools") != null) {
             		f1.harvestTools = new HashMap<>();
             		for (Entry<String, JsonElement> ht : d2.get("harvestTools").getAsJsonObject().entrySet()) {

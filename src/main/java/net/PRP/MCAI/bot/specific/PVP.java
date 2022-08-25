@@ -97,22 +97,22 @@ public class PVP {
 				endPVP();
 				return;
 			}
-			double toEnemy = VectorUtils.sqrt(tempenemy.Position, client.getPosition());
+			double toEnemy = VectorUtils.sqrt(tempenemy.pos, client.getPosition());
 			
 			if (folowEnemy) {
 				if (client.pathfinder.state == net.PRP.MCAI.bot.pathfinder.PathExecutor.State.FINISHED) {
 					folowEnemy = false;
 					return;
 				} else if (client.pathfinder.state == net.PRP.MCAI.bot.pathfinder.PathExecutor.State.SEARCHING) {
-					BotU.LookHead(client, tempenemy.Position);
+					BotU.LookHead(client, tempenemy.pos);
 					client.pm.Walk();
 				}
 				
-				if (VectorUtils.sqrt(client.pathfinder.end, tempenemy.Position) > 5) {
+				if (VectorUtils.sqrt(client.pathfinder.end, tempenemy.pos) > 5) {
 					client.pathfinder.finish("pvp-not relevant pos");
 				}
 			} else {
-				BotU.LookHead(client, tempenemy.Position);
+				BotU.LookHead(client, tempenemy.pos);
 			}
 			if (!folowEnemy) if (toEnemy > 4) {
 				
@@ -128,13 +128,13 @@ public class PVP {
 						BotU.LookHead(client, tempenemy.Position.add(0,1,0));
 						client.pm.Walk();
 					} else {*/
-					if (client.pathfinder.testForPath(tempenemy.Position)) {
-						client.pathfinder.setup(tempenemy.Position);
+					if (client.pathfinder.testForPath(tempenemy.pos)) {
+						client.pathfinder.setup(tempenemy.pos);
 						folowEnemy = true;
 						return;
 					} else {
 						Vector3D pos = VectorUtils.randomPointInRaduis(client, 1, 2);
-						if (pos == null || VectorUtils.sqrt(pos, tempenemy.Position) > 4) {
+						if (pos == null || VectorUtils.sqrt(pos, tempenemy.pos) > 4) {
 							endPVP();
 							return;
 						} else {
@@ -190,7 +190,7 @@ public class PVP {
 		lowerShield();
 		prepareitem();
 		cooldownticks = 10;
-		BotU.LookHead(client, tempenemy.Position);
+		BotU.LookHead(client, tempenemy.pos);
 		client.getSession().send(new ClientPlayerInteractEntityPacket(enemy, InteractAction.ATTACK, false));
 		client.getSession().send(new ClientPlayerSwingArmPacket(Hand.MAIN_HAND));
 		holdShield();

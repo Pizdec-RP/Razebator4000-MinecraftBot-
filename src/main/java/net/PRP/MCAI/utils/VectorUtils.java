@@ -220,11 +220,11 @@ public class VectorUtils {
 	public static Entry<Integer, Entity> getNearE(Vector3D target, List<Entry<Integer, Entity>> all) {
 		Entry<Integer, Entity> minimal = null;
         for (Entry<Integer, Entity> entity : all) {
-        	double distance = sqrt(entity.getValue().Position, target);
+        	double distance = sqrt(entity.getValue().pos, target);
         	if (minimal == null) {
         		minimal = entity;
         	} else {
-        		double distanceminpos = sqrt(minimal.getValue().Position, target);
+        		double distanceminpos = sqrt(minimal.getValue().pos, target);
         		if (distance < distanceminpos) {
         			minimal = entity;
         		} else if (distance == distanceminpos && MathU.rnd(1, 2) == 1) {

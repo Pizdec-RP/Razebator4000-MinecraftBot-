@@ -3,6 +3,7 @@ package net.PRP.MCAI.data;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import com.github.steveice10.mc.protocol.data.game.window.WindowType;
 
@@ -14,7 +15,7 @@ public class MinecraftData {
 	}
 	
 	public Map<Integer, Type> bts = new HashMap<>();
-	public Map<Integer, oldMinecraftBlocks> blockStates = new HashMap<>();// key - state, value - newid,name
+	public Map<Integer, oldMinecraftBlocks> blockStates = new HashMap<>();// key - state, value - oldid,name
 	public Map<Integer, BlockData> blockData = new HashMap<>();//key - oldid
 	public Map<String, List<materialsBreakTime>> materialToolMultipliers = new HashMap<>();// key - material
 	public Map<Integer, ItemData> items = new HashMap<>(); // itemid | itemdata
@@ -31,6 +32,23 @@ public class MinecraftData {
 	public static String codecc = "===================1===========1=================21=221==221==221=";
 	public MinecraftData() {
 		
+	}
+	
+	public int oldIdToNew(int oldid) {
+		for (Entry<Integer, oldMinecraftBlocks> temp : blockStates.entrySet()) {
+			if (temp.getValue().id == oldid) return temp.getKey();
+		}
+		return -1;
+	}
+	
+	public int itemToOldId(int itemid) {
+		int i = -1;
+		for (Entry<Integer, BlockData> entry:blockData.entrySet()) {
+			for (int iid:entry.getValue().drops) {
+				if (iid == itemid) i = entry.getKey();
+			}
+		}
+		return i;
 	}
 	
 	public static Type getTypeByState(int state) {
@@ -91,5 +109,9 @@ public class MinecraftData {
 		aye = bts.get(id);
 		if (aye == null) return Type.UNKNOWN;
 		return aye;
+	}
+
+	public int nameToState(String blockname) {
+		return 0;
 	}
 }

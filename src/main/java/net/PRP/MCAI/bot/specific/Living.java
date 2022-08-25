@@ -169,7 +169,7 @@ public class Living extends SessionAdapter {
 				if (a) {
 					Entity t = client.getWorld().getNearestIfContain("mineflayer");
 					if (t != null) {
-						client.pvp.pvp(t.EntityID);
+						client.pvp.pvp(t.eid);
 						state = raidState.PVP;
 						return;
 					}
@@ -223,7 +223,7 @@ public class Living extends SessionAdapter {
 						
 						if (TargetUUID != null) for (Entry<Integer, Entity> entry : client.getWorld().Entities.entrySet()) {
 							if (entry.getValue().uuid.equals(TargetUUID)) {
-								target = entry.getValue().Position;
+								target = entry.getValue().pos;
 								break;
 							}
 						}
@@ -256,10 +256,10 @@ public class Living extends SessionAdapter {
 						//System.out.println(1);
 						if (enemy == null) {
 							//System.out.println(2);
-							enemy = entry.getValue().EntityID;
-						} else if (client.getWorld().Entities.get(enemy) != null && client.getWorld().Entities.get(enemy).alive && VectorUtils.sqrt(client.getWorld().Entities.get(enemy).Position,client.getPosition()) > VectorUtils.sqrt(client.getWorld().Entities.get(entry.getValue().EntityID).Position, client.getPosition())) {
+							enemy = entry.getValue().eid;
+						} else if (client.getWorld().Entities.get(enemy) != null && client.getWorld().Entities.get(enemy).alive && VectorUtils.sqrt(client.getWorld().Entities.get(enemy).pos,client.getPosition()) > VectorUtils.sqrt(client.getWorld().Entities.get(entry.getValue().eid).pos, client.getPosition())) {
 							//System.out.println(3);
-							enemy = entry.getValue().EntityID;
+							enemy = entry.getValue().eid;
 						}
 					}
 				}
@@ -270,7 +270,7 @@ public class Living extends SessionAdapter {
 				}
 				
 				if (enemy != null && pEnemy != null) {
-					if (client.distance(client.getWorld().Entities.get(enemy).Position) > client.distance(client.getWorld().Entities.get(pEnemy).Position)) {
+					if (client.distance(client.getWorld().Entities.get(enemy).pos) > client.distance(client.getWorld().Entities.get(pEnemy).pos)) {
 						enemy = pEnemy;
 					}
 				} else if (enemy == null && pEnemy != null) {
@@ -279,7 +279,7 @@ public class Living extends SessionAdapter {
 				}
 				
 				if (enemy != null) {
-					if (client.getWorld().Entities.get(enemy) != null && VectorUtils.sqrt(client.getWorld().Entities.get(enemy).Position, client.getPosition()) <= (client.pvp.maxPos*0.7) && client.getWorld().Entities.get(enemy).alive) {
+					if (client.getWorld().Entities.get(enemy) != null && VectorUtils.sqrt(client.getWorld().Entities.get(enemy).pos, client.getPosition()) <= (client.pvp.maxPos*0.7) && client.getWorld().Entities.get(enemy).alive) {
 						client.pvp.pvp(enemy);
 						state = raidState.PVP;
 						enemy = null;
@@ -584,7 +584,7 @@ public class Living extends SessionAdapter {
 						} else if (i > 18 && i <= 20) {
 							enemy = playerForPVP();
 							if (enemy != null) {
-								if (client.getWorld().Entities.get(enemy) != null && VectorUtils.sqrt(client.getWorld().Entities.get(enemy).Position, client.getPosition()) <= client.pvp.maxPos && client.getWorld().Entities.get(enemy).alive) {
+								if (client.getWorld().Entities.get(enemy) != null && VectorUtils.sqrt(client.getWorld().Entities.get(enemy).pos, client.getPosition()) <= client.pvp.maxPos && client.getWorld().Entities.get(enemy).alive) {
 									client.pvp.pvp(enemy);
 									state = raidState.PVP;
 									enemy = null;

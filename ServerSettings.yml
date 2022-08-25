@@ -1,8 +1,8 @@
 {
-    "host": "localhost",
-    "port": 25565,
+    "host": "192.168.0.107",
+    "port": 25566,
     "maxPlayers": 1000,
-    "serverName": "Pizdec RP's test server\nsuck my pp",
+    "serverName": "всем гм, тест самопис сервера",
     "worldfile": "world.json",
-    "spawnpoint": "4.0,7.0,17.0"
+    "spawnpoint": "4.0 7.0 17.0"
 }

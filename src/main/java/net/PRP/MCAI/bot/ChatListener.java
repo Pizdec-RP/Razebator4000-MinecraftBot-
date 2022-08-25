@@ -74,7 +74,7 @@ public class ChatListener extends SessionAdapter {
 				} else if (command.get(0).equalsIgnoreCase("tellmewaterlvl")) {
 					UUID uuid = ((ServerChatPacket) receiveEvent.getPacket()).getSenderUuid();
 					Entry<Integer, Entity> e = client.getWorld().getEntity(uuid);
-					List<Vector3D> list = client.vis.createRay(e.getValue().Position.add(0,1.75,0), e.getValue().Yaw, e.getValue().Pitch, 40, 0.3);
+					List<Vector3D> list = client.vis.createRay(e.getValue().pos.add(0,1.75,0), e.getValue().yaw, e.getValue().pitch, 40, 0.3);
 					for (Vector3D pos : list) {
 						BotU.chat(client, "/particle minecraft:end_rod "+pos.forCommandD()+" 0 0 0 0 1");
 						if (pos.floor().getBlock(client).isWater()) {
@@ -100,7 +100,7 @@ public class ChatListener extends SessionAdapter {
 						BotU.log(2);
 						return;
 					}
-					client.rl.tasklist.add("come "+en.Position.forCommand());
+					client.rl.tasklist.add("come "+en.pos.forCommand());
 				} else if (command.get(0).equalsIgnoreCase("goto")) {
 					client.pathfinder.setup(new Vector3D(Integer.parseInt(command.get(1)), Integer.parseInt(command.get(2)), Integer.parseInt(command.get(3))));
 				} else if (command.get(0).equalsIgnoreCase("record")) {
@@ -146,7 +146,7 @@ public class ChatListener extends SessionAdapter {
 						}
 					}
 					if (en == null) return;
-					BotU.chat(client, en.Position.toStringInt());
+					BotU.chat(client, en.pos.toStringInt());
 				} else if (command.get(0).equalsIgnoreCase("gfb")) {
 					for (Block b : client.vis.getVisibleBlocks()) {
 						System.out.print(b.getId()+" ");
@@ -191,7 +191,7 @@ public class ChatListener extends SessionAdapter {
 					if (en == null) {
 						return;
 					}
-					client.pvp.pvp(en.EntityID);
+					client.pvp.pvp(en.eid);
 					client.rl.state = raidState.PVP;
 				} else if (command.get(0).equalsIgnoreCase("isavoid")) {
 					BotU.chat(client, VectorUtils.BTavoid(new Vector3D(Integer.parseInt(command.get(1)),Integer.parseInt(command.get(2)),Integer.parseInt(command.get(3))).getBlock(client).type)+"");
@@ -302,10 +302,10 @@ public class ChatListener extends SessionAdapter {
 						en = client.getWorld().getByName(command.get(2));
 					}
 					if (en == null) return;
-					Vector3D pos = VectorUtils.randomPointInRaduis(client, 2,2,(int)en.Position.x,(int)en.Position.z);
+					Vector3D pos = VectorUtils.randomPointInRaduis(client, 2,2,(int)en.pos.x,(int)en.pos.z);
 					if (client.pathfinder.testForPath(pos)) {
-						client.rl.tasklist.add("come "+(int)en.Position.x+" "+(int)en.Position.y+" "+(int)en.Position.z);
-						client.rl.tasklist.add("faceto "+(int)en.Position.x+" "+((int)en.Position.y++) +" "+(int)en.Position.z);
+						client.rl.tasklist.add("come "+(int)en.pos.x+" "+(int)en.pos.y+" "+(int)en.pos.z);
+						client.rl.tasklist.add("faceto "+(int)en.pos.x+" "+((int)en.pos.y++) +" "+(int)en.pos.z);
 						client.rl.tasklist.add("dropitemstack "+command.get(1));
 					}
 				} else if (command.get(0).equalsIgnoreCase("cr")) {
@@ -318,7 +318,7 @@ public class ChatListener extends SessionAdapter {
 						}
 					}
 					if (en == null) return;
-					Vector3D pos = VectorUtils.randomPointInRaduis(client, Integer.parseInt(command.get(1)),Integer.parseInt(command.get(2)),(int)en.Position.x,(int)en.Position.z);
+					Vector3D pos = VectorUtils.randomPointInRaduis(client, Integer.parseInt(command.get(1)),Integer.parseInt(command.get(2)),(int)en.pos.x,(int)en.pos.z);
 					client.rl.tasklist.add("come "+(int)pos.x+" "+(int)pos.y+" "+(int)pos.z);
 				} else if (command.get(0).equalsIgnoreCase("printentities")) {
 					for (Entry<Integer, Entity> entity : client.getWorld().Entities.entrySet()) {
@@ -346,8 +346,8 @@ public class ChatListener extends SessionAdapter {
 				} else if (command.get(0).equalsIgnoreCase("raytrace")) {
 					UUID uuid = ((ServerChatPacket) receiveEvent.getPacket()).getSenderUuid();
 					Entry<Integer, Entity> e = client.getWorld().getEntity(uuid);
-					BotU.LookHead(client, e.getValue().Position);
-					List<Vector3D> list = client.vis.createRay(client.getEyeLocation(), e.getValue().Position, client.yaw, client.pitch, 100, 0.3);
+					BotU.LookHead(client, e.getValue().pos);
+					List<Vector3D> list = client.vis.createRay(client.getEyeLocation(), e.getValue().pos, client.yaw, client.pitch, 100, 0.3);
 					for (Vector3D pos : list) {
 						BotU.chat(client, "/particle minecraft:end_rod "+pos.forCommandD()+" 0 0 0 0 1");
 					}
@@ -374,13 +374,13 @@ public class ChatListener extends SessionAdapter {
 					BotU.chat(client, a.size()+" points returned, time: "+(et-st));
 				} else if (command.get(0).equalsIgnoreCase("airun")) {
 					UUID uuid = ((ServerChatPacket) receiveEvent.getPacket()).getSenderUuid();
-					Vector3D to = client.getWorld().getEntity(uuid).getValue().Position.floor();
+					Vector3D to = client.getWorld().getEntity(uuid).getValue().pos.floor();
 					client.lpe.start(to);
 				} else if (command.get(0).equalsIgnoreCase("aistop")) {
 					client.lpe.stop(false);
 				} else if (command.get(0).equalsIgnoreCase("ailearnfrommetoyou")) {
 					UUID uuid = ((ServerChatPacket) receiveEvent.getPacket()).getSenderUuid();
-					Vector3D from = client.getWorld().getEntity(uuid).getValue().Position.floor();
+					Vector3D from = client.getWorld().getEntity(uuid).getValue().pos.floor();
 					Vector3D to = client.getPositionInt();
 					int x = (int) (to.x-from.x);
 					int y = (int) (to.y-from.y);
