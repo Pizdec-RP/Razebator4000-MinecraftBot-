@@ -84,6 +84,7 @@ import net.PRP.MCAI.Multiworld;
 import net.PRP.MCAI.TestServer.entity.Arrow;
 import net.PRP.MCAI.TestServer.entity.Item;
 import net.PRP.MCAI.TestServer.entity.Tickable;
+import net.PRP.MCAI.TestServer.entity.tnt;
 import net.PRP.MCAI.data.Block;
 import net.PRP.MCAI.data.ChunkCoordinates;
 import net.PRP.MCAI.data.Vector3D;
@@ -209,7 +210,7 @@ public class ClientSession extends SessionAdapter {
         	if (item != null && item.getId() == 572) {//fire the tnt
         		if (Multiworld.getBlock(new Vector3D(p.getPosition())).id == 137) {
         			Server.setBlock(new Vector3D(p.getPosition()), 0);
-        			//fire the tnt
+        			Server.spawnTickable(new tnt(new Vector3D(p.getPosition())));
         			return;
         		}
         	}
