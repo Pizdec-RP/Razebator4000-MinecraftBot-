@@ -127,10 +127,6 @@ public class Server {
     	non, loadWorld, genWorld, ready;
     }
     
-    public enum ps {
-    	main, end
-    }
-    
     public static void main(String[] args) {
     	new Thread(()->{
     		try {
