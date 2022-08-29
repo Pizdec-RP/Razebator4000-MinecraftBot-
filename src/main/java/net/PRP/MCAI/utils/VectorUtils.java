@@ -47,6 +47,17 @@ public class VectorUtils {
 		return getNear(pos, normal);
 	}
 	
+	public static Vector3D getDirection(double yaw, double pitch) {
+        Vector3D vector = new Vector3D(0,0,0);
+        double rotX = yaw;
+        double rotY = pitch;
+        vector.setY(-Math.sin(Math.toRadians(rotY)));
+        double xz = Math.cos(Math.toRadians(rotY));
+        vector.setX(-xz * Math.sin(Math.toRadians(rotX)));
+        vector.setZ(xz * Math.cos(Math.toRadians(rotX)));
+        return vector;
+    }
+	
 	public static Vector3D vector(float Yaw, float Pitch, double speed, Bot client) {
         Vector3D vector = new Vector3D(0,0,0);
         double rotX = Yaw;
@@ -60,6 +71,10 @@ public class VectorUtils {
         vector = vector.multiply(speed);
         return vector;
     }
+	
+	public static Vector3D getVector(Vector3D from, Vector3D to) {
+		return new Vector3D(MathU.getDir(to.x-from.x),MathU.getDir(to.y-from.y),MathU.getDir(to.z-from.z));
+	}
 	
 	public static List<Vector3D> filterByRadius(List<Vector3D> positions, Vector3D target, int radius) {
 		for (Vector3D position : positions) {

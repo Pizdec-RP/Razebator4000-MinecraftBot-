@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 
@@ -31,7 +33,6 @@ import com.github.steveice10.mc.protocol.data.game.recipe.Recipe;
 import com.github.steveice10.mc.protocol.data.game.setting.Difficulty;
 import com.github.steveice10.mc.protocol.data.game.world.particle.BlockParticleData;
 import com.github.steveice10.mc.protocol.data.game.world.particle.Particle;
-import com.github.steveice10.mc.protocol.data.game.world.particle.ParticleData;
 import com.github.steveice10.mc.protocol.data.game.world.particle.ParticleType;
 import com.github.steveice10.mc.protocol.packet.ingame.client.ClientChatPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.ClientPluginMessagePacket;
@@ -53,19 +54,21 @@ import com.github.steveice10.mc.protocol.packet.ingame.server.ServerDeclareRecip
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerDifficultyPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerDisconnectPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerJoinGamePacket;
+import com.github.steveice10.mc.protocol.packet.ingame.server.ServerPlayerListDataPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerPlayerListEntryPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerPluginMessagePacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerUnlockRecipesPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.ServerEntityAnimationPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.server.entity.ServerEntityCollectItemPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.ServerEntityDestroyPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.ServerEntityEquipmentPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.ServerEntityMetadataPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.server.entity.player.ServerPlayerAbilitiesPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.player.ServerPlayerChangeHeldItemPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.player.ServerPlayerHealthPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.player.ServerPlayerPositionRotationPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.spawn.ServerSpawnEntityPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.spawn.ServerSpawnPlayerPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.server.window.ServerSetSlotPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.window.ServerWindowItemsPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerChunkDataPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerSpawnParticlePacket;
@@ -78,15 +81,14 @@ import com.github.steveice10.packetlib.event.session.PacketReceivedEvent;
 import com.github.steveice10.packetlib.event.session.SessionAdapter;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.Multiworld;
-import net.PRP.MCAI.TestServer.entity.Arrow;
-import net.PRP.MCAI.TestServer.entity.Item;
-import net.PRP.MCAI.TestServer.entity.Tickable;
-import net.PRP.MCAI.TestServer.entity.tnt;
-import net.PRP.MCAI.data.Block;
+import net.PRP.MCAI.TestServer.entity.DefaultEntity;
+import net.PRP.MCAI.TestServer.entity.EntityItem;
 import net.PRP.MCAI.data.ChunkCoordinates;
+import net.PRP.MCAI.data.Entity;
 import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.VectorUtils;
@@ -105,13 +107,15 @@ public class ClientSession extends SessionAdapter {
 	public float pitch, yaw;
 	public int health;
 	public int food;
-	public Map<Integer, ItemStack> inventory;
+	private Map<Integer, ItemStack> inventory;
 	private st state = st.not;
 	private int sleepticks = 0;
 	public int slot = 0;
 	public boolean onGround = true;
 	public boolean op = false;
 	public boolean banned = false;
+	private int blocksBySecond = 0;
+	private Map<Vector3D, Integer> backup = new ConcurrentHashMap<>();
 	
 	private enum st {
 		not, lsp, succ
@@ -123,205 +127,192 @@ public class ClientSession extends SessionAdapter {
 	
 	@Override
 	public void packetReceived(PacketReceivedEvent event) {
-		if (banned) return;
-		//BotU.log(event.getPacket().getClass().getName());
-		if (event.getPacket() instanceof LoginStartPacket) {
-			if (profile == null) {
-				LoginStartPacket p = event.getPacket();
-				profile = new GameProfile(UUID.randomUUID(), p.getUsername());
-				BotU.log(profile.getName());
-			}
-			double[] ppos = Server.getpos(profile.getName());
-			pos = new Vector3D(ppos[0],ppos[1],ppos[2]);
-			beforePos = new Vector3D(ppos[0],ppos[1],ppos[2]);
-			pitch=(float)ppos[3];
-			yaw=(float)ppos[4];
-			health = Server.getPlayerObject(profile.getName()).get("health").getAsInt();
-			food = Server.getPlayerObject(profile.getName()).get("food").getAsInt();
-			op = Server.getPlayerObject(profile.getName()).get("op").getAsBoolean();
-			Server.newEntityPlayer(this);
-			Server.players.add(this);
-			state = st.lsp;
-			
-			sleepticks = 40;
-		} else if (event.getPacket() instanceof ClientPluginMessagePacket) {
-			ClientPluginMessagePacket p = (ClientPluginMessagePacket)event.getPacket();
-			event.getSession().send(new ServerPluginMessagePacket(p.getChannel(), p.getData()));
-		} else if (event.getPacket() instanceof ClientPlayerPositionRotationPacket) {
-        	ClientPlayerPositionRotationPacket p = (ClientPlayerPositionRotationPacket) event.getPacket();
-        	Vector3D vec3 = new Vector3D(p.getX(),p.getY(),p.getZ());
-        	vel = vec3.subtract(beforePos);
-        	Server.handleEntityMove(vec3,this);
-        	this.yaw = p.getYaw();
-        	this.pitch = p.getPitch();
-        	this.onGround = p.isOnGround();
-        	
-        } else if (event.getPacket() instanceof ClientPlayerRotationPacket) {
-        	ClientPlayerRotationPacket p = (ClientPlayerRotationPacket) event.getPacket();
-        	this.yaw = p.getYaw();
-        	this.pitch = p.getPitch();
-        	this.onGround = p.isOnGround();
-        	
-        } else if (event.getPacket() instanceof ClientPlayerPositionPacket) {
-        	ClientPlayerPositionPacket p = (ClientPlayerPositionPacket) event.getPacket();
-        	Vector3D vec3 = new Vector3D(p.getX(),p.getY(),p.getZ());
-        	vel = vec3.subtract(beforePos);
-        	Server.handleEntityMove(vec3,this);
-        	this.onGround = p.isOnGround();
-        	
-        } else if (event.getPacket() instanceof ClientChatPacket) {
-        	ClientChatPacket packet = event.getPacket();
-        	if (packet.getMessage().startsWith("/")) {
-        		Server.commandUsed(this, packet.getMessage());
-        	} else {
-	        	ServerChatPacket p = new ServerChatPacket(Component.text("<"+profile.getName()+"> "+packet.getMessage()));
+		try {
+			if (banned) return;
+			//BotU.log(event.getPacket().getClass().getName());
+			if (event.getPacket() instanceof LoginStartPacket) {
+				if (profile == null) {
+					LoginStartPacket p = event.getPacket();
+					profile = new GameProfile(UUID.randomUUID(), p.getUsername());
+					BotU.log(profile.getName());
+				}
+				double[] ppos = Server.getpos(profile.getName());
+				pos = new Vector3D(ppos[0],ppos[1],ppos[2]);
+				beforePos = new Vector3D(ppos[0],ppos[1],ppos[2]);
+				pitch=(float)ppos[3];
+				yaw=(float)ppos[4];
+				health = Server.getPlayerObject(profile.getName()).get("health").getAsInt();
+				food = Server.getPlayerObject(profile.getName()).get("food").getAsInt();
+				op = Server.getPlayerObject(profile.getName()).get("op").getAsBoolean();
+				Server.newEntityPlayer(this);
+				Server.players.add(this);
+				state = st.lsp;
+				
+				sleepticks = 40;
+			} else if (event.getPacket() instanceof ClientPluginMessagePacket) {
+				ClientPluginMessagePacket p = (ClientPluginMessagePacket)event.getPacket();
+				event.getSession().send(new ServerPluginMessagePacket(p.getChannel(), p.getData()));
+			} else if (event.getPacket() instanceof ClientPlayerPositionRotationPacket) {
+	        	ClientPlayerPositionRotationPacket p = (ClientPlayerPositionRotationPacket) event.getPacket();
+	        	Vector3D vec3 = new Vector3D(p.getX(),p.getY(),p.getZ());
+	        	vel = vec3.subtract(beforePos);
+	        	Server.handleEntityMove(vec3,this);
+	        	this.yaw = p.getYaw();
+	        	this.pitch = p.getPitch();
+	        	this.onGround = p.isOnGround();
 	        	
-	        	for (ClientSession player : Server.players) {
-	        		player.session.send(p);
+	        } else if (event.getPacket() instanceof ClientPlayerRotationPacket) {
+	        	ClientPlayerRotationPacket p = (ClientPlayerRotationPacket) event.getPacket();
+	        	this.yaw = p.getYaw();
+	        	this.pitch = p.getPitch();
+	        	this.onGround = p.isOnGround();
+	        	
+	        } else if (event.getPacket() instanceof ClientPlayerPositionPacket) {
+	        	ClientPlayerPositionPacket p = (ClientPlayerPositionPacket) event.getPacket();
+	        	Vector3D vec3 = new Vector3D(p.getX(),p.getY(),p.getZ());
+	        	vel = vec3.subtract(beforePos);
+	        	Server.handleEntityMove(vec3,this);
+	        	this.onGround = p.isOnGround();
+	        	
+	        } else if (event.getPacket() instanceof ClientChatPacket) {
+	        	ClientChatPacket packet = event.getPacket();
+	        	if (packet.getMessage().startsWith("/")) {
+	        		Server.commandUsed(this, packet.getMessage());
+	        	} else {
+		        	ServerChatPacket p = new ServerChatPacket(Component.text("<"+profile.getName()+"> "+packet.getMessage()).color(NamedTextColor.GREEN));
+		        	
+		        	for (ClientSession player : Server.players) {
+		        		player.session.send(p);
+		        	}
 	        	}
-        	}
-        } else if (event.getPacket() instanceof ClientRequestPacket) {
-        	ClientRequestPacket p = event.getPacket();
-        	if (p.getRequest()==ClientRequest.RESPAWN) {
-        		this.health = 20;
-        		this.food = 20;
-        		this.pos = Server.spawnpoint.clone();
-        		session.send(new ServerPlayerHealthPacket(health,food,0));
-        		session.send(new ServerPlayerPositionRotationPacket(pos.x,pos.y,pos.z,yaw,pitch,tpid++,new ArrayList<PositionElement>()));
-        	}
-        } else if (event.getPacket() instanceof ClientPlayerActionPacket) {
-        	ClientPlayerActionPacket p = event.getPacket();
-        	if (p.getAction() == PlayerAction.START_DIGGING) {
-        		if (gm == GameMode.CREATIVE) {
-        			Server.setBlock(new Vector3D(p.getPosition()), 0);
-        		}
-        	} else if (p.getAction() == PlayerAction.FINISH_DIGGING) {
-        		Server.setBlock(new Vector3D(p.getPosition()), 0);
-        	} else if (p.getAction() == PlayerAction.DROP_ITEM | p.getAction() == PlayerAction.DROP_ITEM_STACK) {
-        		Server.sendForEver(new ServerEntityAnimationPacket(entityId,Animation.SWING_ARM));
-        	} else if (p.getAction() == PlayerAction.RELEASE_USE_ITEM) {
-        		if (getiteminhand() != null && getiteminhand().getId() == 574) {
-        			Server.spawnTickable(new Arrow(pos.add(0, 1.75, 0), getDirection(yaw,pitch).multiply(0.3)));
-        		}
-        	}
-        } else if (event.getPacket() instanceof ClientPlayerPlaceBlockPacket) {
-        	ClientPlayerPlaceBlockPacket p = event.getPacket();
-        	ItemStack item = getiteminhand();
-        	if (item != null && item.getId() == 572) {//fire the tnt
-        		if (Multiworld.getBlock(new Vector3D(p.getPosition())).id == 137) {
-        			Server.setBlock(new Vector3D(p.getPosition()), 0);
-        			Server.spawnTickable(new tnt(new Vector3D(p.getPosition())));
-        			return;
-        		}
-        	}
-        	
-        	Vector3D posss = VectorUtils.convert(p.getPosition()).add(VectorUtils.BFtoVec(p.getFace()));
-        	Block beforeBlock = Multiworld.getBlock(posss);
-        	if (beforeBlock.id != 0) return;
-        	if (p.getHand() == Hand.MAIN_HAND) {
-        		if (item == null || item.getId() == 0) {
-        			//empty click
-        		} else {
-        			int state = -1;
-        			int oid = Main.getMCData().itemToOldId(item.getId());
-        			if (oid != -1) {
-        				state = Main.getMCData().oldIdToNew(oid);
-        			}
-        			if (state != -1) Server.setBlock(posss, state);
-        		}
-        	} else {
-        		Server.setBlock(posss, beforeBlock.state);
-        	}
-        } else if (event.getPacket() instanceof ClientPlayerChangeHeldItemPacket) {
-        	ClientPlayerChangeHeldItemPacket p = event.getPacket();
-        	this.slot = p.getSlot();
-        	Server.sendForEver(new ServerEntityEquipmentPacket(entityId,new Equipment[] {new Equipment(EquipmentSlot.MAIN_HAND, getiteminhand())}));
-        } else if (event.getPacket() instanceof ClientCreativeInventoryActionPacket) {
-        	ClientCreativeInventoryActionPacket p = event.getPacket();
-        	BotU.log("cslot: "+p.getSlot());
-        	
-        	if (p.getSlot() < 0) {
-        		tossItem(p.getClickedItem());
-        	} else {
-        		inventory.replace(p.getSlot(), p.getClickedItem());
-        		if (p.getSlot() >= 36 && p.getSlot() <= 44) {
-        			Server.sendForEver(new ServerEntityEquipmentPacket(entityId,new Equipment[] {new Equipment(EquipmentSlot.MAIN_HAND, getiteminhand())}));
-        		} else if (p.getSlot() == 45) {
-        			Server.sendForEver(new ServerEntityEquipmentPacket(entityId,new Equipment[] {new Equipment(EquipmentSlot.OFF_HAND, inventory.get(45))}));
-        		} else if (p.getSlot() == 5) {
-        			Server.sendForEver(new ServerEntityEquipmentPacket(entityId,new Equipment[] {new Equipment(EquipmentSlot.HELMET, inventory.get(5))}));
-        		} else if (p.getSlot() == 6) {
-        			Server.sendForEver(new ServerEntityEquipmentPacket(entityId,new Equipment[] {new Equipment(EquipmentSlot.CHESTPLATE, inventory.get(6))}));
-        		} else if (p.getSlot() == 7) {
-        			Server.sendForEver(new ServerEntityEquipmentPacket(entityId,new Equipment[] {new Equipment(EquipmentSlot.LEGGINGS, inventory.get(7))}));
-        		} else if (p.getSlot() == 8) {
-        			Server.sendForEver(new ServerEntityEquipmentPacket(entityId,new Equipment[] {new Equipment(EquipmentSlot.BOOTS, inventory.get(8))}));
-        		}
-        	}
-        } else if (event.getPacket() instanceof ClientPlayerSwingArmPacket) {
-        	Server.sendForEver(new ServerEntityAnimationPacket(entityId,Animation.SWING_ARM));
-        } else if (event.getPacket() instanceof ClientPlayerStatePacket) {
-        	ClientPlayerStatePacket p = event.getPacket();
-        	//if (p.getEntityId() != this.entityId) return;
-        	if (p.getState() == PlayerState.START_SNEAKING) {
-        		Server.sendForEver(new ServerEntityMetadataPacket(entityId,
-    				new EntityMetadata[] {
-    					new EntityMetadata(0, MetadataType.BYTE, (byte)2),
-						new EntityMetadata(6, MetadataType.POSE, Pose.SNEAKING)
-    				}
-        		));
-        	} else if (p.getState() == PlayerState.STOP_SNEAKING) {
-        		Server.sendForEver(new ServerEntityMetadataPacket(entityId,
-    				new EntityMetadata[] {
-    					new EntityMetadata(0, MetadataType.BYTE, (byte)0),
-						new EntityMetadata(6, MetadataType.POSE, Pose.STANDING)
-    				}
-        		));
-        	} else if (p.getState() == PlayerState.START_ELYTRA_FLYING) {
-        		Server.sendForEver(new ServerEntityMetadataPacket(entityId,
-    				new EntityMetadata[] {
-    					new EntityMetadata(0, MetadataType.BYTE, (byte)-128),
-						new EntityMetadata(6, MetadataType.POSE, Pose.FALL_FLYING)
-    				}
-        		));
-        	} 
-        } else if (event.getPacket() instanceof ClientPlayerInteractEntityPacket) {
-        	ClientPlayerInteractEntityPacket p = event.getPacket();
-        	
-        	if (p.getAction() == InteractAction.ATTACK) {
-        		//Multiworld.Entities.get(p.getEntityId())
-        	}
-        } else if (event.getPacket() instanceof ClientPlayerUseItemPacket) {
-        	ClientPlayerUseItemPacket p = event.getPacket();
-        	if (p.getHand() == Hand.MAIN_HAND) {
-        		if (getiteminhand() != null) {
-        			int iid = getiteminhand().getId();
-        			if (iid == 613) {
-        				List<Vector3D> points = createRay(pos, yaw, pitch, 30, 0.3);
-            			for (Vector3D pn : points) {
-            				Server.sendForEver(new ServerSpawnParticlePacket(new Particle(ParticleType.END_ROD,new BlockParticleData(1)),true,pn.x,pn.y+1.75,pn.z,0f,0f,0f,0f,1));
-            			}
-        			} else if (iid == 578) {
-        				List<Vector3D> points = new ArrayList<>();
-        				for (int i = -179; i < 179;i++) {
-        					if (i%20==0) {
-        						points.addAll(createRay(pos, i, pitch, 8, 0.8));
-        					}
-        				}
-        				for (Vector3D pn : points) {
-            				Server.sendForEver(new ServerSpawnParticlePacket(new Particle(ParticleType.END_ROD,new BlockParticleData(1)),true,pn.x,pn.y+2.1,pn.z,0f,0f,0f,0f,1));
-            			}
-        			}
-        		}
-        	}
-        } else if (event.getPacket() instanceof ClientPlayerUseItemPacket) {
-        	
-        }
+	        } else if (event.getPacket() instanceof ClientRequestPacket) {
+	        	ClientRequestPacket p = event.getPacket();
+	        	if (p.getRequest()==ClientRequest.RESPAWN) {
+	        		this.health = 20;
+	        		this.food = 20;
+	        		this.pos = Server.spawnpoint.clone();
+	        		session.send(new ServerPlayerHealthPacket(health,food,0));
+	        		session.send(new ServerPlayerPositionRotationPacket(pos.x,pos.y,pos.z,yaw,pitch,tpid++,new ArrayList<PositionElement>()));
+	        	}
+	        } else if (event.getPacket() instanceof ClientPlayerActionPacket) {
+	        	ClientPlayerActionPacket p = event.getPacket();
+	        	Vector3D temppos = new Vector3D(p.getPosition());
+	        	if (p.getAction() == PlayerAction.START_DIGGING) {
+	        		this.blocksBySecond++;
+	        		if (!backup.containsKey(temppos) && Multiworld.getBlock(temppos).id == 0) backup.put(temppos,Multiworld.getState(p.getPosition().getX(),p.getPosition().getY(),p.getPosition().getZ()));
+	        		if (gm == GameMode.CREATIVE) {
+	        			Server.setBlock(new Vector3D(p.getPosition()), 0);
+	        		}
+	        	} else if (p.getAction() == PlayerAction.FINISH_DIGGING) {
+	        		Server.setBlock(new Vector3D(p.getPosition()), 0);
+	        	} else if (p.getAction() == PlayerAction.DROP_ITEM_STACK) {
+	        		if (getiteminhand().getId() == 0) return;
+	        		tossItem(getiteminhand());
+	        		this.addToInv(slot, new ItemStack(0,0));
+	        	} else if (p.getAction() == PlayerAction.DROP_ITEM) {
+	        		if (getiteminhand().getId() == 0) return;
+	        		if (getiteminhand().getAmount() > 1) {
+		        		tossItem(new ItemStack(getiteminhand().getId(), 1, getiteminhand().getNbt()));
+		        		this.addToInv(slot, new ItemStack(getiteminhand().getId(),getiteminhand().getAmount()-1,getiteminhand().getNbt()));
+	        		} else {
+	        			tossItem(getiteminhand());
+	            		this.addToInv(slot, new ItemStack(0,0));
+	        		}
+	        	} else if (p.getAction() == PlayerAction.RELEASE_USE_ITEM) {
+	        		if (getiteminhand() != null && getiteminhand().getId() == 574) {
+	        			//Server.spawnTickable(new Arrow(pos.add(0, 1.75, 0), VectorUtils.getDirection(yaw,pitch).multiply(0.3)));
+	        		}
+	        	}
+	        } else if (event.getPacket() instanceof ClientPlayerPlaceBlockPacket) {
+	        	ClientPlayerPlaceBlockPacket p = event.getPacket();
+	        	BotU.log("pbe");
+	        	if (p.getHand() == Hand.MAIN_HAND) {
+	        		Server.placeBlockEvent(new Vector3D(p.getPosition()), p.getFace(), getiteminhand().getId(),this);
+	        	}/* else {
+	        		Server.setBlock(posss, beforeBlock.state);
+	        	}*/
+	        } else if (event.getPacket() instanceof ClientPlayerChangeHeldItemPacket) {
+	        	ClientPlayerChangeHeldItemPacket p = event.getPacket();
+	        	this.slot = p.getSlot();
+	        	Server.sendForEver(new ServerEntityEquipmentPacket(entityId,new Equipment[] {new Equipment(EquipmentSlot.MAIN_HAND, getiteminhand())}));
+	        } else if (event.getPacket() instanceof ClientCreativeInventoryActionPacket) {
+	        	ClientCreativeInventoryActionPacket p = event.getPacket();
+	        	BotU.log("cslot: "+p.getSlot());
+	        	if (p.getSlot() < 0) {
+	        		tossItem(p.getClickedItem());
+	        	} else if (p.getClickedItem() == null) {
+	        		addToInv(p.getSlot(), new ItemStack(0,0));
+	        	} else {
+	        		addToInv(p.getSlot(), p.getClickedItem());
+	        	}
+	        } else if (event.getPacket() instanceof ClientPlayerSwingArmPacket) {
+	        	Server.sendForEver(new ServerEntityAnimationPacket(entityId,Animation.SWING_ARM));
+	        } else if (event.getPacket() instanceof ClientPlayerStatePacket) {
+	        	ClientPlayerStatePacket p = event.getPacket();
+	        	//if (p.getEntityId() != this.entityId) return;
+	        	if (p.getState() == PlayerState.START_SNEAKING) {
+	        		Server.sendForEver(new ServerEntityMetadataPacket(entityId,
+	    				new EntityMetadata[] {
+	    					new EntityMetadata(0, MetadataType.BYTE, (byte)2),
+							new EntityMetadata(6, MetadataType.POSE, Pose.SNEAKING)
+	    				}
+	        		));
+	        	} else if (p.getState() == PlayerState.STOP_SNEAKING) {
+	        		Server.sendForEver(new ServerEntityMetadataPacket(entityId,
+	    				new EntityMetadata[] {
+	    					new EntityMetadata(0, MetadataType.BYTE, (byte)0),
+							new EntityMetadata(6, MetadataType.POSE, Pose.STANDING)
+	    				}
+	        		));
+	        	} else if (p.getState() == PlayerState.START_ELYTRA_FLYING) {
+	        		Server.sendForEver(new ServerEntityMetadataPacket(entityId,
+	    				new EntityMetadata[] {
+	    					new EntityMetadata(0, MetadataType.BYTE, (byte)-128),
+							new EntityMetadata(6, MetadataType.POSE, Pose.FALL_FLYING)
+	    				}
+	        		));
+	        	} 
+	        } else if (event.getPacket() instanceof ClientPlayerInteractEntityPacket) {
+	        	ClientPlayerInteractEntityPacket p = event.getPacket();
+	        	
+	        	if (p.getAction() == InteractAction.ATTACK) {
+	        		//Multiworld.Entities.get(p.getEntityId())
+	        	}
+	        } else if (event.getPacket() instanceof ClientPlayerUseItemPacket) {
+	        	ClientPlayerUseItemPacket p = event.getPacket();
+	        	if (p.getHand() == Hand.MAIN_HAND) {
+	        		if (getiteminhand() != null) {
+	        			int iid = getiteminhand().getId();
+	        			if (iid == 613) {
+	        				List<Vector3D> points = createRay(pos, yaw, pitch, 30, 0.3);
+	            			for (Vector3D pn : points) {
+	            				Server.sendForEver(new ServerSpawnParticlePacket(new Particle(ParticleType.END_ROD,new BlockParticleData(1)),true,pn.x,pn.y+1.75,pn.z,0f,0f,0f,0f,1));
+	            			}
+	        			} else if (iid == 578) {
+	        				List<Vector3D> points = new ArrayList<>();
+	        				for (int i = -179; i < 179;i++) {
+	        					if (i%20==0) {
+	        						points.addAll(createRay(pos, i, pitch, 8, 0.8));
+	        					}
+	        				}
+	        				for (Vector3D pn : points) {
+	            				Server.sendForEver(new ServerSpawnParticlePacket(new Particle(ParticleType.END_ROD,new BlockParticleData(1)),true,pn.x,pn.y+2.1,pn.z,0f,0f,0f,0f,1));
+	            			}
+	        			}
+	        		}
+	        	}
+	        } else if (event.getPacket() instanceof ClientPlayerUseItemPacket) {
+	        	
+	        }
+		} catch (Exception e) {
+			e.printStackTrace();
+			this.disconnect(Component.text("серверная ошибка. Такие дела, соси хуй быдло и перезаходи давай"));
+		}
 	}
 	
 	public List<Vector3D> createRay(Vector3D from, float yaw, float pitch, int dist, double amp) {
 		List<Vector3D> blocks = new CopyOnWriteArrayList<>();
-        final Vector3D v = getDirection(yaw, pitch).normalize();
+        final Vector3D v = VectorUtils.getDirection(yaw, pitch).normalize();
         for (int i = 1; i <= dist; i++) {
             from = from.add(v.multiply(amp));
             blocks.add(from);
@@ -329,24 +320,52 @@ public class ClientSession extends SessionAdapter {
 		return blocks;
 	}
 	
-	public Vector3D getDirection(double yaw, double pitch) {
-        Vector3D vector = new Vector3D(0,0,0);
-        double rotX = yaw;
-        double rotY = pitch;
-        vector.setY(-Math.sin(Math.toRadians(rotY)));
-        double xz = Math.cos(Math.toRadians(rotY));
-        vector.setX(-xz * Math.sin(Math.toRadians(rotX)));
-        vector.setZ(xz * Math.cos(Math.toRadians(rotX)));
-        return vector;
-    }
-	
 	public void tossItem(ItemStack item) {
-		BotU.log("itemtossed");
-		Server.spawnTickable(new Item(item, pos.add(0, 1.75, 0), getDirection(pitch,yaw)));
+		Vector3D dir = VectorUtils.getDirection(pitch,yaw).multiply(0.2);
+		UUID uuid = UUID.randomUUID();
+		BotU.log("tossed item: "+item.toString());
+		Server.spawnTickableItem(new EntityItem(item,uuid,Server.nextEID(), pos.add(0, 1.75, 0), dir));
 	}
 	
 	public ItemStack getiteminhand() {
-		return inventory.get(36+slot);
+		return getItem(36+slot);
+	}
+	
+	public void addToInv(int slott, ItemStack item) {
+		if (item == null) item = new ItemStack(0,0);
+		session.send(new ServerSetSlotPacket(0,slott,item));
+		if (inventory.containsKey(slott)) {
+			inventory.replace(slott, item);
+		} else {
+			inventory.put(slott, item);
+		}
+		if (slott >= 36 && slott <= 44) {
+			Server.sendForEver(new ServerEntityEquipmentPacket(entityId,new Equipment[] {new Equipment(EquipmentSlot.MAIN_HAND, getiteminhand())}));
+		} else if (slott == 45) {
+			Server.sendForEver(new ServerEntityEquipmentPacket(entityId,new Equipment[] {new Equipment(EquipmentSlot.OFF_HAND, getItem(45))}));
+		} else if (slott == 5) {
+			Server.sendForEver(new ServerEntityEquipmentPacket(entityId,new Equipment[] {new Equipment(EquipmentSlot.HELMET, getItem(5))}));
+		} else if (slott == 6) {
+			Server.sendForEver(new ServerEntityEquipmentPacket(entityId,new Equipment[] {new Equipment(EquipmentSlot.CHESTPLATE, getItem(6))}));
+		} else if (slott == 7) {
+			Server.sendForEver(new ServerEntityEquipmentPacket(entityId,new Equipment[] {new Equipment(EquipmentSlot.LEGGINGS, getItem(7))}));
+		} else if (slott == 8) {
+			Server.sendForEver(new ServerEntityEquipmentPacket(entityId,new Equipment[] {new Equipment(EquipmentSlot.BOOTS, getItem(8))}));
+		}
+	}
+	
+	public boolean invIsNull() {
+		return this.inventory == null;
+	}
+	
+	public ItemStack getItem(int slott) {
+		ItemStack item = inventory.get(slott);
+		if (item == null) {
+			return new ItemStack(0,0);
+		} else {
+			return new ItemStack(item.getId(),item.getAmount(),item.getNbt());
+			
+		}
 	}
 	
 	public void tick() {
@@ -358,28 +377,82 @@ public class ClientSession extends SessionAdapter {
 			sendDefaultPackets();
 			state = st.succ;
 		} else if (state == st.succ) {
-			Multiworld.Entities.get(entityId).pos = pos;
-			Multiworld.Entities.get(entityId).vel = vel;
-			Multiworld.Entities.get(entityId).pitch = pitch;
-			Multiworld.Entities.get(entityId).yaw = yaw;
+			//Multiworld.Entities.get(entityId).pos = pos;
+			//Multiworld.Entities.get(entityId).vel = vel;
+			//Multiworld.Entities.get(entityId).pitch = pitch;
+			//Multiworld.Entities.get(entityId).yaw = yaw;
 			if (Server.tickCounter%10==0) {
 				session.send(new ServerUpdateViewPositionPacket((int)pos.x>>4,(int)pos.z>>4));
 			}
+			
+			
+			if (Server.tickCounter%20==0) {
+				if (blocksBySecond > 8) {
+					for (Entry<Vector3D, Integer> g : backup.entrySet()) {
+						Server.setBlock(g.getKey(), g.getValue());
+					}
+					if (blocksBySecond > 20) {
+						String reason = "нюкерщик ебучий";
+						banned = true;
+						Server.sendForEver(new ServerChatPacket(Component.text(profile.getName()+" был забанен нахуй. Причина: "+reason+" хуесосим его.").color(NamedTextColor.RED)));
+						session.send(new ServerChatPacket(Component.text("ты был опущен(забанен) на этом серве. причина - "+reason+". мне лень тебя кикать поэтому выйди сам (всё что ты сделаешь в этом состоянии игнорируется. можешь хоть нюкер врубить мне похуй)").color(NamedTextColor.RED)));
+						session.send(new ServerChatPacket(Component.text("server closed the connection").color(NamedTextColor.AQUA)));
+						Server.sendForEver(new ServerPlayerListEntryPacket(
+							PlayerListEntryAction.UPDATE_DISPLAY_NAME,
+							new PlayerListEntry[] {
+								new PlayerListEntry(profile,Component.text("тень забаненого игрока "+profile.getName()))
+							}
+						));
+						
+					} else {
+						this.disconnect(Component.text("ты чето быстро блоки ломаешь сука. Нюкером пользуешься поди гандон"));
+						Server.broadcastMSG(Component.text(profile.getName()+" был кикнут античитом, лох ебаный"));
+						
+					}
+				}
+				backup.clear();
+				if (blocksBySecond>0) BotU.log("bbs: "+this.blocksBySecond);
+				this.blocksBySecond = 0;
+			}
 		}
+	}
+	
+	public void disconnect(Component reason) {
+		session.send(new ServerDisconnectPacket(reason));
 	}
 	
 	@Override
     public void disconnected(DisconnectedEvent event) {
 		//BotU.log(event.getReason());
+		Server.players.remove(this);
 		Server.sendForEver(new ServerPlayerListEntryPacket(
 			PlayerListEntryAction.REMOVE_PLAYER,
 			new PlayerListEntry[] {
 				new PlayerListEntry(profile)
 			}
 		));
-		Server.players.remove(this);
 		Server.sendForEver(new ServerEntityDestroyPacket(new int[] {entityId}));
-		Server.sendForEver(new ServerChatPacket(Component.text(profile.getName()+" ливнул пидарас. Уходишь? ну и пиздуй! не побывает в тебе мой хуй")));
+		Server.sendForEver(new ServerChatPacket(Component.text(profile.getName()+" ливнул пидарас").color(NamedTextColor.GOLD)));
+		
+		Server.worldData.get("players").getAsJsonObject().get(profile.getName()).getAsJsonObject().add("op", new JsonPrimitive(op));
+		Server.worldData.get("players").getAsJsonObject().get(profile.getName()).getAsJsonObject().add("banned", new JsonPrimitive(banned));
+		
+		Server.worldData.get("players").getAsJsonObject().get(profile.getName()).getAsJsonObject().add(
+    			"pos",
+    			new JsonPrimitive(pos.x+" "+pos.y+" "+pos.z));
+    	Server.worldData.get("players").getAsJsonObject().get(profile.getName()).getAsJsonObject().add("pitch", new JsonPrimitive(pitch));
+    	Server.worldData.get("players").getAsJsonObject().get(profile.getName()).getAsJsonObject().add("yaw", new JsonPrimitive(yaw));
+    	JsonArray inv = new JsonArray();
+		for (int i = 0; i < 45;i++) {
+			JsonObject itemobj = new JsonObject();
+			ItemStack item = inventory==null?new ItemStack(0,0):getItem(i);
+			itemobj.add("id", new JsonPrimitive(item==null?0:item.getId()));
+			itemobj.add("count", new JsonPrimitive(item==null?0:item.getAmount()));
+			inv.add(itemobj);
+		}
+		Server.worldData.get("players").getAsJsonObject().get(profile.getName()).getAsJsonObject().add("inventory", inv);
+		Server.worldData.get("players").getAsJsonObject().get(profile.getName()).getAsJsonObject().add("health", new JsonPrimitive(health));
+		Server.worldData.get("players").getAsJsonObject().get(profile.getName()).getAsJsonObject().add("food", new JsonPrimitive(food));
 	}
 	
 	public void sendWorld() {
@@ -432,19 +505,19 @@ public class ClientSession extends SessionAdapter {
 	}
 	
 	public void sendEntities() {
-		for (Tickable t : Server.tickable) {
+		for (DefaultEntity t : Multiworld.Entities.values()) {
 			session.send(new ServerSpawnEntityPacket(
-					t.getEntity().eid, 
-					t.getEntity().uuid,
-					t.getEntity().type,
-					t.getEntity().pos.x,
-					t.getEntity().pos.y,
-					t.getEntity().pos.z,
-					t.getEntity().yaw,
-					t.getEntity().pitch,
-					t.getEntity().vel.x,
-					t.getEntity().vel.y,
-					t.getEntity().vel.z
+					t.id, 
+					t.uuid,
+					t.type,
+					t.x,
+					t.y,
+					t.z,
+					t.yaw,
+					t.pitch,
+					t.motionX,
+					t.motionY,
+					t.motionZ
 		    	));
 		}
 	}
@@ -561,10 +634,95 @@ public class ClientSession extends SessionAdapter {
 		for (int i = 0; i < 45;i++) {
 			JsonObject itemobj = tempinv.get(i).getAsJsonObject();
 			ItemStack item = new ItemStack(itemobj.get("id").getAsInt(), itemobj.get("count").getAsInt());
-			inventory.put(i, item);
+			addToInv(i, item);
 			ti[i] = item;
 		}
 		session.send(new ServerWindowItemsPacket(0, ti));
-		Server.sendForEver(new ServerChatPacket(Component.text(profile.getName()+" жеска залетел на гейпати")));
+		Server.sendForEver(new ServerChatPacket(Component.text(profile.getName()+" залетел").color(NamedTextColor.GOLD)));
+	}
+
+	public boolean isAlive() {
+		return this.health > 0;
+	}
+	
+	public boolean canAddItem(ItemStack item) {
+		item = new ItemStack(item.getId(),item.getAmount(),item.getNbt());
+        for (int i = 9; i <= 44; i++) {
+            ItemStack slot = getItem(i);
+            if (item.getId() == slot.getId()) {
+                int diff;
+                if ((diff = Main.getMCData().items.get(slot.getId()).stackSize - slot.getAmount()) > 0) {
+                    item = new ItemStack(item.getId(), item.getAmount() - diff, item.getNbt());
+                }
+            } else if (slot.getId() == 0) {
+                item = new ItemStack(item.getId(), item.getAmount() - 64, item.getNbt());
+            }
+
+            if (item.getAmount() <= 0) {
+                return true;
+            }
+        }
+
+        return false;
+	}
+	
+	public int addItem(ItemStack item) {
+		int canadd = 0;
+		int slotmaxcount = Main.getMCData().items.get(item.getId()).stackSize;
+		for (int i = 44; i >= 9; i--) {
+			ItemStack slotitem = this.getItem(i);
+			if (slotitem.getId() == item.getId()) {
+				canadd = slotmaxcount-slotitem.getAmount();
+				if (canadd == 0) {
+				} else if (canadd == item.getAmount()) {
+					this.addToInv(i, item);
+					return item.getAmount();
+				} else if (canadd > item.getAmount()) {
+					this.addToInv(i, new ItemStack(item.getId(), slotitem.getAmount()+item.getAmount(),item.getNbt()));
+					return item.getAmount();
+				} else if (canadd < item.getAmount()) {
+					int toadd = slotmaxcount - slotitem.getAmount();
+					this.addToInv(i, new ItemStack(item.getId(), slotmaxcount,item.getNbt()));
+					return toadd;
+				} else {
+					BotU.wn("HOLY SHIT THAT UNBELIVEABLE FUCK THIS MF NIGGA WTFFFF AOOOOOAAAOOA");
+					return -228;
+				}
+			} else if (slotitem.getId() == 0) {
+				this.addToInv(i, item);
+				return item.getAmount();
+			}
+		}
+		return 0;
+	}
+	
+	public void chat(String msg) {
+		session.send(new ServerChatPacket(Component.text(msg)));
+	}
+
+	public boolean pickupEntity(DefaultEntity entity) {
+		if (entity instanceof EntityItem) {
+			if (((EntityItem) entity).getPickupDelay() <= 0) {
+                ItemStack item = ((EntityItem) entity).getItem();
+
+                if (item != null && item.getId() != 0) {
+                    if (!this.canAddItem(item)) {
+                        return false;
+                    }
+                    
+                    int count = this.addItem(item);
+
+                    if (count>0) Server.sendForEver(new ServerEntityCollectItemPacket(entity.id,this.entityId, count));
+                    
+                    if (count >= item.getAmount()) {
+                    	entity.close();
+                    }
+                    
+                    if (count>0) return true;
+                    else return false;
+                }
+            }
+		}
+		return false;
 	}
 }

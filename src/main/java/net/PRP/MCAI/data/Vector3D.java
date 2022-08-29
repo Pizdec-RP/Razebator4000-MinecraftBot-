@@ -118,6 +118,18 @@ public class Vector3D {
 		this.z = z;
 	}
 	
+	public void addX(double i) {
+		this.x +=i;
+	}
+	
+	public void addY(double i) {
+		this.y +=i;
+	}
+	
+	public void addZ(double i) {
+		this.z +=i;
+	}
+	
 	public Vector3D floorXZ() {
 		this.x = Math.floor(x);
 		this.z = Math.floor(z);
@@ -240,7 +252,7 @@ public class Vector3D {
     }
 	
 	public double length() {
-        return Math.sqrt(NumberConversions.square(this.x) + NumberConversions.square(this.y) + NumberConversions.square(this.z));
+        return Math.sqrt(this.lengthSquared());
     }
 	
 	public World getWorld(Bot client) {
@@ -279,6 +291,28 @@ public class Vector3D {
         }
         diagonal *= Math.sqrt(2);
         return (diagonal + straight) * 3.5D;
+    }
+
+	public void setComponents(double x, double y, double z) {
+		this.x=x;
+		this.y=y;
+		this.z=z;
+	}
+	
+	public void addComponents(double x, double y, double z) {
+		this.x+=x;
+		this.y+=y;
+		this.z+=z;
+	}
+
+	public void addComponents(Vector3D l) {
+		this.x+=l.x;
+		this.y+=l.y;
+		this.z+=l.z;
+	}
+
+	public double lengthSquared() {
+        return this.x * this.x + this.y * this.y + this.z * this.z;
     }
 	
 	/*public static double gylcalculate(int goalY, int currentY) {

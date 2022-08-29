@@ -14,6 +14,26 @@ public class MathU {
         }
     });
 	
+	public static int floorDouble(double n) {
+        int i = (int) n;
+        return n >= i ? i : i - 1;
+    }
+
+    public static int ceilDouble(double n) {
+        int i = (int) (n + 1);
+        return n >= i ? i : i - 1;
+    }
+
+    public static int floorFloat(float n) {
+        int i = (int) n;
+        return n >= i ? i : i - 1;
+    }
+
+    public static int ceilFloat(float n) {
+        int i = (int) (n + 1);
+        return n >= i ? i : i - 1;
+    }
+	
 	public static double atan2(double d, double d2) {
         boolean bl;
         double d3;
@@ -108,6 +128,12 @@ public class MathU {
         d *= 1.5 - d2 * d * d;
         return d;
     }
+	
+	public static double getDir(double d) {
+		if (d < 0) return -1;
+		else if (d > 0) return 1;
+		else return 0;
+	}
 	
 	public static <T> T make(T t, Consumer<T> consumer) {
         consumer.accept(t);

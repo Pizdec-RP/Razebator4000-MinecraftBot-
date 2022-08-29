@@ -34,6 +34,10 @@ public class AABB {
 	    return this;
 	}
 	
+	public AABB grow(double x, double y, double z) {
+        return new AABB(this.getMinX() - x, this.getMinY() - y, this.getMinZ() - z, this.getMaxX() + x, this.getMaxY() + y, this.getMaxZ() + z);
+    }
+	
 	public List<Vector3D> getCorners() {
 		List<Vector3D> c = new ArrayList<>();
 		
@@ -188,11 +192,110 @@ public class AABB {
 	public void setMaxZ(double maxZ) {
 		this.maxZ = maxZ;
 	}
+	
+	public AABB setBB(AABB bb) {
+        this.setMinX(bb.getMinX());
+        this.setMinY(bb.getMinY());
+        this.setMinZ(bb.getMinZ());
+        this.setMaxX(bb.getMaxX());
+        this.setMaxY(bb.getMaxY());
+        this.setMaxZ(bb.getMaxZ());
+        return this;
+    }
+	
+	public double calculateXOffset(AABB bb, double x) {
+        if (bb.getMaxY() <= this.getMinY() || bb.getMinY() >= this.getMaxY()) {
+            return x;
+        }
+        if (bb.getMaxZ() <= this.getMinZ() || bb.getMinZ() >= this.getMaxZ()) {
+            return x;
+        }
+        if (x > 0 && bb.getMaxX() <= this.getMinX()) {
+            double x1 = this.getMinX() - bb.getMaxX();
+            if (x1 < x) {
+                x = x1;
+            }
+        }
+        if (x < 0 && bb.getMinX() >= this.getMaxX()) {
+            double x2 = this.getMaxX() - bb.getMinX();
+            if (x2 > x) {
+                x = x2;
+            }
+        }
+
+        return x;
+    }
+
+    public double calculateYOffset(AABB bb, double y) {
+        if (bb.getMaxX() <= this.getMinX() || bb.getMinX() >= this.getMaxX()) {
+            return y;
+        }
+        if (bb.getMaxZ() <= this.getMinZ() || bb.getMinZ() >= this.getMaxZ()) {
+            return y;
+        }
+        if (y > 0 && bb.getMaxY() <= this.getMinY()) {
+            double y1 = this.getMinY() - bb.getMaxY();
+            if (y1 < y) {
+                y = y1;
+            }
+        }
+        if (y < 0 && bb.getMinY() >= this.getMaxY()) {
+            double y2 = this.getMaxY() - bb.getMinY();
+            if (y2 > y) {
+                y = y2;
+            }
+        }
+
+        return y;
+    }
+
+    public double calculateZOffset(AABB bb, double z) {
+        if (bb.getMaxX() <= this.getMinX() || bb.getMinX() >= this.getMaxX()) {
+            return z;
+        }
+        if (bb.getMaxY() <= this.getMinY() || bb.getMinY() >= this.getMaxY()) {
+            return z;
+        }
+        if (z > 0 && bb.getMaxZ() <= this.getMinZ()) {
+            double z1 = this.getMinZ() - bb.getMaxZ();
+            if (z1 < z) {
+                z = z1;
+            }
+        }
+        if (z < 0 && bb.getMinZ() >= this.getMaxZ()) {
+            double z2 = this.getMaxZ() - bb.getMinZ();
+            if (z2 > z) {
+                z = z2;
+            }
+        }
+
+        return z;
+    }
 
 	@Override
 	public String toString() {
 		return "AABB [minX=" + minX + ", minY=" + minY + ", minZ=" + minZ + ", maxX=" + maxX + ", maxY=" + maxY + ", maxZ=" + maxZ + "]";
 	}
+
+	public AABB addCoord(double x, double y, double z) {
+        double minX = this.getMinX();
+        double minY = this.getMinY();
+        double minZ = this.getMinZ();
+        double maxX = this.getMaxX();
+        double maxY = this.getMaxY();
+        double maxZ = this.getMaxZ();
+
+        if (x < 0) minX += x;
+        if (x > 0) maxX += x;
+
+        if (y < 0) minY += y;
+        if (y > 0) maxY += y;
+
+        if (z < 0) minZ += z;
+        if (z > 0) maxZ += z;
+
+        return new AABB(minX, minY, minZ, maxX, maxY, maxZ);
+    }
 	
 	
 }

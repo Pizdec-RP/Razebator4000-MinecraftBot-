@@ -281,7 +281,7 @@ public class Main {
             
             JsonReader reader2 = new JsonReader(new FileReader("data/blocks.json"));
             obj = (JsonObject) new JsonParser().parse(reader2);
-            
+            getMCData().blocksJson = obj;
             for (oldMinecraftBlocks oldBlock : omb) {
             	JsonObject newBlockState = obj.get(oldBlock.name).getAsJsonObject();
             	if (oldBlock.name.contains("slab")) {

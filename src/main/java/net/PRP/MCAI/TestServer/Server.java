@@ -19,18 +19,22 @@ import com.github.steveice10.mc.protocol.data.game.entity.player.GameMode;
 import com.github.steveice10.mc.protocol.data.game.entity.player.PositionElement;
 import com.github.steveice10.mc.protocol.data.game.entity.type.EntityType;
 import com.github.steveice10.mc.protocol.data.game.world.block.BlockChangeRecord;
+import com.github.steveice10.mc.protocol.data.game.world.block.BlockFace;
 import com.github.steveice10.mc.protocol.data.status.PlayerInfo;
 import com.github.steveice10.mc.protocol.data.status.ServerStatusInfo;
 import com.github.steveice10.mc.protocol.data.status.VersionInfo;
 import com.github.steveice10.mc.protocol.data.status.handler.ServerInfoBuilder;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerChatPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerDisconnectPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.server.ServerPlayerListDataPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerPlayerListEntryPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerTitlePacket;
+import com.github.steveice10.mc.protocol.packet.ingame.server.entity.ServerEntityDestroyPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.ServerEntityHeadLookPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.ServerEntityMetadataPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.ServerEntityRotationPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.ServerEntityTeleportPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.server.entity.ServerEntityVelocityPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.player.ServerPlayerPositionRotationPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.spawn.ServerSpawnEntityPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.spawn.ServerSpawnLivingEntityPacket;
@@ -52,6 +56,7 @@ import com.github.steveice10.packetlib.event.server.SessionRemovedEvent;
 import com.github.steveice10.packetlib.packet.Packet;
 import com.github.steveice10.packetlib.tcp.TcpServer;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
@@ -60,11 +65,13 @@ import com.google.gson.stream.JsonReader;
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.Multiworld;
 import net.PRP.MCAI.TestServer.entity.*;
+import net.PRP.MCAI.data.Block;
 import net.PRP.MCAI.data.ChunkCoordinates;
 import net.PRP.MCAI.data.Entity;
 import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.ThreadU;
+import net.PRP.MCAI.utils.VectorUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 
@@ -109,19 +116,21 @@ public class Server {
     public static State serverState = State.non;
     public static int entitiesid = 0;
     public static CommandNode[] commands = new CommandNode[] {
-    	new CommandNode(CommandType.ROOT,false,new int[] {1,2,3,4,5,6},-1,null,null,null,null),
+    	new CommandNode(CommandType.ROOT,false,new int[] {1,2,3,4,5,6,7,8},-1,null,null,null,null),
     	new CommandNode(CommandType.LITERAL,true,new int[10], -1, "help", null,null,null),
     	new CommandNode(CommandType.LITERAL,true,new int[10], -1, "ban", null,null,null),
     	new CommandNode(CommandType.LITERAL,true,new int[10], -1, "unban", null,null,null),
     	new CommandNode(CommandType.LITERAL,true,new int[10], -1, "razban", null,null,null),
     	new CommandNode(CommandType.LITERAL,true,new int[10], -1, "title", null,null,null),
+    	new CommandNode(CommandType.LITERAL,true,new int[10], -1, "spawnentity", null,null,null),
+    	new CommandNode(CommandType.LITERAL,true,new int[10], -1, "spawnitem", null,null,null),
     	new CommandNode(CommandType.LITERAL,true,new int[10], -1, "filll", CommandParser.BLOCK_POS,null,null)
     };
     public static Vector3D spawnpoint;
     public static JsonObject worldData;
     private static boolean ul = false;//update locked
     public static int tickCounter = 0;
-    public static List<Tickable> tickable = new CopyOnWriteArrayList<>();
+	private static int raznica;
     
     public enum State {
     	non, loadWorld, genWorld, ready;
@@ -143,18 +152,47 @@ public class Server {
 	    		
 	    		if (!player.banned) player.tick();
 	    	}
-	    	for (Tickable e : tickable) {
+	    	for (DefaultEntity entity : Multiworld.Entities.values()) {
+	    		entity.onUpdate();
+	    	}
+	    	
+	    	if (tickCounter%2==0) {
+	    		for (ClientSession player : players) {
+	    			int eid = player.entityId;
+		    		for (ClientSession sender : players) {
+		    			if (sender.entityId != eid && !sender.banned) {
+		    				sender.session.send(new ServerEntityTeleportPacket(eid,player.pos.x,player.pos.y,player.pos.z,player.yaw,player.pitch,player.onGround));
+		    				sender.session.send(new ServerEntityHeadLookPacket(eid,player.yaw));
+		    			}
+		    		}
+	    		}
+	    	}
+	    	if (tickCounter%20==0) {
+	    		sendForEver(
+	    				new ServerPlayerListDataPacket(
+	    						Component.text("сервер запущен на Pizdec RP core v2.28 build-1488-super-hyper-nigger-fisting-ass").color(NamedTextColor.LIGHT_PURPLE),
+	    						Component.text("онлайн: "+players.size()+" нахуй. Длительность тика:"+(raznica>25?raznica+" (overload)":raznica)+"\n")
+	    						.append(Component.text("##########\n").color(NamedTextColor.BLUE)
+	    						.append(Component.text("##########").color(NamedTextColor.YELLOW)))));
+	    		
+	    	}
+	    	/*for (Tickable e : tickable) {
 	    		e.tick();
+	    		if (e.getEntity().pos.y<0) {
+	    			Multiworld.Entities.remove(e.getEntity().eid);
+	    			tickable.remove(e);
+	    			Server.sendForEver(new ServerEntityDestroyPacket(new int[] {e.getEntity().eid}));
+	    		}
 	    	}
 	    	if (tickCounter%2==0) {
 	    		//BotU.log("entities: "+Multiworld.Entities.size());
 	    		for (Tickable e : tickable) {
 	    			e.packettick();
 	    		}
-	    		for (Entry<Integer, Entity> entity : Multiworld.Entities.entrySet()) {
+	    		for (Entry<Integer, DefaultEntity> entity : Multiworld.Entities.entrySet()) {
 	    			if (entity.getValue().type == EntityType.PLAYER) {
 			    		Integer eid = entity.getKey();
-			    		Entity en = entity.getValue();
+			    		DefaultEntity en = entity.getValue();
 			    		//BotU.log("eid:"+eid);
 			    		for (ClientSession player : players) {
 			    			if (player.entityId != eid && !player.banned) {
@@ -168,7 +206,7 @@ public class Server {
 			    		}
 	    			}
 		    	}
-	    	}
+	    	}*/
 	    	tickCounter++;
 	    	if (tickCounter > 100) {
 	    		tickCounter = 0;
@@ -178,7 +216,7 @@ public class Server {
     	}
     }
     
-    public static void spawnTickable(Tickable t) {
+    /*public static void spawnTickable(Tickable t) {
     	tickable.add(t);
     	Multiworld.Entities.put(t.getEntity().eid, t.getEntity());
     	sendForEver(new ServerSpawnEntityPacket(
@@ -194,9 +232,9 @@ public class Server {
 			t.getEntity().vel.y,
 			t.getEntity().vel.z
     	));
-    }
+    }*/
     
-    public static void spawnTickableLiving(Tickable t) {
+    /*public static void spawnTickableLiving(Tickable t) {
     	tickable.add(t);
     	Multiworld.Entities.put(t.getEntity().eid, t.getEntity());
     	sendForEver(new ServerSpawnLivingEntityPacket(
@@ -234,25 +272,23 @@ public class Server {
 				 new EntityMetadata(17, MetadataType.INT, 0),
 				 }
 		 ));
-    }
+    }*/
     
-    public static void spawnTickableItem(Tickable t) {
-    	tickable.add(t);
-    	Multiworld.Entities.put(t.getEntity().eid, t.getEntity());
+    public static void spawnTickableItem(EntityItem t) {
     	sendForEver(new ServerSpawnEntityPacket(
-			t.getEntity().eid, 
-			t.getEntity().uuid,
-			t.getEntity().type,
-			t.getEntity().pos.x,
-			t.getEntity().pos.y,
-			t.getEntity().pos.z,
+			t.id, 
+			t.uuid,
+			t.type,
+			t.x,
+			t.y,
+			t.z,
 			0,
 			0,
 			0,
 			0,
 			0
-    	));
-    	sendForEver(new ServerEntityMetadataPacket(t.getEntity().eid,new EntityMetadata[] {
+        ));
+    	sendForEver(new ServerEntityMetadataPacket(t.id,new EntityMetadata[] {
     			 //new EntityMetadata(0, MetadataType.BYTE, (byte)0), 
 				 //new EntityMetadata(1, MetadataType.INT, 300), 
 				 //new EntityMetadata(2, MetadataType.OPTIONAL_CHAT, null),
@@ -260,9 +296,11 @@ public class Server {
 				 //new EntityMetadata(4, MetadataType.BOOLEAN, false), 
 				 //new EntityMetadata(5, MetadataType.BOOLEAN, false), 
 				 //new EntityMetadata(6, MetadataType.POSE, Pose.STANDING), 
-				 new EntityMetadata(7, MetadataType.ITEM, ((Item)t).item)
+				 new EntityMetadata(7, MetadataType.ITEM, t.getItem())
     	}));
-    	Server.sendForEver(new ServerEntityTeleportPacket(t.getEntity().eid,t.getEntity().pos.x,t.getEntity().pos.y,t.getEntity().pos.z,t.getEntity().yaw,t.getEntity().pitch,t.getEntity().onGround));
+    	Server.sendForEver(new ServerEntityVelocityPacket(t.id,0,0,0));
+    	Server.sendForEver(new ServerEntityTeleportPacket(t.id,t.x,t.y,t.z,t.yaw,t.pitch,t.isOnGround()));
+    	Multiworld.Entities.put(t.id,t);
     }
     
     public ClientSession csByEID(int eid) {
@@ -272,8 +310,53 @@ public class Server {
     	return null;
     }
     
+    public static void placeBlockEvent (Vector3D pos, BlockFace face, int itemid, ClientSession cs) {
+    	try {
+	    	if (itemid == 0) return;
+			Vector3D pos2 = pos.add(VectorUtils.BFtoVec(face));
+			Block beforeBlock = Multiworld.getBlock(pos2);
+			int state = -1;
+			
+			String blockName = Main.getMCData().items.get(itemid).name;
+			//BotU.log(blockName);
+			//BotU.log("minecraft:"+blockName);
+			if (Main.getMCData().blocksJson.has("minecraft:"+blockName)) {
+				JsonObject blockObject = Main.getMCData().blocksJson.get("minecraft:"+blockName).getAsJsonObject();
+				//BotU.log(blockObject.toString());
+				for (JsonElement bstate : blockObject.get("states").getAsJsonArray()) {
+					//BotU.log(bstate);
+					if (bstate.getAsJsonObject().has("default")) {
+						if (bstate.getAsJsonObject().get("default").getAsBoolean()) {
+							state = bstate.getAsJsonObject().get("id").getAsInt();
+						}
+					}
+				}
+				
+				if (state != -1) setBlock(pos2, state);
+				else setBlock(pos2, beforeBlock.state);
+			} else {
+				//item is not block
+				ItemStack item = cs.getiteminhand();
+	        	if (item.getId() == 572) {//fire the tnt
+	        		if (Multiworld.getBlock(pos).id == 137) {
+	        			Server.setBlock(pos, 0);
+	        			//Server.spawnTickable(new tnt(pos));
+	        			BotU.log("305: spawn tnt");
+	        			return;
+	        		}
+	        	}
+			}
+    	} catch (Exception e) {
+    		e.printStackTrace();
+    	}
+    }
+    
+    public static void broadcastMSG(Component text) {
+    	sendForEver(new ServerChatPacket(text));
+    }
+    
     public static void newEntityPlayer(ClientSession cs) {
-    	Multiworld.Entities.put(cs.entityId, new Entity(cs.entityId,cs.profile.getId(), EntityType.PLAYER, cs.pos, cs.yaw, cs.pitch));
+    	//Multiworld.Entities.put(cs.entityId, new Entity(cs.entityId,cs.profile.getId(), EntityType.PLAYER, cs.pos, cs.yaw, cs.pitch));
     	sendForEver(new ServerSpawnPlayerPacket(cs.entityId,
     			cs.profile.getId(),
     			cs.pos.x,
@@ -281,8 +364,7 @@ public class Server {
     			cs.pos.z,
     			cs.yaw,
     			cs.pitch
-    			));
-    	
+    	));
     }
     
     public static void handleEntityMove(Vector3D newpos, ClientSession cs) {
@@ -307,7 +389,7 @@ public class Server {
     
     public static void sendForEver(Packet p) {
     	for (ClientSession player : players) {
-    		player.session.send(p);
+    		if (!player.banned) player.session.send(p);
     	}
     }
     
@@ -475,7 +557,7 @@ public class Server {
 		    		        	JsonArray inv = new JsonArray();
 		    					for (int i = 0; i < 45;i++) {
 		    						JsonObject itemobj = new JsonObject();
-		    						ItemStack item = player.inventory==null?null:player.inventory.get(i);
+		    						ItemStack item = player.invIsNull()?new ItemStack(0,0):player.getItem(i);
 		    						itemobj.add("id", new JsonPrimitive(item==null?0:item.getId()));
 		    						itemobj.add("count", new JsonPrimitive(item==null?0:item.getAmount()));
 		    						inv.add(itemobj);
@@ -538,7 +620,7 @@ public class Server {
     			long timeone = System.currentTimeMillis();
     			tick();
     			long timetwo = System.currentTimeMillis();
-    			int raznica = (int) (timetwo - timeone);
+    			Server.raznica = (int) (timetwo - timeone);
     			if (needtocompensate > 5000) {
     				needtocompensate = 0;
     				BotU.log("client overloaded, skiped "+needtocompensate/tickrate+" ticks");
@@ -615,7 +697,7 @@ public class Server {
     }
     
     public static void setBlock(Vector3D Vec3, int state) {
-    	if (Multiworld.getBlock(Vec3).state == state) return;
+    	
     	if (Vec3.y == 0) {
     		Multiworld.setBlock(Vec3.translate(), 33);
     		sendForEver(new ServerBlockChangePacket(new BlockChangeRecord(Vec3.translate(),33)));
@@ -962,11 +1044,42 @@ public class Server {
     			}
     		}
 		} else if (message.startsWith("spawnitem")) {
-			Server.spawnTickableItem(new Item(new ItemStack(2,1),cs.pos,new Vector3D(0,0,0)));
-			cs.session.send(new ServerChatPacket(Component.text("entity created")));
+			int id = Server.nextEID();
+			UUID uuid = UUID.randomUUID();
+			cs.chat("spawned item. id: " + id+" uuid: "+uuid.toString());
+			DefaultEntity t = new EntityItem(new ItemStack(2,1), uuid,id,new Vector3D(0,10,0));
+			
+			sendForEver(new ServerSpawnEntityPacket(
+				id, 
+				uuid,
+				EntityType.ITEM,
+				cs.pos.x,
+				cs.pos.y,
+				cs.pos.z,
+				0,
+				0,
+				0,
+				0,
+				0
+	        ));
+	    	sendForEver(new ServerEntityMetadataPacket(id,new EntityMetadata[] {
+	    			 //new EntityMetadata(0, MetadataType.BYTE, (byte)0), 
+					 //new EntityMetadata(1, MetadataType.INT, 300), 
+					 //new EntityMetadata(2, MetadataType.OPTIONAL_CHAT, null),
+					 //new EntityMetadata(3, MetadataType.BOOLEAN, false), 
+					 //new EntityMetadata(4, MetadataType.BOOLEAN, false), 
+					 //new EntityMetadata(5, MetadataType.BOOLEAN, false), 
+					 //new EntityMetadata(6, MetadataType.POSE, Pose.STANDING), 
+					 new EntityMetadata(7, MetadataType.ITEM, new ItemStack(2,1))
+	    	}));
+	    	Server.sendForEver(new ServerEntityVelocityPacket(id,0,0,0));
+		    Server.sendForEver(new ServerEntityTeleportPacket(id,0,10,0,0,0,true));
+		    Multiworld.Entities.put(t.id, t);
+		    //Server.spawnTickableItem(new Item(new ItemStack(2,1),cs.pos.clone(),new Vector3D(0,0,0)));
+			//cs.session.send(new ServerChatPacket(Component.text("entity created")));
 		} else if (message.startsWith("spawnentity")) {
-			Server.spawnTickable(new Pig(cs.pos,new Vector3D(0,0,0)));
-			cs.session.send(new ServerChatPacket(Component.text("entity created")));
+			//Server.spawnTickable(new Pig(cs.pos.clone(),new Vector3D(0,0,0)));
+			//cs.session.send(new ServerChatPacket(Component.text("entity created")));
 	    } else if (message.startsWith("fp")) {
 			cs.session.send(new ServerChatPacket(Component.text("юзаем команду...")));
 			int eid = nextEID();
@@ -1030,6 +1143,8 @@ public class Server {
 					 }
 			 );
 			 sendForEver(p);
+		} else if (message.startsWith("piih")) {
+			cs.chat(cs.getiteminhand().toString());
 		}
 	}
 

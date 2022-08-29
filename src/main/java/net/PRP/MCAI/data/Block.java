@@ -258,6 +258,23 @@ public class Block {
 	public void setType(Type type) {
 		this.type = type;
 	}
+
+	public double getResistance() {
+		return Main.getMCData().blockData.get(this.id).resistance;
+	}
+	
+	public int getDamage() {
+        return 0;
+    }
+
+	public float getFluidHeightPercent() {
+        float d = (float) this.getDamage();
+        if (d >= 8) {
+            d = 0;
+        }
+
+        return (d + 1) / 9f;
+    }
 	
 	
 }

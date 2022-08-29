@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.github.steveice10.mc.protocol.data.game.window.WindowType;
+import com.google.gson.JsonObject;
 
 import net.PRP.MCAI.Main;
 
@@ -13,7 +14,7 @@ public class MinecraftData {
 	public enum Type {
 		HARD, VOID, AVOID, AIR, LIQUID, DOOR, GATE, DOOR_GATE, UNKNOWN, LADDER, GOAWAY, UNBREAKABLE, CARPET;
 	}
-	
+	public JsonObject blocksJson;
 	public Map<Integer, Type> bts = new HashMap<>();
 	public Map<Integer, oldMinecraftBlocks> blockStates = new HashMap<>();// key - state, value - oldid,name
 	public Map<Integer, BlockData> blockData = new HashMap<>();//key - oldid

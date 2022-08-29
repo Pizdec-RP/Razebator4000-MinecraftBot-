@@ -34,4 +34,126 @@ public class Entity {
     public String toString() {
     	return "id: "+eid+" uuid:"+uuid+" pos:"+pos.toStringInt();
     }
+
+
+
+	public boolean isOnGround() {
+		return onGround;
+	}
+
+
+
+	public void setOnGround(boolean onGround) {
+		this.onGround = onGround;
+	}
+
+
+
+	public ItemStack getMainhand() {
+		return mainhand;
+	}
+
+
+
+	public void setMainhand(ItemStack mainhand) {
+		this.mainhand = mainhand;
+	}
+
+
+
+	public ItemStack getOffhand() {
+		return offhand;
+	}
+
+
+
+	public void setOffhand(ItemStack offhand) {
+		this.offhand = offhand;
+	}
+
+
+
+	public int getEid() {
+		return eid;
+	}
+
+
+
+	public void setEid(int eid) {
+		this.eid = eid;
+	}
+
+
+
+	public EntityType getType() {
+		return type;
+	}
+
+
+
+	public void setType(EntityType type) {
+		this.type = type;
+	}
+
+
+
+	public Vector3D getPos() {
+		return pos;
+	}
+
+
+
+	public void setPos(Vector3D pos) {
+		this.pos = pos;
+	}
+
+
+
+	public Vector3D getVel() {
+		return vel;
+	}
+
+
+
+	public void setVel(Vector3D vel) {
+		this.vel = vel;
+	}
+
+
+
+	public float getYaw() {
+		return yaw;
+	}
+
+
+
+	public void setYaw(float yaw) {
+		this.yaw = yaw;
+	}
+
+
+
+	public float getPitch() {
+		return pitch;
+	}
+
+
+
+	public void setPitch(float pitch) {
+		this.pitch = pitch;
+	}
+
+
+
+	public UUID getUuid() {
+		return uuid;
+	}
+
+
+
+	public void setUuid(UUID uuid) {
+		this.uuid = uuid;
+	}
+    
+    
 }
