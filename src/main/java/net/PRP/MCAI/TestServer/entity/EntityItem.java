@@ -101,7 +101,9 @@ public class EntityItem extends DefaultEntity {
                 }
             }
         }
-
+        
+        this.entityBaseTick();
+        
         if (isInsideOfFire()) {
             this.kill();
         }

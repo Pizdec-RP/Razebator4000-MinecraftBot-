@@ -22,6 +22,8 @@ import com.github.steveice10.mc.protocol.data.game.entity.metadata.Equipment;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.ItemStack;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.MetadataType;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.Pose;
+import com.github.steveice10.mc.protocol.data.game.entity.object.FallingBlockData;
+import com.github.steveice10.mc.protocol.data.game.entity.object.GenericObjectData;
 import com.github.steveice10.mc.protocol.data.game.entity.player.Animation;
 import com.github.steveice10.mc.protocol.data.game.entity.player.GameMode;
 import com.github.steveice10.mc.protocol.data.game.entity.player.Hand;
@@ -85,12 +87,15 @@ import com.google.gson.JsonPrimitive;
 
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.Multiworld;
+import net.PRP.MCAI.TestServer.entity.BlockEntity;
 import net.PRP.MCAI.TestServer.entity.DefaultEntity;
 import net.PRP.MCAI.TestServer.entity.EntityItem;
+import net.PRP.MCAI.data.Block;
 import net.PRP.MCAI.data.ChunkCoordinates;
 import net.PRP.MCAI.data.Entity;
 import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.utils.BotU;
+import net.PRP.MCAI.utils.MathU;
 import net.PRP.MCAI.utils.VectorUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -114,8 +119,13 @@ public class ClientSession extends SessionAdapter {
 	public boolean onGround = true;
 	public boolean op = false;
 	public boolean banned = false;
+	
+	//internal plugin's shit---------
 	private int blocksBySecond = 0;
 	private Map<Vector3D, Integer> backup = new ConcurrentHashMap<>();
+	public DefaultEntity capturedBlock = null;
+	private int csleep = 0;
+	//-------------------------------
 	
 	private enum st {
 		not, lsp, succ
@@ -247,6 +257,7 @@ public class ClientSession extends SessionAdapter {
 	        	}
 	        } else if (event.getPacket() instanceof ClientPlayerSwingArmPacket) {
 	        	Server.sendForEver(new ServerEntityAnimationPacket(entityId,Animation.SWING_ARM));
+	        	Hit(this.getiteminhand().getId());
 	        } else if (event.getPacket() instanceof ClientPlayerStatePacket) {
 	        	ClientPlayerStatePacket p = event.getPacket();
 	        	//if (p.getEntityId() != this.entityId) return;
@@ -283,22 +294,8 @@ public class ClientSession extends SessionAdapter {
 	        	if (p.getHand() == Hand.MAIN_HAND) {
 	        		if (getiteminhand() != null) {
 	        			int iid = getiteminhand().getId();
-	        			if (iid == 613) {
-	        				List<Vector3D> points = createRay(pos, yaw, pitch, 30, 0.3);
-	            			for (Vector3D pn : points) {
-	            				Server.sendForEver(new ServerSpawnParticlePacket(new Particle(ParticleType.END_ROD,new BlockParticleData(1)),true,pn.x,pn.y+1.75,pn.z,0f,0f,0f,0f,1));
-	            			}
-	        			} else if (iid == 578) {
-	        				List<Vector3D> points = new ArrayList<>();
-	        				for (int i = -179; i < 179;i++) {
-	        					if (i%20==0) {
-	        						points.addAll(createRay(pos, i, pitch, 8, 0.8));
-	        					}
-	        				}
-	        				for (Vector3D pn : points) {
-	            				Server.sendForEver(new ServerSpawnParticlePacket(new Particle(ParticleType.END_ROD,new BlockParticleData(1)),true,pn.x,pn.y+2.1,pn.z,0f,0f,0f,0f,1));
-	            			}
-	        			}
+	        			Click(iid);
+	        	
 	        		}
 	        	}
 	        } else if (event.getPacket() instanceof ClientPlayerUseItemPacket) {
@@ -307,6 +304,68 @@ public class ClientSession extends SessionAdapter {
 		} catch (Exception e) {
 			e.printStackTrace();
 			this.disconnect(Component.text("серверная ошибка. Такие дела, соси хуй быдло и перезаходи давай"));
+		}
+	}
+	
+	public void Hit(int iid) {
+		if (csleep > 0) return;
+		csleep = 10;
+		if (iid == 613) {
+			BlockEntity tb = new BlockEntity(Server.nextEID(), pos.clone(), MathU.rnd(1, 17111));
+			tb.x = pos.x;
+	    	tb.y = pos.y+1.5;
+	    	tb.z = pos.z;
+			Vector3D dir = VectorUtils.getDirection(yaw,pitch);
+		    
+		    tb.motionX += dir.x;
+		    tb.motionY += dir.y;
+		    tb.motionZ += dir.z;
+			Server.spawnTickableFallingBlock(tb);
+			
+		}
+	}
+	
+	public void Click(int iid) {
+		if (csleep > 0) return;
+		csleep = 10;
+		if (iid == 613) {//stick
+			
+		    if (this.capturedBlock == null) {
+				List<Vector3D> points = createRay(pos, yaw, pitch, 6, 0.5);
+				for (Vector3D pn : points) {
+					Server.sendForEver(new ServerSpawnParticlePacket(new Particle(ParticleType.END_ROD,new BlockParticleData(1)),true,pn.x,pn.y+1.75,pn.z,0f,0f,0f,0f,1));
+					Block b = Multiworld.getBlock(pn);
+					if (!b.isAvoid()) {
+						Multiworld.setBlock(pn.clone().floor().translate(), 0);
+						BlockEntity tb = new BlockEntity(Server.nextEID(), pn.clone(), b.state);
+						
+						this.capturedBlock = tb;
+						((BlockEntity)this.capturedBlock).captured = true;
+						Server.spawnTickableFallingBlock(this.capturedBlock);
+						return;
+					}
+				}
+		    } else {
+		    	this.capturedBlock.motionX = 0;
+		    	this.capturedBlock.motionY = 0;
+		    	this.capturedBlock.motionZ = 0;
+		    	this.capturedBlock.lastMotionX = 0;
+		    	this.capturedBlock.lastMotionY = 0;
+		    	this.capturedBlock.lastMotionZ = 0;
+		    	
+		    	((BlockEntity)this.capturedBlock).captured = false;
+		    	this.capturedBlock = null;
+		    }
+		} else if (iid == 578) {
+			List<Vector3D> points = new ArrayList<>();
+			for (int i = -179; i < 179;i++) {
+				if (i%20==0) {
+					points.addAll(createRay(pos, i, pitch, 8, 0.8));
+				}
+			}
+			for (Vector3D pn : points) {
+				Server.sendForEver(new ServerSpawnParticlePacket(new Particle(ParticleType.END_ROD,new BlockParticleData(1)),true,pn.x,pn.y+2.1,pn.z,0f,0f,0f,0f,1));
+			}
 		}
 	}
 	
@@ -377,15 +436,11 @@ public class ClientSession extends SessionAdapter {
 			sendDefaultPackets();
 			state = st.succ;
 		} else if (state == st.succ) {
-			//Multiworld.Entities.get(entityId).pos = pos;
-			//Multiworld.Entities.get(entityId).vel = vel;
-			//Multiworld.Entities.get(entityId).pitch = pitch;
-			//Multiworld.Entities.get(entityId).yaw = yaw;
 			if (Server.tickCounter%10==0) {
 				session.send(new ServerUpdateViewPositionPacket((int)pos.x>>4,(int)pos.z>>4));
 			}
 			
-			
+			if (csleep >0) csleep--;
 			if (Server.tickCounter%20==0) {
 				if (blocksBySecond > 8) {
 					for (Entry<Vector3D, Integer> g : backup.entrySet()) {
@@ -510,6 +565,7 @@ public class ClientSession extends SessionAdapter {
 					t.id, 
 					t.uuid,
 					t.type,
+					(t instanceof BlockEntity? new FallingBlockData(((BlockEntity)t).blockState,0):new GenericObjectData(0)),
 					t.x,
 					t.y,
 					t.z,
@@ -518,7 +574,12 @@ public class ClientSession extends SessionAdapter {
 					t.motionX,
 					t.motionY,
 					t.motionZ
-		    	));
+		    ));
+			if (t instanceof EntityItem) {
+				session.send(new ServerEntityMetadataPacket(t.id,new EntityMetadata[] {
+					new EntityMetadata(7, MetadataType.ITEM, ((EntityItem)t).getItem())
+		    	}));
+			}
 		}
 	}
 	
@@ -551,7 +612,7 @@ public class ClientSession extends SessionAdapter {
     			"minecraft:world",
     			1488,
     			(int) Server.gets("maxPlayers"),
-    			6,
+    			10,
     			false,
     			true,
     			false,

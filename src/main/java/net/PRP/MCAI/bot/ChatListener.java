@@ -78,7 +78,7 @@ public class ChatListener extends SessionAdapter {
 					for (Vector3D pos : list) {
 						BotU.chat(client, "/particle minecraft:end_rod "+pos.forCommandD()+" 0 0 0 0 1");
 						if (pos.floor().getBlock(client).isWater()) {
-							BotU.chat(client, "state-id: "+pos.getBlock(client).getAsWaterLevel());
+							BotU.chat(client, "state-id: "+pos.getBlock(client).getFluidHeight());
 							return;
 						}
 					}

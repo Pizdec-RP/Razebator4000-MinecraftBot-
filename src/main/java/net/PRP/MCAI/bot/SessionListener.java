@@ -205,7 +205,7 @@ public class SessionListener extends SessionAdapter {
 		} else if (receiveEvent.getPacket() instanceof ServerPlayerChangeHeldItemPacket) {
 			ServerPlayerChangeHeldItemPacket p = (ServerPlayerChangeHeldItemPacket)receiveEvent.getPacket();
 			BotU.SetSlot(client, p.getSlot());
-		} else if (receiveEvent.getPacket() instanceof ServerSpawnLivingEntityPacket) {
+		} else if (receiveEvent.getPacket() instanceof ServerSpawnEntityPacket) {
 			BotU.log(receiveEvent.getPacket().toString());
 		} else if (receiveEvent.getPacket() instanceof ServerEntityMetadataPacket) {
 			BotU.log(receiveEvent.getPacket().toString());

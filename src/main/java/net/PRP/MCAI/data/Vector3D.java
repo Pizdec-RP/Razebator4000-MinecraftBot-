@@ -314,6 +314,10 @@ public class Vector3D {
 	public double lengthSquared() {
         return this.x * this.x + this.y * this.y + this.z * this.z;
     }
+
+	public Vector3D round() {
+        return new Vector3D(Math.round(this.x), Math.round(this.y), Math.round(this.z));
+    }
 	
 	/*public static double gylcalculate(int goalY, int currentY) {
         if (currentY > goalY) {

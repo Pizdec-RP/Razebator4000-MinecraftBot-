@@ -14,6 +14,7 @@ import net.PRP.MCAI.TestServer.Server;
 import net.PRP.MCAI.data.AABB;
 import net.PRP.MCAI.data.Block;
 import net.PRP.MCAI.data.Vector3D;
+import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.MathU;
 import net.minecraft.server.v1_12_R1.BlockFire;
 
@@ -31,7 +32,7 @@ public abstract class DefaultEntity {
 	private boolean isPlayer;
 	public float pitch;
 	public float yaw;
-	private double lastX,lastY,lastZ,lastPitch,lastYaw,lastMotionX,lastMotionY,lastMotionZ;
+	public double lastX,lastY,lastZ,lastPitch,lastYaw,lastMotionX,lastMotionY,lastMotionZ;
 	public int id;
 	protected boolean onGround = true;
 	protected int age = 0;
@@ -39,7 +40,7 @@ public abstract class DefaultEntity {
 	private boolean keepMovement = false;
 	private boolean isCollidedVertically = false;
 	private boolean isCollidedHorizontally = false;
-	private boolean isCollided = false;
+	protected boolean isCollided = false;
 	private float fallDistance;
 	private double highestPosition = 0;
 	
@@ -74,7 +75,6 @@ public abstract class DefaultEntity {
         if (this.closed) {
             return;
         }
-
         if (!this.isAlive()) {
             ++this.deadTicks ;
             if (this.deadTicks >= 10) {
@@ -99,8 +99,6 @@ public abstract class DefaultEntity {
 	
 	public void despawnFromAll() {
 		Server.sendForEver(new ServerEntityDestroyPacket(new int[] {this.id}));
-		
-		//destroy entity packet
 	}
 	
 	public void updateMovement() {
@@ -108,7 +106,7 @@ public abstract class DefaultEntity {
         double diffRotation = (this.yaw - this.lastYaw) * (this.yaw - this.lastYaw) + (this.pitch - this.lastPitch) * (this.pitch - this.lastPitch);
 
         double diffMotion = (this.motionX - this.lastMotionX) * (this.motionX - this.lastMotionX) + (this.motionY - this.lastMotionY) * (this.motionY - this.lastMotionY) + (this.motionZ - this.lastMotionZ) * (this.motionZ - this.lastMotionZ);
-
+        
         if (diffPosition > 0.0001 || diffRotation > 1.0) {
             this.lastX = this.x;
             this.lastY = this.y;
@@ -117,16 +115,16 @@ public abstract class DefaultEntity {
             this.lastYaw = this.yaw;
             this.lastPitch = this.pitch;
 
-            this.addMovement(this.x, this.y, this.z, this.yaw, this.pitch, this.yaw);
+            
         }
-
+        this.addMovement(this.x, this.y, this.z, this.yaw, this.pitch, this.yaw);
         if (diffMotion > 0.0025 || (diffMotion > 0.0001 && this.getMotion().lengthSquared() <= 0.0001)) {
             this.lastMotionX = this.motionX;
             this.lastMotionY = this.motionY;
             this.lastMotionZ = this.motionZ;
-
-            this.addMotion(this.motionX, this.motionY, this.motionZ);
+            
         }
+        this.addMotion(this.motionX, this.motionY, this.motionZ);
     }
 	
 	public void addMotion(double motionX, double motionY, double motionZ) {
@@ -152,17 +150,18 @@ public abstract class DefaultEntity {
 
 	public void checkBlockCollision() {
 		Vector3D vector = new Vector3D(0,0,0);
-		//for (Block block : this.getCollisionBlocks()) {
-			
-		//}
+		for (Block block : this.getCollisionBlocks()) {
+			block.onEntityCollide(this);
+            block.addVelocityToEntity(this, vector);
+		}
 		
-		//if (!vector.isZero()) {
+		if (!vector.isZero()) {
             vector = vector.normalize();
             double d = 0.014d;
             this.motionX += vector.x * d;
             this.motionY += vector.y * d;
             this.motionZ += vector.z * d;
-        //}
+        }
 	}
 	
 	public List<Block> getBlocksAround() {

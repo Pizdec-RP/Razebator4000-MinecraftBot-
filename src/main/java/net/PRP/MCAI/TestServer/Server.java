@@ -14,6 +14,8 @@ import com.github.steveice10.mc.protocol.data.game.command.CommandParser;
 import com.github.steveice10.mc.protocol.data.game.command.CommandType;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.EntityMetadata;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.Pose;
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.Position;
+import com.github.steveice10.mc.protocol.data.game.entity.object.FallingBlockData;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.ItemStack;
 import com.github.steveice10.mc.protocol.data.game.entity.player.GameMode;
 import com.github.steveice10.mc.protocol.data.game.entity.player.PositionElement;
@@ -116,15 +118,17 @@ public class Server {
     public static State serverState = State.non;
     public static int entitiesid = 0;
     public static CommandNode[] commands = new CommandNode[] {
-    	new CommandNode(CommandType.ROOT,false,new int[] {1,2,3,4,5,6,7,8},-1,null,null,null,null),
+    	new CommandNode(CommandType.ROOT,false,new int[] {1,2,3,4,5,6,7,8,9,10},-1,null,null,null,null),
     	new CommandNode(CommandType.LITERAL,true,new int[10], -1, "help", null,null,null),
     	new CommandNode(CommandType.LITERAL,true,new int[10], -1, "ban", null,null,null),
     	new CommandNode(CommandType.LITERAL,true,new int[10], -1, "unban", null,null,null),
     	new CommandNode(CommandType.LITERAL,true,new int[10], -1, "razban", null,null,null),
     	new CommandNode(CommandType.LITERAL,true,new int[10], -1, "title", null,null,null),
-    	new CommandNode(CommandType.LITERAL,true,new int[10], -1, "spawnentity", null,null,null),
+    	new CommandNode(CommandType.LITERAL,true,new int[10], -1, "spawnfallingblock", null,null,null),
     	new CommandNode(CommandType.LITERAL,true,new int[10], -1, "spawnitem", null,null,null),
-    	new CommandNode(CommandType.LITERAL,true,new int[10], -1, "filll", CommandParser.BLOCK_POS,null,null)
+    	new CommandNode(CommandType.LITERAL,true,new int[10], -1, "filll", CommandParser.BLOCK_POS,null,null),
+    	new CommandNode(CommandType.LITERAL,true,new int[10], -1, "setBlockByState", CommandParser.BLOCK_POS,null,null),
+    	new CommandNode(CommandType.LITERAL,true,new int[10], -1, "printwaterheight", CommandParser.BLOCK_POS,null,null)
     };
     public static Vector3D spawnpoint;
     public static JsonObject worldData;
@@ -274,6 +278,34 @@ public class Server {
 		 ));
     }*/
     
+    public static void spawnTickableFallingBlock(DefaultEntity t) {
+    	sendForEver(new ServerSpawnEntityPacket(
+			t.id,
+			t.uuid,
+			EntityType.FALLING_BLOCK,
+			new FallingBlockData(((BlockEntity)t).blockState,0),
+			t.x,
+			t.y,
+			t.z,
+			0,
+			0,
+			t.motionX,
+			t.motionY,
+			t.motionZ
+        ));
+    	sendForEver(new ServerEntityMetadataPacket(t.id,new EntityMetadata[] {
+    			 new EntityMetadata(0, MetadataType.BYTE, (byte)0), 
+				 new EntityMetadata(1, MetadataType.INT, 0), 
+				 new EntityMetadata(2, MetadataType.OPTIONAL_CHAT, null),
+				 new EntityMetadata(3, MetadataType.BOOLEAN, false), 
+				 new EntityMetadata(4, MetadataType.BOOLEAN, false), 
+				 new EntityMetadata(5, MetadataType.BOOLEAN, false), 
+				 new EntityMetadata(6, MetadataType.POSE, Pose.STANDING), 
+				 new EntityMetadata(7, MetadataType.POSITION, new Position(0,0,0))
+    	}));
+	    Multiworld.Entities.put(t.id, t);
+    }
+    
     public static void spawnTickableItem(EntityItem t) {
     	sendForEver(new ServerSpawnEntityPacket(
 			t.id, 
@@ -336,7 +368,9 @@ public class Server {
 				else setBlock(pos2, beforeBlock.state);
 			} else {
 				//item is not block
+				
 				ItemStack item = cs.getiteminhand();
+				cs.Click(item.getId());
 	        	if (item.getId() == 572) {//fire the tnt
 	        		if (Multiworld.getBlock(pos).id == 137) {
 	        			Server.setBlock(pos, 0);
@@ -381,9 +415,19 @@ public class Server {
     	} else if (newpos.y<0) {
     		cs.session.send(new ServerPlayerPositionRotationPacket(cs.beforePos.x,10,cs.beforePos.z,cs.yaw,cs.pitch,cs.tpid++,new ArrayList<PositionElement>()));
     	} else {
-    		
     		cs.beforePos = cs.pos;
     		cs.pos = newpos;
+    		
+    		if (cs.capturedBlock != null) {
+    			List<Vector3D> points = cs.createRay(cs.pos, cs.yaw, cs.pitch, 6, 0.5);
+    			Vector3D v = points.get(points.size()-1);
+    			((BlockEntity)cs.capturedBlock).captured = true;
+    			cs.capturedBlock.x = v.x+0.5;
+    			cs.capturedBlock.y = v.y+0.5;
+    			cs.capturedBlock.z = v.z+0.5;
+    			
+    		}
+    		
     	}
     }
     
@@ -967,6 +1011,19 @@ public class Server {
 		} else if (message.startsWith("heгp") || message.startsWith("негр")) {
 			cs.session.send(new ServerChatPacket(Component.text("асуждаю блять")));
 			return;
+		} else if (message.startsWith("setBlockByState")) {
+			String state = message.split(" ")[1];
+			if (state == null || state == "") {
+				cs.chat("ты не указал state-id блока");
+			} else {
+				Server.setBlock(cs.pos.clone(), Integer.parseInt(state));
+			}
+		} else if (message.startsWith("printwaterheight")) {
+			if (Multiworld.getBlock(cs.pos.clone().floor()).isWater()) {
+				cs.chat("fh: "+Multiworld.getBlock(cs.pos.clone().floor()).getFluidHeight());
+			} else {
+				cs.chat("ты должен стоять в воде чтобы команда выполнилась");
+			}
 		}
 		if (!cs.op) {
 			Server.sendForEver(new ServerChatPacket(Component.text(cs.profile.getName()+" хотел заюзать команду:"+message+" но у него нету опки поэтому он соснул хуйца и теперь все знают че он хотел написать")));
@@ -1077,9 +1134,48 @@ public class Server {
 		    Multiworld.Entities.put(t.id, t);
 		    //Server.spawnTickableItem(new Item(new ItemStack(2,1),cs.pos.clone(),new Vector3D(0,0,0)));
 			//cs.session.send(new ServerChatPacket(Component.text("entity created")));
-		} else if (message.startsWith("spawnentity")) {
-			//Server.spawnTickable(new Pig(cs.pos.clone(),new Vector3D(0,0,0)));
-			//cs.session.send(new ServerChatPacket(Component.text("entity created")));
+		} else if (message.startsWith("spawnfallingblock")) {
+			
+			int id = Server.nextEID();
+			String[] stat = message.split(" ");
+			if (stat.length <= 1) {
+				cs.chat("ты не указал state-id");
+				return;
+			}
+			int state = Integer.parseInt(stat[1]);
+			cs.chat("spawned item. id: " + id);
+			DefaultEntity t = new BlockEntity(id,cs.pos.clone().add(0,1.55,0),state);
+			
+			sendForEver(new ServerSpawnEntityPacket(
+				id,
+				t.uuid,
+				EntityType.FALLING_BLOCK,
+				new FallingBlockData(state,0),
+				cs.pos.x,
+				cs.pos.y,
+				cs.pos.z,
+				0,
+				0,
+				0,
+				0,
+				0
+	        ));
+	    	sendForEver(new ServerEntityMetadataPacket(id,new EntityMetadata[] {
+	    			 new EntityMetadata(0, MetadataType.BYTE, (byte)0), 
+					 new EntityMetadata(1, MetadataType.INT, 0), 
+					 new EntityMetadata(2, MetadataType.OPTIONAL_CHAT, null),
+					 new EntityMetadata(3, MetadataType.BOOLEAN, false), 
+					 new EntityMetadata(4, MetadataType.BOOLEAN, false), 
+					 new EntityMetadata(5, MetadataType.BOOLEAN, false), 
+					 new EntityMetadata(6, MetadataType.POSE, Pose.STANDING), 
+					 new EntityMetadata(7, MetadataType.POSITION, new Position(0,0,0))
+	    	}));
+		    Multiworld.Entities.put(t.id, t);
+		    Vector3D dir = VectorUtils.getDirection(cs.yaw, cs.pitch);
+		    
+		    t.motionX += dir.x;
+		    t.motionY += dir.y;
+		    t.motionZ += dir.z;
 	    } else if (message.startsWith("fp")) {
 			cs.session.send(new ServerChatPacket(Component.text("юзаем команду...")));
 			int eid = nextEID();

@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import net.PRP.MCAI.Main;
+import net.PRP.MCAI.Multiworld;
+import net.PRP.MCAI.TestServer.entity.DefaultEntity;
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.data.MinecraftData.Type;
 import net.PRP.MCAI.utils.BotU;
@@ -69,10 +71,10 @@ public class Block {
 			}
 			waterlogged = ss.waterlogged;
 		} else if (isWater()) {
-			hitbox = new AABB(Math.floor(pos.x), Math.floor(pos.y), Math.floor(pos.z), Math.floor(pos.x)+1, Math.floor(pos.y)+waterLvlToMaxY(getAsWaterLevel()), Math.floor(pos.z)+1);
+			hitbox = new AABB(Math.floor(pos.x), Math.floor(pos.y), Math.floor(pos.z), Math.floor(pos.x)+1, getFluidHeight(), Math.floor(pos.z)+1);
 			//BotU.log(hitbox.toString());
 		} else if (isLava()) {
-			hitbox = new AABB(Math.floor(pos.x), Math.floor(pos.y), Math.floor(pos.z), Math.floor(pos.x)+(getAsLavaLevel()*0.1), Math.floor(pos.y)+1, Math.floor(pos.z)+1);
+			hitbox = new AABB(Math.floor(pos.x), Math.floor(pos.y), Math.floor(pos.z), Math.floor(pos.x)+1, getFluidHeight(), Math.floor(pos.z)+1);
 		} else {
 			if (type == Type.VOID ||type == Type.AIR || type == Type.AVOID) {
 				hitbox = null;
@@ -104,25 +106,6 @@ public class Block {
 		}
 	}
 	
-	public double waterLvlToMaxY(int lvl) {
-		return 1;
-	}
-	
-	public int getAsLavaLevel() {
-		if (state >= 50 && state <= 65) {
-			return state - 50;
-		} else {
-			return -1;
-		}
-	}
-	
-	public int getAsWaterLevel() {
-		if (state >= 34 && state <= 49) {
-			return state - 34;
-		} else {
-			return -999;
-		}
-	}
 	
 	public boolean isSlab() {
 		return name.contains("slab");
@@ -263,12 +246,43 @@ public class Block {
 		return Main.getMCData().blockData.get(this.id).resistance;
 	}
 	
-	public int getDamage() {
-        return 0;
+	//                        test server only
+	public void addVelocityToEntity(DefaultEntity entity, Vector3D vector) {
+        if (this.isLiquid()) {
+            Vector3D flow = this.getFlowVector(null);
+            vector.x += flow.x;
+            vector.y += flow.y;
+            vector.z += flow.z;
+        }
+    }
+	
+	public void onEntityCollide(DefaultEntity entity) {
+        if (this.isLiquid()) entity.resetFallDistance();
+    }
+	
+	//                        liquid only
+	
+	
+	public double getFluidHeight() {
+		return (pos.y+1)-(getFluidHeightPercent() - 0.1111111);
+	}
+	
+	public boolean canBeFlowedInto() {
+        return this.isLiquid();
+    }
+	
+	public int getMeta() {
+		if (this.isWater()) {
+			return this.state-34;
+		} else if (this.isLava()) {
+			return this.state - 50;
+		} else {
+			return 0;
+		}
     }
 
 	public float getFluidHeightPercent() {
-        float d = (float) this.getDamage();
+        float d = (float) this.getMeta();
         if (d >= 8) {
             d = 0;
         }
@@ -276,5 +290,80 @@ public class Block {
         return (d + 1) / 9f;
     }
 	
+	protected boolean canFlowInto(Block block) {
+        return block.canBeFlowedInto() && !(block.isLiquid() && block.getMeta() == 0);
+    }
 	
+	public int getEffectiveFlowDecay(Block block) {
+        if (block.getId() != this.getId()) {
+            return -1;
+        }
+        int decay = block.getMeta();
+        if (decay >= 8) {
+            decay = 0;
+        }
+        return decay;
+    }
+	
+	public Block getBlock(double x, double y, double z, Bot client) {
+		return (client==null?Multiworld.getBlock(x, y, z):client.getWorld().getBlock(x, y, z));
+	}
+	
+	public Vector3D getFlowVector(Bot client) {
+        if (!this.isLiquid()) {
+            return null;
+        }
+        Vector3D vector = new Vector3D(0, 0, 0);
+        int decay = this.getEffectiveFlowDecay(this);
+        for (int j = 0; j < 4; ++j) {
+            int x = (int) this.pos.x;
+            int y = (int) this.pos.y;
+            int z = (int) this.pos.z;
+            switch (j) {
+                case 0:
+                    --x;
+                    break;
+                case 1:
+                    x++;
+                    break;
+                case 2:
+                    z--;
+                    break;
+                default:
+                    z++;
+            }
+            Block sideBlock = (client==null?Multiworld.getBlock(x, y, z):client.getWorld().getBlock(x, y, z));
+            int blockDecay = this.getEffectiveFlowDecay(sideBlock);
+            if (blockDecay < 0) {
+                if (!sideBlock.isLiquid()) {
+                    continue;
+                }
+                blockDecay = this.getEffectiveFlowDecay((client==null?Multiworld.getBlock(x, y-1, z):client.getWorld().getBlock(x, y-1, z)));
+                if (blockDecay >= 0) {
+                    int realDecay = blockDecay - (decay - 8);
+                    vector.x += (sideBlock.pos.x - this.pos.x) * realDecay;
+                    vector.y += (sideBlock.pos.y - this.pos.y) * realDecay;
+                    vector.z += (sideBlock.pos.z - this.pos.z) * realDecay;
+                }
+            } else {
+                int realDecay = blockDecay - decay;
+                vector.x += (sideBlock.pos.x - this.pos.x) * realDecay;
+                vector.y += (sideBlock.pos.y - this.pos.y) * realDecay;
+                vector.z += (sideBlock.pos.z - this.pos.z) * realDecay;
+            }
+        }
+        if (this.getMeta() >= 8) {
+            if (!this.canFlowInto(this.getBlock((int) this.pos.x, (int) this.pos.y, (int) this.pos.z - 1, client)) ||
+                    !this.canFlowInto(this.getBlock((int) this.pos.x, (int) this.pos.y, (int) this.pos.z + 1, client)) ||
+                    !this.canFlowInto(this.getBlock((int) this.pos.x - 1, (int) this.pos.y, (int) this.pos.z, client)) ||
+                    !this.canFlowInto(this.getBlock((int) this.pos.x + 1, (int) this.pos.y, (int) this.pos.z, client)) ||
+                    !this.canFlowInto(this.getBlock((int) this.pos.x, (int) this.pos.y + 1, (int) this.pos.z - 1, client)) ||
+                    !this.canFlowInto(this.getBlock((int) this.pos.x, (int) this.pos.y + 1, (int) this.pos.z + 1, client)) ||
+                    !this.canFlowInto(this.getBlock((int) this.pos.x - 1, (int) this.pos.y + 1, (int) this.pos.z, client)) ||
+                    !this.canFlowInto(this.getBlock((int) this.pos.x + 1, (int) this.pos.y + 1, (int) this.pos.z, client))) {
+                vector = vector.normalize().add(0, -6, 0);
+            }
+        }
+        return vector.normalize();
+    }
 }
