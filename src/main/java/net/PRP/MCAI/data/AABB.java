@@ -296,6 +296,16 @@ public class AABB {
 
         return new AABB(minX, minY, minZ, maxX, maxY, maxZ);
     }
+
+	public AABB setBounds(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
+        this.setMinX(minX);
+        this.setMinY(minY);
+        this.setMinZ(minZ);
+        this.setMaxX(maxX);
+        this.setMaxY(maxY);
+        this.setMaxZ(maxZ);
+        return this;
+    }
 	
 	
 }

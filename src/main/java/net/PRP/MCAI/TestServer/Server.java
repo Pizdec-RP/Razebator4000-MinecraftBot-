@@ -284,14 +284,14 @@ public class Server {
 			t.uuid,
 			EntityType.FALLING_BLOCK,
 			new FallingBlockData(((BlockEntity)t).blockState,0),
-			t.x,
-			t.y,
-			t.z,
+			t.getX(),
+			t.getY(),
+			t.getZ(),
 			0,
 			0,
-			t.motionX,
-			t.motionY,
-			t.motionZ
+			t.getMotionX(),
+			t.getMotionY(),
+			t.getMotionZ()
         ));
     	sendForEver(new ServerEntityMetadataPacket(t.id,new EntityMetadata[] {
     			 new EntityMetadata(0, MetadataType.BYTE, (byte)0), 
@@ -311,9 +311,9 @@ public class Server {
 			t.id, 
 			t.uuid,
 			t.type,
-			t.x,
-			t.y,
-			t.z,
+			t.getX(),
+			t.getY(),
+			t.getZ(),
 			0,
 			0,
 			0,
@@ -331,7 +331,7 @@ public class Server {
 				 new EntityMetadata(7, MetadataType.ITEM, t.getItem())
     	}));
     	Server.sendForEver(new ServerEntityVelocityPacket(t.id,0,0,0));
-    	Server.sendForEver(new ServerEntityTeleportPacket(t.id,t.x,t.y,t.z,t.yaw,t.pitch,t.isOnGround()));
+    	Server.sendForEver(new ServerEntityTeleportPacket(t.id,t.getX(),t.getY(),t.getZ(),t.yaw,t.pitch,t.isOnGround()));
     	Multiworld.Entities.put(t.id,t);
     }
     
@@ -418,14 +418,10 @@ public class Server {
     		cs.beforePos = cs.pos;
     		cs.pos = newpos;
     		
-    		if (cs.capturedBlock != null) {
-    			List<Vector3D> points = cs.createRay(cs.pos, cs.yaw, cs.pitch, 6, 0.5);
-    			Vector3D v = points.get(points.size()-1);
-    			((BlockEntity)cs.capturedBlock).captured = true;
-    			cs.capturedBlock.x = v.x+0.5;
-    			cs.capturedBlock.y = v.y+0.5;
-    			cs.capturedBlock.z = v.z+0.5;
-    			
+    		if (cs.capturedBlock != null && ((BlockEntity)cs.capturedBlock).captured) {
+    			List<Vector3D> points = cs.createRay(cs.pos, cs.yaw, cs.pitch, 9, 0.5);
+    			cs.capturedBlock.setPos(points.get(points.size()-1));
+    			//BotU.log("uncapt pos: "+cs.capturedBlock.getPos().toString());
     		}
     		
     	}
@@ -741,7 +737,7 @@ public class Server {
     }
     
     public static void setBlock(Vector3D Vec3, int state) {
-    	
+    	//BotU.log("placed "+state+" at "+Vec3.toString());
     	if (Vec3.y == 0) {
     		Multiworld.setBlock(Vec3.translate(), 33);
     		sendForEver(new ServerBlockChangePacket(new BlockChangeRecord(Vec3.translate(),33)));
@@ -1173,9 +1169,7 @@ public class Server {
 		    Multiworld.Entities.put(t.id, t);
 		    Vector3D dir = VectorUtils.getDirection(cs.yaw, cs.pitch);
 		    
-		    t.motionX += dir.x;
-		    t.motionY += dir.y;
-		    t.motionZ += dir.z;
+		    t.setVel(dir);
 	    } else if (message.startsWith("fp")) {
 			cs.session.send(new ServerChatPacket(Component.text("юзаем команду...")));
 			int eid = nextEID();

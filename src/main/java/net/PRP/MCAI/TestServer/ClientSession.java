@@ -312,14 +312,10 @@ public class ClientSession extends SessionAdapter {
 		csleep = 10;
 		if (iid == 613) {
 			BlockEntity tb = new BlockEntity(Server.nextEID(), pos.clone(), MathU.rnd(1, 17111));
-			tb.x = pos.x;
-	    	tb.y = pos.y+1.5;
-	    	tb.z = pos.z;
+			tb.setPos(pos.add(0,1.5F,0));
 			Vector3D dir = VectorUtils.getDirection(yaw,pitch);
 		    
-		    tb.motionX += dir.x;
-		    tb.motionY += dir.y;
-		    tb.motionZ += dir.z;
+		    tb.setVel(dir);
 			Server.spawnTickableFallingBlock(tb);
 			
 		}
@@ -331,7 +327,7 @@ public class ClientSession extends SessionAdapter {
 		if (iid == 613) {//stick
 			
 		    if (this.capturedBlock == null) {
-				List<Vector3D> points = createRay(pos, yaw, pitch, 6, 0.5);
+				List<Vector3D> points = createRay(pos, yaw, pitch, 9, 0.5);
 				for (Vector3D pn : points) {
 					Server.sendForEver(new ServerSpawnParticlePacket(new Particle(ParticleType.END_ROD,new BlockParticleData(1)),true,pn.x,pn.y+1.75,pn.z,0f,0f,0f,0f,1));
 					Block b = Multiworld.getBlock(pn);
@@ -346,12 +342,8 @@ public class ClientSession extends SessionAdapter {
 					}
 				}
 		    } else {
-		    	this.capturedBlock.motionX = 0;
-		    	this.capturedBlock.motionY = 0;
-		    	this.capturedBlock.motionZ = 0;
-		    	this.capturedBlock.lastMotionX = 0;
-		    	this.capturedBlock.lastMotionY = 0;
-		    	this.capturedBlock.lastMotionZ = 0;
+		    	Vector3D dir = VectorUtils.getDirection(yaw, pitch);
+		    	this.capturedBlock.setVel(dir);
 		    	
 		    	((BlockEntity)this.capturedBlock).captured = false;
 		    	this.capturedBlock = null;
@@ -555,6 +547,15 @@ public class ClientSession extends SessionAdapter {
 	    			player.pitch,
 	    			player.yaw
 		    	));
+				session.send(new ServerEntityEquipmentPacket(entityId,new Equipment[] {
+						new Equipment(EquipmentSlot.MAIN_HAND, player.getiteminhand()),
+						new Equipment(EquipmentSlot.OFF_HAND, player.getItem(45)),
+						new Equipment(EquipmentSlot.HELMET, player.getItem(5)),
+						new Equipment(EquipmentSlot.CHESTPLATE, player.getItem(6)),
+						new Equipment(EquipmentSlot.LEGGINGS, player.getItem(7)),
+						new Equipment(EquipmentSlot.BOOTS, player.getItem(8))
+				}));
+				
 			}
 		}
 	}
@@ -566,14 +567,14 @@ public class ClientSession extends SessionAdapter {
 					t.uuid,
 					t.type,
 					(t instanceof BlockEntity? new FallingBlockData(((BlockEntity)t).blockState,0):new GenericObjectData(0)),
-					t.x,
-					t.y,
-					t.z,
+					t.getX(),
+					t.getY(),
+					t.getZ(),
 					t.yaw,
 					t.pitch,
-					t.motionX,
-					t.motionY,
-					t.motionZ
+					t.getMotionX(),
+					t.getMotionY(),
+					t.getMotionZ()
 		    ));
 			if (t instanceof EntityItem) {
 				session.send(new ServerEntityMetadataPacket(t.id,new EntityMetadata[] {

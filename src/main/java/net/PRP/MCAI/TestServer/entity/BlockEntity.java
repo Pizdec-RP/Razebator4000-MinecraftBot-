@@ -81,8 +81,7 @@ public class BlockEntity extends DefaultEntity {
             motionX *= friction;
             motionY *= 1 - getDrag();
             motionZ *= friction;
-            //Vector3D pos = (new Vector3D(x - 0.5, y, z - 0.5)).round();
-            BotU.log(captured);
+            
             if (!captured && this.onGround) {
         		close();
         		BotU.log("closing");

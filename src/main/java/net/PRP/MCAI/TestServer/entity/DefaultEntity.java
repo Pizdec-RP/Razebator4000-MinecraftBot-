@@ -21,8 +21,8 @@ import net.minecraft.server.v1_12_R1.BlockFire;
 public abstract class DefaultEntity {
 	public int hp;
 	public UUID uuid;
-	public double x,y,z;
-	public double motionX, motionY, motionZ;
+	protected double x,y,z;
+	protected double motionX, motionY, motionZ;
 	private List<Block> collisionBlocks;
 	public AABB boundingBox;
 	private List<Block> blocksAround;
@@ -201,6 +201,40 @@ public abstract class DefaultEntity {
 
         return this.collisionBlocks;
     }
+	
+	public void recalculateBoundingBox() {
+		float height = this.getHeight();
+        double radius = this.getWidth() / 2d;
+		this.boundingBox.setBounds(x - radius, y, z - radius, x + radius, y + height, z + radius);
+	}
+	
+	public void setVel(Vector3D newpos) {
+		this.motionX = newpos.x;
+		this.motionY = newpos.y;
+		this.motionZ = newpos.z;
+		recalculateBoundingBox();
+	}
+	
+	public void setVel(double dx, double dy, double dz) {
+		this.motionX = dx;
+		this.motionY = dy;
+		this.motionZ = dz;
+		recalculateBoundingBox();
+	}
+	
+	public void setPos(Vector3D newpos) {
+		this.x = newpos.x;
+		this.y = newpos.y;
+		this.z = newpos.z;
+		recalculateBoundingBox();
+	}
+	
+	public void setPos(double dx, double dy, double dz) {
+		this.x = dx;
+		this.y = dy;
+		this.z = dz;
+		recalculateBoundingBox();
+	}
 	
 	public void move(double dx, double dy, double dz) {
         if (dx == 0 && dz == 0 && dy == 0) {
@@ -415,7 +449,33 @@ public abstract class DefaultEntity {
         return 0;
     }
     
-    public Vector3D getPos() {
+    
+    
+    public double getX() {
+		return x;
+	}
+
+	public double getY() {
+		return y;
+	}
+
+	public double getZ() {
+		return z;
+	}
+
+	public double getMotionX() {
+		return motionX;
+	}
+
+	public double getMotionY() {
+		return motionY;
+	}
+
+	public double getMotionZ() {
+		return motionZ;
+	}
+
+	public Vector3D getPos() {
     	return new Vector3D(this.x,this.y,this.z);
     }
 
