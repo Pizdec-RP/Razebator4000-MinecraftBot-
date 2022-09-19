@@ -32,7 +32,6 @@ public class Physics extends SessionAdapter {
 	
 	public Physics(Bot client) {
 		this.client = client;
-		BotU.log(client.name+" pl");
 	}
 	
 	@Override

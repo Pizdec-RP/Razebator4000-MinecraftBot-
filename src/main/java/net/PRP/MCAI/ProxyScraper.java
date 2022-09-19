@@ -22,15 +22,19 @@ public class ProxyScraper {
 		if (pt.equalsIgnoreCase("socks4")) {
 			filename = "socks4.txt";
 			proxypype = Proxy.Type.SOCKS;
+			proxies.addAll(ProxyNetParser.parseSOCKS4());
 		} else if (pt.equalsIgnoreCase("socks5")) {
 			filename = "socks5.txt";
 			proxypype = Proxy.Type.SOCKS;
+			proxies.addAll(ProxyNetParser.parseSOCKS5());
 		} else if (pt.equalsIgnoreCase("http")) {
 			filename = "http.txt";
 			proxypype = Proxy.Type.HTTP;
+			proxies.addAll(ProxyNetParser.parseHTTP());
 		} else {
 			proxypype = Proxy.Type.DIRECT;
 		}
+		System.out.println("парсю с файла");
     	File file = new File(filename);
         if (file.exists()) {
             try {
@@ -45,11 +49,12 @@ public class ProxyScraper {
                     //poshel nahuy
                 }
             }
-            catch (Exception ignd) {
-            	ignd.printStackTrace();
+            catch (Exception nignd) {
+            	nignd.printStackTrace();
             }
         }
-        System.out.println("proxies loaded "+proxies.size());
+        
+        System.out.println("загружено проксей: "+proxies.size());
         return proxies;
     }
 }

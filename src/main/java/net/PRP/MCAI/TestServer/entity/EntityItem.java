@@ -20,16 +20,16 @@ public class EntityItem extends DefaultEntity {
 
     protected int pickupDelay = 20;
     
-    public EntityItem(ItemStack item, UUID uuid,int id, Vector3D pos) {
-    	this(item, uuid, id, pos.x,pos.y,pos.z,0,0,0);
+    public EntityItem(ItemStack item, UUID uuid,int id, Vector3D pos,Server s) {
+    	this(item, uuid, id, pos.x,pos.y,pos.z,0,0,0,s);
     }
     
-    public EntityItem(ItemStack item, UUID uuid,int id, Vector3D pos, Vector3D vel) {
-    	this(item, uuid, id, pos.x,pos.y,pos.z,vel.x,vel.y,vel.z);
+    public EntityItem(ItemStack item, UUID uuid,int id, Vector3D pos, Vector3D vel,Server s) {
+    	this(item, uuid, id, pos.x,pos.y,pos.z,vel.x,vel.y,vel.z,s);
     }
 
-	public EntityItem(ItemStack item, UUID uuid,int id, double x, double y, double z, double mx, double my, double mz) {
-		super(id, uuid, EntityType.ITEM, x, y, z, 5, null, 0, 0, mx, my, mz);
+	public EntityItem(ItemStack item, UUID uuid,int id, double x, double y, double z, double mx, double my, double mz,Server s) {
+		super(id, uuid, EntityType.ITEM, x, y, z, 5, null, 0, 0, mx, my, mz,s);
 		this.item = item;
 		float height = this.getHeight();
         double radius = this.getWidth() / 2d;

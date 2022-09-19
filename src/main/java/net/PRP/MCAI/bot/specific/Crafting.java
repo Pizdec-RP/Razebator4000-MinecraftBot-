@@ -106,7 +106,6 @@ public class Crafting extends SessionAdapter {
             client.getSession().send(new ClientConfirmTransactionPacket(p.getWindowId(), p.getActionId(), true));
 		} else if (receiveEvent.getPacket() instanceof ServerCloseWindowPacket) {
 			final ServerCloseWindowPacket p = (ServerCloseWindowPacket) receiveEvent.getPacket();
-			BotU.log("scwp");
 			client.playerInventory.currentWindowId = p.getWindowId();
 			windowType = null;
 		}

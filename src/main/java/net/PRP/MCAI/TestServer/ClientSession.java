@@ -119,6 +119,7 @@ public class ClientSession extends SessionAdapter {
 	public boolean onGround = true;
 	public boolean op = false;
 	public boolean banned = false;
+	public Server Server;
 	
 	//internal plugin's shit---------
 	private int blocksBySecond = 0;
@@ -131,8 +132,8 @@ public class ClientSession extends SessionAdapter {
 		not, lsp, succ
 	}
 	
-	public ClientSession() {
-		
+	public ClientSession(Server s) {
+		this.Server = s;
 	}
 	
 	@Override
@@ -186,6 +187,7 @@ public class ClientSession extends SessionAdapter {
 	        	
 	        } else if (event.getPacket() instanceof ClientChatPacket) {
 	        	ClientChatPacket packet = event.getPacket();
+	        	BotU.log(profile.getName()+" say: "+packet.getMessage());
 	        	if (packet.getMessage().startsWith("/")) {
 	        		Server.commandUsed(this, packet.getMessage());
 	        	} else {
@@ -311,7 +313,7 @@ public class ClientSession extends SessionAdapter {
 		if (csleep > 0) return;
 		csleep = 10;
 		if (iid == 613) {
-			BlockEntity tb = new BlockEntity(Server.nextEID(), pos.clone(), MathU.rnd(1, 17111));
+			BlockEntity tb = new BlockEntity(Server.nextEID(), pos.clone(), MathU.rnd(1, 17111),Server);
 			tb.setPos(pos.add(0,1.5F,0));
 			Vector3D dir = VectorUtils.getDirection(yaw,pitch);
 		    
@@ -327,13 +329,13 @@ public class ClientSession extends SessionAdapter {
 		if (iid == 613) {//stick
 			
 		    if (this.capturedBlock == null) {
-				List<Vector3D> points = createRay(pos, yaw, pitch, 9, 0.5);
+				List<Vector3D> points = createRay(pos.add(0,1.75,0), yaw, pitch, 9, 0.5);
 				for (Vector3D pn : points) {
-					Server.sendForEver(new ServerSpawnParticlePacket(new Particle(ParticleType.END_ROD,new BlockParticleData(1)),true,pn.x,pn.y+1.75,pn.z,0f,0f,0f,0f,1));
+					Server.sendForEver(new ServerSpawnParticlePacket(new Particle(ParticleType.END_ROD,new BlockParticleData(1)),true,pn.x,pn.y,pn.z,0f,0f,0f,0f,1));
 					Block b = Multiworld.getBlock(pn);
 					if (!b.isAvoid()) {
 						Multiworld.setBlock(pn.clone().floor().translate(), 0);
-						BlockEntity tb = new BlockEntity(Server.nextEID(), pn.clone(), b.state);
+						BlockEntity tb = new BlockEntity(Server.nextEID(), pn.clone(), b.state,Server);
 						
 						this.capturedBlock = tb;
 						((BlockEntity)this.capturedBlock).captured = true;
@@ -348,7 +350,7 @@ public class ClientSession extends SessionAdapter {
 		    	((BlockEntity)this.capturedBlock).captured = false;
 		    	this.capturedBlock = null;
 		    }
-		} else if (iid == 578) {
+		} else if (iid == 578) {//diamond
 			List<Vector3D> points = new ArrayList<>();
 			for (int i = -179; i < 179;i++) {
 				if (i%20==0) {
@@ -357,6 +359,25 @@ public class ClientSession extends SessionAdapter {
 			}
 			for (Vector3D pn : points) {
 				Server.sendForEver(new ServerSpawnParticlePacket(new Particle(ParticleType.END_ROD,new BlockParticleData(1)),true,pn.x,pn.y+2.1,pn.z,0f,0f,0f,0f,1));
+			}
+		} else if (iid == 745) {//blaze rod
+			List<Vector3D> points = createRay(pos.add(0,1.75,0), yaw, pitch, 15, 1);
+			for (Vector3D pn : points) {
+				Server.sendForEver(new ServerSpawnParticlePacket(new Particle(ParticleType.FLAME,new BlockParticleData(1)),true,pn.x,pn.y,pn.z,0f,0f,0f,0f,1));
+				Block b = Multiworld.getBlock(pn);
+				if (!b.isAvoid()) {
+					Multiworld.setBlock(pn.clone().floor().translate(), 0);
+					BlockEntity tb1 = new BlockEntity(Server.nextEID(), pn.clone(), b.state, new Vector3D(0.5,0.5,0.5),Server);
+					BlockEntity tb2 = new BlockEntity(Server.nextEID(), pn.clone(), b.state, new Vector3D(-0.5,0.5,-0.5),Server);
+					BlockEntity tb3 = new BlockEntity(Server.nextEID(), pn.clone(), b.state, new Vector3D(-0.5,0.5,0.5),Server);
+					BlockEntity tb4 = new BlockEntity(Server.nextEID(), pn.clone(), b.state, new Vector3D(0.5,0.5,-0.5),Server);
+					
+					Server.spawnTickableFallingBlock(tb1);
+					Server.spawnTickableFallingBlock(tb2);
+					Server.spawnTickableFallingBlock(tb3);
+					Server.spawnTickableFallingBlock(tb4);
+					return;
+				}
 			}
 		}
 	}
@@ -375,7 +396,7 @@ public class ClientSession extends SessionAdapter {
 		Vector3D dir = VectorUtils.getDirection(pitch,yaw).multiply(0.2);
 		UUID uuid = UUID.randomUUID();
 		BotU.log("tossed item: "+item.toString());
-		Server.spawnTickableItem(new EntityItem(item,uuid,Server.nextEID(), pos.add(0, 1.75, 0), dir));
+		Server.spawnTickableItem(new EntityItem(item,uuid,Server.nextEID(), pos.add(0, 1.75, 0), dir,Server));
 	}
 	
 	public ItemStack getiteminhand() {
@@ -471,7 +492,7 @@ public class ClientSession extends SessionAdapter {
 	@Override
     public void disconnected(DisconnectedEvent event) {
 		//BotU.log(event.getReason());
-		Server.players.remove(this);
+		/*Server.players.remove(this);
 		Server.sendForEver(new ServerPlayerListEntryPacket(
 			PlayerListEntryAction.REMOVE_PLAYER,
 			new PlayerListEntry[] {
@@ -500,6 +521,7 @@ public class ClientSession extends SessionAdapter {
 		Server.worldData.get("players").getAsJsonObject().get(profile.getName()).getAsJsonObject().add("inventory", inv);
 		Server.worldData.get("players").getAsJsonObject().get(profile.getName()).getAsJsonObject().add("health", new JsonPrimitive(health));
 		Server.worldData.get("players").getAsJsonObject().get(profile.getName()).getAsJsonObject().add("food", new JsonPrimitive(food));
+		*/
 	}
 	
 	public void sendWorld() {

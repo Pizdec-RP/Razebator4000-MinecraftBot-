@@ -40,17 +40,17 @@ public class ChatListener extends SessionAdapter {
 		this.client = client;
 	}
 	
-	@SuppressWarnings("deprecation")
 	@Override
     public void packetReceived(PacketReceivedEvent receiveEvent) {
 		if (receiveEvent.getPacket() instanceof ServerChatPacket) {
-			
+			String msg = StringU.componentToString(((ServerChatPacket) receiveEvent.getPacket()).getMessage());
+			if ((int)Main.gamerule("mode")==2 && msg.contains("discord.gg/") && !msg.contains("SPAM")) BotU.log("onl: "+client.getWorld().ServerTabPanel.size()+" message: "+msg);
 			List<String> command = messageToCommand(receiveEvent.getPacket());
 			if (command == null || command.size() <= 0) {
 				//System.out.println("eto ne komanda");
 				return;
 			} else {
-				BotU.log("executing command: "+command.get(0));
+				//BotU.log("executing command: "+command.get(0));
 				/*if (command.get(0).equalsIgnoreCase("minewood")) {
 		    		Actions.mineWood(client, Integer.parseInt(command.get(1)));
 				} else if (command.get(0).equalsIgnoreCase("mine")) {

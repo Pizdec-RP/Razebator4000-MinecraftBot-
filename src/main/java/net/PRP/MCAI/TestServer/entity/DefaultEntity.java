@@ -43,9 +43,11 @@ public abstract class DefaultEntity {
 	protected boolean isCollided = false;
 	private float fallDistance;
 	private double highestPosition = 0;
+	public Server Server;
 	
 	
-	public DefaultEntity(int id, UUID uuid, EntityType type,double x, double y, double z, int hp, AABB hitbox, float pitch, float yaw, double mx, double my, double mz) {
+	public DefaultEntity(int id, UUID uuid, EntityType type,double x, double y, double z, int hp, AABB hitbox, float pitch, float yaw, double mx, double my, double mz, Server s) {
+		this.Server = s;
 		this.uuid = uuid;
 		this.id = id;
 		this.x=x;

@@ -54,7 +54,6 @@ public class Living extends SessionAdapter {
 	public List<ServerListener> listeners = new ArrayList<>();
 	Integer pEnemy = null;
 	Integer enemy = null;
-	private int cd = 0;
 	public boolean a = false;
 	
 	public List<EntityType> badentities = new ArrayList<EntityType>() {
@@ -141,7 +140,7 @@ public class Living extends SessionAdapter {
 			}
 			
 			
-			if ((boolean) Main.gamerule("raidspam") && Main.pasti.size() > 0 && (Main.suc > 5 | (int)Main.gamerule("bots") <= 5)) {
+			if ((boolean) Main.gamerule("raidspam") && Main.pasti.size() > 0) {
 				spamticks--;
 				if (spamticks <= 0) {
 					spamticks =  (int) Main.gamerule("spamrange") / 50;
@@ -154,6 +153,7 @@ public class Living extends SessionAdapter {
             			pasta = pasta.replaceFirst("=rrl=", StringU.RndRuLetter());
             		}
             		BotU.chat(this.client, pasta);
+            		//BotU.log("chat: ("+client.getHost()+") "+pasta);
 				}
 			}
 			

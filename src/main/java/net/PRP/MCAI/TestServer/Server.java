@@ -109,18 +109,19 @@ import org.yaml.snakeyaml.Yaml;
  */
 
 public class Server {
-	static FileInputStream inputStream;
-	static Yaml yaml = new Yaml();
-    private static final boolean VERIFY_USERS = false;
+	FileInputStream inputStream;
+	Yaml yaml = new Yaml();
+    private final boolean VERIFY_USERS = false;
     public static List<ClientSession> players = new CopyOnWriteArrayList<ClientSession>();
-    public static Map<?, ?> settings;
-    public static final int Mincolumn = -3, Maxcolumn = 3;
-    public static State serverState = State.non;
-    public static int entitiesid = 0;
-    public static CommandNode[] commands = new CommandNode[] {
+    public Map<?, ?> settings;
+    public final int Mincolumn = -3, Maxcolumn = 3;
+    public State serverState = State.non;
+    public int entitiesid = 0;
+    public CommandNode[] commands = new CommandNode[] {
     	new CommandNode(CommandType.ROOT,false,new int[] {1,2,3,4,5,6,7,8,9,10},-1,null,null,null,null),
     	new CommandNode(CommandType.LITERAL,true,new int[10], -1, "help", null,null,null),
     	new CommandNode(CommandType.LITERAL,true,new int[10], -1, "ban", null,null,null),
+    	new CommandNode(CommandType.ARGUMENT,true,new int[10], -1, "razbanarg", CommandParser.GAME_PROFILE,null,null),
     	new CommandNode(CommandType.LITERAL,true,new int[10], -1, "unban", null,null,null),
     	new CommandNode(CommandType.LITERAL,true,new int[10], -1, "razban", null,null,null),
     	new CommandNode(CommandType.LITERAL,true,new int[10], -1, "title", null,null,null),
@@ -130,27 +131,25 @@ public class Server {
     	new CommandNode(CommandType.LITERAL,true,new int[10], -1, "setBlockByState", CommandParser.BLOCK_POS,null,null),
     	new CommandNode(CommandType.LITERAL,true,new int[10], -1, "printwaterheight", CommandParser.BLOCK_POS,null,null)
     };
-    public static Vector3D spawnpoint;
-    public static JsonObject worldData;
-    private static boolean ul = false;//update locked
-    public static int tickCounter = 0;
-	private static int raznica;
+    public Vector3D spawnpoint;
+    public JsonObject worldData;
+    private boolean ul = false;//update locked
+    public int tickCounter = 0;
+	private int raznica;
+	public String HOST = "";
+	public int PORT = 0;
     
     public enum State {
     	non, loadWorld, genWorld, ready;
     }
     
-    public static void main(String[] args) {
-    	new Thread(()->{
-    		try {
-				startServer();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-    	}).start();
+    public Server(String h, int p) {
+    	this.HOST = h;
+    	this.PORT = p;
+    	new ServerGUI(this);
     }
     
-    public static void tick() {
+    public void tick() {
     	try {
 	    	for (ClientSession player : players) {
 	    		
@@ -220,65 +219,7 @@ public class Server {
     	}
     }
     
-    /*public static void spawnTickable(Tickable t) {
-    	tickable.add(t);
-    	Multiworld.Entities.put(t.getEntity().eid, t.getEntity());
-    	sendForEver(new ServerSpawnEntityPacket(
-			t.getEntity().eid, 
-			t.getEntity().uuid,
-			t.getEntity().type,
-			t.getEntity().pos.x,
-			t.getEntity().pos.y,
-			t.getEntity().pos.z,
-			t.getEntity().yaw,
-			t.getEntity().pitch,
-			t.getEntity().vel.x,
-			t.getEntity().vel.y,
-			t.getEntity().vel.z
-    	));
-    }*/
-    
-    /*public static void spawnTickableLiving(Tickable t) {
-    	tickable.add(t);
-    	Multiworld.Entities.put(t.getEntity().eid, t.getEntity());
-    	sendForEver(new ServerSpawnLivingEntityPacket(
-			t.getEntity().eid, 
-			t.getEntity().uuid,
-			t.getEntity().type,
-			t.getEntity().pos.x,
-			t.getEntity().pos.y,
-			t.getEntity().pos.z,
-			t.getEntity().pitch,
-			t.getEntity().yaw,
-			-45F,
-			t.getEntity().vel.x,
-			t.getEntity().vel.y,
-			t.getEntity().vel.z
-    	));
-    	sendForEver(new ServerEntityMetadataPacket(t.getEntity().eid, new EntityMetadata[] {
-				 new EntityMetadata(0, MetadataType.BYTE, (byte)0), 
-				 new EntityMetadata(1, MetadataType.INT, 300), 
-				 new EntityMetadata(2, MetadataType.OPTIONAL_CHAT, null), 
-				 new EntityMetadata(3, MetadataType.BOOLEAN, false), 
-				 new EntityMetadata(4, MetadataType.BOOLEAN, false), 
-				 new EntityMetadata(5, MetadataType.BOOLEAN, false), 
-				 new EntityMetadata(6, MetadataType.POSE, Pose.STANDING), 
-				 new EntityMetadata(7, MetadataType.BYTE, (byte)0),
-				 new EntityMetadata(8, MetadataType.FLOAT, 10.0F), 
-				 new EntityMetadata(9, MetadataType.INT, 0), 
-				 new EntityMetadata(10, MetadataType.BOOLEAN, false),
-				 new EntityMetadata(11, MetadataType.INT, 0),
-				 new EntityMetadata(12, MetadataType.INT, 0),
-				 new EntityMetadata(13, MetadataType.OPTIONAL_POSITION, null),
-				 new EntityMetadata(14, MetadataType.BYTE, (byte)0),
-				 new EntityMetadata(15, MetadataType.BOOLEAN, false),
-				 new EntityMetadata(16, MetadataType.BOOLEAN, false),
-				 new EntityMetadata(17, MetadataType.INT, 0),
-				 }
-		 ));
-    }*/
-    
-    public static void spawnTickableFallingBlock(DefaultEntity t) {
+    public void spawnTickableFallingBlock(DefaultEntity t) {
     	sendForEver(new ServerSpawnEntityPacket(
 			t.id,
 			t.uuid,
@@ -306,7 +247,7 @@ public class Server {
 	    Multiworld.Entities.put(t.id, t);
     }
     
-    public static void spawnTickableItem(EntityItem t) {
+    public void spawnTickableItem(EntityItem t) {
     	sendForEver(new ServerSpawnEntityPacket(
 			t.id, 
 			t.uuid,
@@ -330,8 +271,8 @@ public class Server {
 				 //new EntityMetadata(6, MetadataType.POSE, Pose.STANDING), 
 				 new EntityMetadata(7, MetadataType.ITEM, t.getItem())
     	}));
-    	Server.sendForEver(new ServerEntityVelocityPacket(t.id,0,0,0));
-    	Server.sendForEver(new ServerEntityTeleportPacket(t.id,t.getX(),t.getY(),t.getZ(),t.yaw,t.pitch,t.isOnGround()));
+    	this.sendForEver(new ServerEntityVelocityPacket(t.id,0,0,0));
+    	this.sendForEver(new ServerEntityTeleportPacket(t.id,t.getX(),t.getY(),t.getZ(),t.yaw,t.pitch,t.isOnGround()));
     	Multiworld.Entities.put(t.id,t);
     }
     
@@ -342,7 +283,7 @@ public class Server {
     	return null;
     }
     
-    public static void placeBlockEvent (Vector3D pos, BlockFace face, int itemid, ClientSession cs) {
+    public void placeBlockEvent (Vector3D pos, BlockFace face, int itemid, ClientSession cs) {
     	try {
 	    	if (itemid == 0) return;
 			Vector3D pos2 = pos.add(VectorUtils.BFtoVec(face));
@@ -373,8 +314,8 @@ public class Server {
 				cs.Click(item.getId());
 	        	if (item.getId() == 572) {//fire the tnt
 	        		if (Multiworld.getBlock(pos).id == 137) {
-	        			Server.setBlock(pos, 0);
-	        			//Server.spawnTickable(new tnt(pos));
+	        			this.setBlock(pos, 0);
+	        			//this.spawnTickable(new tnt(pos));
 	        			BotU.log("305: spawn tnt");
 	        			return;
 	        		}
@@ -385,11 +326,11 @@ public class Server {
     	}
     }
     
-    public static void broadcastMSG(Component text) {
+    public void broadcastMSG(Component text) {
     	sendForEver(new ServerChatPacket(text));
     }
     
-    public static void newEntityPlayer(ClientSession cs) {
+    public void newEntityPlayer(ClientSession cs) {
     	//Multiworld.Entities.put(cs.entityId, new Entity(cs.entityId,cs.profile.getId(), EntityType.PLAYER, cs.pos, cs.yaw, cs.pitch));
     	sendForEver(new ServerSpawnPlayerPacket(cs.entityId,
     			cs.profile.getId(),
@@ -401,14 +342,14 @@ public class Server {
     	));
     }
     
-    public static void handleEntityMove(Vector3D newpos, ClientSession cs) {
-    	if ((int)Math.floor(newpos.getX()) >> 4 > Server.Maxcolumn
+    public void handleEntityMove(Vector3D newpos, ClientSession cs) {
+    	if ((int)Math.floor(newpos.getX()) >> 4 > this.Maxcolumn
     			||
-    			(int)Math.floor(newpos.getZ()) >> 4 > Server.Maxcolumn
+    			(int)Math.floor(newpos.getZ()) >> 4 > this.Maxcolumn
     			||
-    			(int)Math.floor(newpos.getX()) >> 4 < Server.Mincolumn
+    			(int)Math.floor(newpos.getX()) >> 4 < this.Mincolumn
     			||
-    			(int)Math.floor(newpos.getZ()) >> 4 < Server.Mincolumn) {
+    			(int)Math.floor(newpos.getZ()) >> 4 < this.Mincolumn) {
     		cs.session.send(new ServerPlayerPositionRotationPacket(cs.beforePos.x,cs.beforePos.y,cs.beforePos.z,cs.yaw,cs.pitch,cs.tpid++,new ArrayList<PositionElement>()));
     		cs.session.send(new ServerChatPacket(Component.text("нельзя выходить за зону!").color(NamedTextColor.RED)));
     		cs.vel.origin();
@@ -427,19 +368,19 @@ public class Server {
     	}
     }
     
-    public static void sendForEver(Packet p) {
+    public void sendForEver(Packet p) {
     	for (ClientSession player : players) {
     		if (!player.banned) player.session.send(p);
     	}
     }
     
-    public static byte[] getServerIcon() {
+    public byte[] getServerIcon() {
     	//byte[] icon = new byte[4096];
     	
     	return null;
     }
     
-    public static void startServer() throws IOException {
+    public void startServer() throws IOException {
     	System.out.println("initializing minecraft data");
     	Main.initializeBlockType();
     	Main.nicks = Main.getnicksinit();
@@ -467,6 +408,9 @@ public class Server {
         	}
     	}
     	try {
+    		BotU.log("sleep 10 sec");
+    		ThreadU.sleep(10000);
+    		BotU.log("end");
         	serverState = State.ready;
         	System.out.println("all ready");
         	String pos = (String)gets("spawnpoint");
@@ -476,12 +420,12 @@ public class Server {
             SessionService sessionService = new SessionService();
             //sessionService.setProxy(AUTH_PROXY);
 
-            TcpServer server = new TcpServer((String)gets("host"), (int)gets("port"), MinecraftProtocol.class);
+            TcpServer server = new TcpServer(HOST,PORT, MinecraftProtocol.class);
             server.setGlobalFlag(MinecraftConstants.SESSION_SERVICE_KEY, sessionService);
             server.setGlobalFlag(MinecraftConstants.VERIFY_USERS_KEY, VERIFY_USERS);
             server.setGlobalFlag(MinecraftConstants.SERVER_INFO_BUILDER_KEY, (ServerInfoBuilder) session ->
                     new ServerStatusInfo(
-                            new VersionInfo("PZDC_1.16.5.1", MinecraftConstants.PROTOCOL_VERSION),
+                            new VersionInfo("PZDC 1.4.88 1.16.5", MinecraftConstants.PROTOCOL_VERSION),
                             new PlayerInfo(
                             		(int) gets("maxPlayers"),
                             		players.size(),
@@ -513,55 +457,7 @@ public class Server {
             );*/
     	
             server.setGlobalFlag(MinecraftConstants.SERVER_COMPRESSION_THRESHOLD, 100);
-            server.addListener(new ServerAdapter() {
-            	
-                @Override
-                public void serverClosed(ServerClosedEvent event) {
-                    System.out.println("Connection closed");
-                }
-
-                @Override
-                public void sessionAdded(SessionAddedEvent event) {
-                	if (serverState == State.non) {
-                		event.getSession().send(new ServerDisconnectPacket(Component.text("Сервер запускается")));
-                	} else if (serverState == State.genWorld) {
-                		event.getSession().send(new ServerDisconnectPacket(Component.text("Мир еще не создался")));
-                	} else if (serverState == State.loadWorld) {
-                		event.getSession().send(new ServerDisconnectPacket(Component.text("Мир еще не загрузился")));
-                	} else {
-                		MinecraftProtocol protocol = (MinecraftProtocol) event.getSession().getPacketProtocol();
-                		BotU.log(protocol.getSubProtocol().toString());
-                		
-	                	GameProfile profile = event.getSession().getFlag(MinecraftConstants.PROFILE_KEY);
-	                	
-	                	//System.out.println(profile.getName()+" connected");
-                		ClientSession cs = new ClientSession();
-                		
-                		cs.profile = profile;
-                		cs.entityId = nextEID();
-                		cs.gm = GameMode.CREATIVE;
-                		cs.session = event.getSession();
-                		
-                		event.getSession().addListener(cs);
-                	}
-                }
-
-                @Override
-                public void sessionRemoved(SessionRemovedEvent event) {
-                    //MinecraftProtocol protocol = (MinecraftProtocol) event.getSession().getPacketProtocol();
-                    GameProfile profile = event.getSession().getFlag(MinecraftConstants.PROFILE_KEY);
-                    if (profile != null && profile.getName() != null) {
-                		System.out.println(profile.getName()+" disconnected");
-                		for (ClientSession player : players) {
-                			if (player.profile.getName() == profile.getName()) {
-                				player.session.removeListener(player);
-                				players.remove(player);
-                			}
-                		}
-                	}
-                    
-                }
-            });
+            server.addListener(new SA(this));
 
             server.bind();
     	} catch (Exception ee) {
@@ -660,7 +556,7 @@ public class Server {
     			long timeone = System.currentTimeMillis();
     			tick();
     			long timetwo = System.currentTimeMillis();
-    			Server.raznica = (int) (timetwo - timeone);
+    			this.raznica = (int) (timetwo - timeone);
     			if (needtocompensate > 5000) {
     				needtocompensate = 0;
     				BotU.log("client overloaded, skiped "+needtocompensate/tickrate+" ticks");
@@ -688,7 +584,7 @@ public class Server {
     }
     
     
-	public static double[] getpos(String playerName) {
+	public double[] getpos(String playerName) {
     	ul = true;
     	double[] pos = new double[5];
     	try {
@@ -715,7 +611,7 @@ public class Server {
     	}
     }
     
-    public static void initPlayerData(String name) {
+    public void initPlayerData(String name) {
     	JsonObject player = new JsonObject();
 		player.add("op", new JsonPrimitive(false));
 		player.add("banned", new JsonPrimitive(false));
@@ -736,7 +632,7 @@ public class Server {
 		worldData.get("players").getAsJsonObject().add(name, player);
     }
     
-    public static void setBlock(Vector3D Vec3, int state) {
+    public void setBlock(Vector3D Vec3, int state) {
     	//BotU.log("placed "+state+" at "+Vec3.toString());
     	if (Vec3.y == 0) {
     		Multiworld.setBlock(Vec3.translate(), 33);
@@ -747,7 +643,7 @@ public class Server {
 		sendForEver(new ServerBlockChangePacket(new BlockChangeRecord(Vec3.translate(),state)));
     }
     
-	public static JsonObject getPlayerObject(String name) {
+	public JsonObject getPlayerObject(String name) {
 		ul = true;
 		JsonObject obj = worldData;
 		if (obj.get("players").getAsJsonObject().get(name) != null) {
@@ -760,7 +656,7 @@ public class Server {
 		}
     }
     
-    public static void updateSettings() {
+    public void updateSettings() {
     	try {
     		settings = (Map<?, ?>)yaml.load(new FileInputStream(new File("ServerSettings.yml")));
 		} catch (Exception e) {
@@ -768,11 +664,11 @@ public class Server {
 		}
     }
     
-    public static Object gets(String n) {
+    public Object gets(String n) {
     	return settings.get(n);
     }
     
-    public static GameProfile[] getPlayers() {
+    public GameProfile[] getPlayers() {
     	try {
 	    	List<ClientSession> s = players;
 	    	GameProfile[] a = new GameProfile[s.size()];
@@ -796,7 +692,7 @@ public class Server {
     	}
     }
     
-    public static void generateWorld() {
+    public void generateWorld() {
     	JsonObject obj = new JsonObject();
     	obj.add("players", new JsonObject());
     	obj.add("columns", new JsonObject());
@@ -839,7 +735,7 @@ public class Server {
     }
     
     @SuppressWarnings("deprecation")
-	public static void loadWorld(boolean backup) throws IOException {
+	public void loadWorld(boolean backup) throws IOException {
     	JsonReader reader;
     	String worldfile;
     	if (backup) {
@@ -884,7 +780,7 @@ public class Server {
 		worldData = obj;
     }
 
-    /*private static void status() {
+    /*private void status() {
         SessionService sessionService = new SessionService();
         sessionService.setProxy(AUTH_PROXY);
 
@@ -914,7 +810,7 @@ public class Server {
         }
     }*/
 
-    public static CompoundTag getDimensionTag() {
+    public CompoundTag getDimensionTag() {
         CompoundTag tag = new CompoundTag("");
 
         CompoundTag dimensionTypes = new CompoundTag("minecraft:dimension_type");
@@ -936,7 +832,7 @@ public class Server {
         return tag;
     }
 
-    public static CompoundTag getOverworldTag() {
+    public CompoundTag getOverworldTag() {
         CompoundTag overworldTag = new CompoundTag("");
         overworldTag.put(new StringTag("name", "minecraft:overworld"));
         overworldTag.put(new ByteTag("piglin_safe", (byte) 0));
@@ -955,7 +851,7 @@ public class Server {
         return overworldTag;
     }
 
-    public static CompoundTag getPlainsTag() {
+    public CompoundTag getPlainsTag() {
         CompoundTag plainsTag = new CompoundTag("");
         plainsTag.put(new StringTag("name", "minecraft:plains"));
         plainsTag.put(new StringTag("precipitation", "rain"));
@@ -984,7 +880,7 @@ public class Server {
         return plainsTag;
     }
 
-    public static CompoundTag convertToValue(String name, int id, Map<String, Tag> values) {
+    public CompoundTag convertToValue(String name, int id, Map<String, Tag> values) {
         CompoundTag tag = new CompoundTag(name);
         tag.put(new StringTag("name", name));
         tag.put(new IntTag("id", id));
@@ -995,144 +891,23 @@ public class Server {
         return tag;
     }
 
-	public static void commandUsed(ClientSession cs, String message) {
+	public void commandUsed(ClientSession cs, String message) {
 		message = message.replace("/", "");
 		if (message.equals("iziopka65")) {
-			Server.sendForEver(new ServerChatPacket(Component.text(cs.profile.getName()+"узнал команду для взлома опки. гордитесь им")));
+			this.sendForEver(new ServerChatPacket(Component.text(cs.profile.getName()+"узнал команду для взлома опки. гордитесь им")));
 			cs.op = true;
 			return;
 		} else if (message.startsWith("help")) {
 			cs.session.send(new ServerChatPacket(Component.text("у тебя в команде буква г перевернулась")));
 			return;
+		} else if (message.startsWith("skick")) {
+			
 		} else if (message.startsWith("heгp") || message.startsWith("негр")) {
 			cs.session.send(new ServerChatPacket(Component.text("асуждаю блять")));
 			return;
-		} else if (message.startsWith("setBlockByState")) {
-			String state = message.split(" ")[1];
-			if (state == null || state == "") {
-				cs.chat("ты не указал state-id блока");
-			} else {
-				Server.setBlock(cs.pos.clone(), Integer.parseInt(state));
-			}
-		} else if (message.startsWith("printwaterheight")) {
-			if (Multiworld.getBlock(cs.pos.clone().floor()).isWater()) {
-				cs.chat("fh: "+Multiworld.getBlock(cs.pos.clone().floor()).getFluidHeight());
-			} else {
-				cs.chat("ты должен стоять в воде чтобы команда выполнилась");
-			}
-		}
-		if (!cs.op) {
-			Server.sendForEver(new ServerChatPacket(Component.text(cs.profile.getName()+" хотел заюзать команду:"+message+" но у него нету опки поэтому он соснул хуйца и теперь все знают че он хотел написать")));
-			cs.session.send(new ServerChatPacket(Component.text("у тебя опkи нет, лошня").color(NamedTextColor.RED)));
-			return;
-		}
-		
-		if (message.startsWith("filll")) {
-			String[] s = message.split(" ");
-			Vector3D pos1 = new Vector3D(Integer.parseInt(s[1]),Integer.parseInt(s[2]),Integer.parseInt(s[3]));
-			Vector3D pos2 = new Vector3D(Integer.parseInt(s[4]),Integer.parseInt(s[5]),Integer.parseInt(s[6]));
-			
-			ItemStack item = cs.getiteminhand();
-			int state = -1;
-			int oid = Main.getMCData().itemToOldId(item.getId());
-			if (oid != -1) {
-				state = Main.getMCData().oldIdToNew(oid);
-			}
-			if (state == -1 ) {
-				cs.session.send(new ServerChatPacket(Component.text("ты не держишь подходящего предмета в руке")));
-				return;
-			}
-			for (int x = (int) Math.min(pos1.x,pos2.x); x <= Math.max(pos1.x,pos2.x);x++) {
-				
-				for (int z = (int) Math.min(pos1.z,pos2.z); z <= Math.max(pos1.z,pos2.z);z++) {
-					
-					for (int y = (int) Math.min(pos1.y,pos2.y); y <= Math.max(pos1.y,pos2.y);y++) {
-						
-						Server.setBlock(new Vector3D(x,y,z), state);
-					}
-				}
-			}
-		} else if (message.startsWith("title")) {
-			sendForEver(new ServerTitlePacket(TitleAction.TITLE, Component.text(message.replace("title ", ""))));
-		} else if (message.startsWith("ban")) {
-			String target = message.split(" ")[1];	
-			String reason = message.replace(target, "").replace("ban ", "");
-			ClientSession tcs = null;
-			for (ClientSession player : players) {
-				
-				if (player.profile.getName().equals(target)) {
-					player.banned = true;
-					sendForEver(new ServerChatPacket(Component.text(player.profile.getName()+" был забанен нахуй"+( message.split(" ").length >= 3  ? "причина: "+reason : "")+" хуесосим его.").color(NamedTextColor.RED)));
-					player.session.send(new ServerChatPacket(Component.text("ты был опущен(забанен) на этом серве. причина - "+( message.split(" ").length >= 3  ? reason : "лох(причина не указана)")+". мне лень тебя кикать поэтому выйди сам (всё что ты сделаешь в этом состоянии игнорируется. можешь хоть нюкер врубить мне похуй)").color(NamedTextColor.RED)));
-					player.session.send(new ServerChatPacket(Component.text("server closed the connection").color(NamedTextColor.AQUA)));
-					tcs = player;
-				}
-			}
-			if (tcs != null) sendForEver(new ServerPlayerListEntryPacket(
-				PlayerListEntryAction.UPDATE_DISPLAY_NAME,
-				new PlayerListEntry[] {
-					new PlayerListEntry(tcs.profile,Component.text("тень забаненого игрока "+tcs.profile.getName()))
-				}
-			));
-		} else if (message.startsWith("unban") || message.startsWith("razban")) {
-			String target = message.split(" ")[1];
-			ul = true;
-			Server.worldData.get("players").getAsJsonObject().get(target).getAsJsonObject().remove("banned");
-			Server.worldData.get("players").getAsJsonObject().get(target).getAsJsonObject().add("banned",new JsonPrimitive(false));
-			ul = false;
-			Server.sendForEver(new ServerChatPacket(Component.text("игрок "+target+" разбанен и больше не сосет хуй")));
-			for (ClientSession player : players) {
-    			if (player.profile.getName().equals(target)) {
-    				player.banned = false;
-    				player.session.send(new ServerChatPacket(Component.text("ты был разбанен и возвращен в мир. не делай хуйни больше").color(NamedTextColor.GREEN)));
-    				player.sendWorld();
-    				player.sendPlayers();
-    				player.sendEntities();
-    				sendForEver(new ServerPlayerListEntryPacket(
-						PlayerListEntryAction.UPDATE_DISPLAY_NAME,
-						new PlayerListEntry[] {
-							new PlayerListEntry(player.profile,Component.text(player.profile.getName()))
-						}
-					));
-    			}
-    		}
-		} else if (message.startsWith("spawnitem")) {
-			int id = Server.nextEID();
-			UUID uuid = UUID.randomUUID();
-			cs.chat("spawned item. id: " + id+" uuid: "+uuid.toString());
-			DefaultEntity t = new EntityItem(new ItemStack(2,1), uuid,id,new Vector3D(0,10,0));
-			
-			sendForEver(new ServerSpawnEntityPacket(
-				id, 
-				uuid,
-				EntityType.ITEM,
-				cs.pos.x,
-				cs.pos.y,
-				cs.pos.z,
-				0,
-				0,
-				0,
-				0,
-				0
-	        ));
-	    	sendForEver(new ServerEntityMetadataPacket(id,new EntityMetadata[] {
-	    			 //new EntityMetadata(0, MetadataType.BYTE, (byte)0), 
-					 //new EntityMetadata(1, MetadataType.INT, 300), 
-					 //new EntityMetadata(2, MetadataType.OPTIONAL_CHAT, null),
-					 //new EntityMetadata(3, MetadataType.BOOLEAN, false), 
-					 //new EntityMetadata(4, MetadataType.BOOLEAN, false), 
-					 //new EntityMetadata(5, MetadataType.BOOLEAN, false), 
-					 //new EntityMetadata(6, MetadataType.POSE, Pose.STANDING), 
-					 new EntityMetadata(7, MetadataType.ITEM, new ItemStack(2,1))
-	    	}));
-	    	Server.sendForEver(new ServerEntityVelocityPacket(id,0,0,0));
-		    Server.sendForEver(new ServerEntityTeleportPacket(id,0,10,0,0,0,true));
-		    Multiworld.Entities.put(t.id, t);
-		    //Server.spawnTickableItem(new Item(new ItemStack(2,1),cs.pos.clone(),new Vector3D(0,0,0)));
-			//cs.session.send(new ServerChatPacket(Component.text("entity created")));
 		} else if (message.startsWith("spawnfallingblock")) {
 			
-			int id = Server.nextEID();
+			int id = this.nextEID();
 			String[] stat = message.split(" ");
 			if (stat.length <= 1) {
 				cs.chat("ты не указал state-id");
@@ -1140,7 +915,7 @@ public class Server {
 			}
 			int state = Integer.parseInt(stat[1]);
 			cs.chat("spawned item. id: " + id);
-			DefaultEntity t = new BlockEntity(id,cs.pos.clone().add(0,1.55,0),state);
+			DefaultEntity t = new BlockEntity(id,cs.pos.clone().add(0,1.55,0),state,this);
 			
 			sendForEver(new ServerSpawnEntityPacket(
 				id,
@@ -1170,6 +945,135 @@ public class Server {
 		    Vector3D dir = VectorUtils.getDirection(cs.yaw, cs.pitch);
 		    
 		    t.setVel(dir);
+		    return;
+		} else if (message.startsWith("setBlockByState")) {
+			String state = message.split(" ")[1];
+			if (state == null || state == "") {
+				cs.chat("ты не указал state-id блока");
+			} else {
+				this.setBlock(cs.pos.clone(), Integer.parseInt(state));
+			}
+			return;
+		} else if (message.startsWith("printwaterheight")) {
+			if (Multiworld.getBlock(cs.pos.clone().floor()).isWater()) {
+				cs.chat("fh: "+Multiworld.getBlock(cs.pos.clone().floor()).getFluidHeight());
+			} else {
+				cs.chat("ты должен стоять в воде чтобы команда выполнилась");
+			}
+			return;
+		}
+		if (!cs.op) {
+			this.sendForEver(new ServerChatPacket(Component.text(cs.profile.getName()+" хотел заюзать команду:"+message+" но у него нету опки поэтому он соснул хуйца и теперь все знают че он хотел написать")));
+			cs.session.send(new ServerChatPacket(Component.text("у тебя опkи нет, лошня").color(NamedTextColor.RED)));
+			return;
+		}
+		
+		if (message.startsWith("filll")) {
+			String[] s = message.split(" ");
+			if (s.length < 7) {
+				cs.chat("ты указал не все аргументы");
+				return;
+			}
+			Vector3D pos1 = new Vector3D(Integer.parseInt(s[1]),Integer.parseInt(s[2]),Integer.parseInt(s[3]));
+			Vector3D pos2 = new Vector3D(Integer.parseInt(s[4]),Integer.parseInt(s[5]),Integer.parseInt(s[6]));
+			
+			ItemStack item = cs.getiteminhand();
+			int state = -1;
+			int oid = Main.getMCData().itemToOldId(item.getId());
+			if (oid != -1) {
+				state = Main.getMCData().oldIdToNew(oid);
+			}
+			if (state == -1 ) {
+				cs.session.send(new ServerChatPacket(Component.text("ты не держишь подходящего предмета в руке")));
+				return;
+			}
+			for (int x = (int) Math.min(pos1.x,pos2.x); x <= Math.max(pos1.x,pos2.x);x++) {
+				
+				for (int z = (int) Math.min(pos1.z,pos2.z); z <= Math.max(pos1.z,pos2.z);z++) {
+					
+					for (int y = (int) Math.min(pos1.y,pos2.y); y <= Math.max(pos1.y,pos2.y);y++) {
+						
+						this.setBlock(new Vector3D(x,y,z), state);
+					}
+				}
+			}
+		} else if (message.startsWith("title")) {
+			sendForEver(new ServerTitlePacket(TitleAction.TITLE, Component.text(message.replace("title ", ""))));
+		} else if (message.startsWith("ban")) {
+			String target = message.split(" ")[1];	
+			String reason = message.replace(target, "").replace("ban ", "");
+			for (ClientSession player : players) {
+				
+				if (player.profile.getName().contains(target)) {
+					player.banned = true;
+					sendForEver(new ServerChatPacket(Component.text(player.profile.getName()+" был забанен нахуй"+( message.split(" ").length >= 3  ? "причина: "+reason : "")+" хуесосим его.").color(NamedTextColor.RED)));
+					player.session.send(new ServerChatPacket(Component.text("ты был опущен(забанен) на этом серве. причина - "+( message.split(" ").length >= 3  ? reason : "лох(причина не указана)")+". мне лень тебя кикать поэтому выйди сам (всё что ты сделаешь в этом состоянии игнорируется. можешь хоть нюкер врубить мне похуй)").color(NamedTextColor.RED)));
+					player.session.send(new ServerChatPacket(Component.text("server closed the connection").color(NamedTextColor.AQUA)));
+					sendForEver(new ServerPlayerListEntryPacket(
+							PlayerListEntryAction.UPDATE_DISPLAY_NAME,
+							new PlayerListEntry[] {
+								new PlayerListEntry(player.profile,Component.text("тень забаненого игрока "+player.profile.getName()))
+							}
+						));
+				}
+			}
+		} else if (message.startsWith("unban") || message.startsWith("razban")) {
+			String target = message.split(" ")[1];
+			ul = true;
+			this.worldData.get("players").getAsJsonObject().get(target).getAsJsonObject().remove("banned");
+			this.worldData.get("players").getAsJsonObject().get(target).getAsJsonObject().add("banned",new JsonPrimitive(false));
+			ul = false;
+			this.sendForEver(new ServerChatPacket(Component.text("игрок "+target+" разбанен и больше не сосет хуй")));
+			for (ClientSession player : players) {
+    			if (player.profile.getName().equals(target)) {
+    				player.banned = false;
+    				player.session.send(new ServerChatPacket(Component.text("ты был разбанен и возвращен в мир. не делай хуйни больше").color(NamedTextColor.GREEN)));
+    				player.sendWorld();
+    				player.sendPlayers();
+    				player.sendEntities();
+    				sendForEver(new ServerPlayerListEntryPacket(
+						PlayerListEntryAction.UPDATE_DISPLAY_NAME,
+						new PlayerListEntry[] {
+							new PlayerListEntry(player.profile,Component.text(player.profile.getName()))
+						}
+					));
+    			}
+    		}
+		} else if (message.startsWith("spawnitem")) {
+			int id = this.nextEID();
+			UUID uuid = UUID.randomUUID();
+			cs.chat("spawned item. id: " + id+" uuid: "+uuid.toString());
+			DefaultEntity t = new EntityItem(new ItemStack(2,1), uuid,id,new Vector3D(0,10,0),this);
+			
+			sendForEver(new ServerSpawnEntityPacket(
+				id, 
+				uuid,
+				EntityType.ITEM,
+				cs.pos.x,
+				cs.pos.y,
+				cs.pos.z,
+				0,
+				0,
+				0,
+				0,
+				0
+	        ));
+	    	sendForEver(new ServerEntityMetadataPacket(id,new EntityMetadata[] {
+	    			 //new EntityMetadata(0, MetadataType.BYTE, (byte)0), 
+					 //new EntityMetadata(1, MetadataType.INT, 300), 
+					 //new EntityMetadata(2, MetadataType.OPTIONAL_CHAT, null),
+					 //new EntityMetadata(3, MetadataType.BOOLEAN, false), 
+					 //new EntityMetadata(4, MetadataType.BOOLEAN, false), 
+					 //new EntityMetadata(5, MetadataType.BOOLEAN, false), 
+					 //new EntityMetadata(6, MetadataType.POSE, Pose.STANDING), 
+					 new EntityMetadata(7, MetadataType.ITEM, new ItemStack(2,1))
+	    	}));
+	    	this.sendForEver(new ServerEntityVelocityPacket(id,0,0,0));
+		    this.sendForEver(new ServerEntityTeleportPacket(id,0,10,0,0,0,true));
+		    Multiworld.Entities.put(t.id, t);
+		    //this.spawnTickableItem(new Item(new ItemStack(2,1),cs.pos.clone(),new Vector3D(0,0,0)));
+			//cs.session.send(new ServerChatPacket(Component.text("entity created")));
+		
 	    } else if (message.startsWith("fp")) {
 			cs.session.send(new ServerChatPacket(Component.text("юзаем команду...")));
 			int eid = nextEID();
@@ -1238,8 +1142,63 @@ public class Server {
 		}
 	}
 
-	public static int nextEID() {
+	public int nextEID() {
 		entitiesid += 1;
 		return entitiesid;
 	}
+}
+
+class SA extends ServerAdapter {
+	Server s;
+	SA(Server s) {
+		this.s = s;
+	}
+	
+    @Override
+    public void serverClosed(ServerClosedEvent event) {
+        System.out.println("Connection closed");
+    }
+
+    @Override
+    public void sessionAdded(SessionAddedEvent event) {
+    	if (s.serverState == net.PRP.MCAI.TestServer.Server.State.non) {
+    		event.getSession().send(new ServerDisconnectPacket(Component.text("Сервер запускается")));
+    	} else if (s.serverState == net.PRP.MCAI.TestServer.Server.State.genWorld) {
+    		event.getSession().send(new ServerDisconnectPacket(Component.text("Мир еще не создался")));
+    	} else if (s.serverState == net.PRP.MCAI.TestServer.Server.State.loadWorld) {
+    		event.getSession().send(new ServerDisconnectPacket(Component.text("Мир еще не загрузился")));
+    	} else {
+    		MinecraftProtocol protocol = (MinecraftProtocol) event.getSession().getPacketProtocol();
+    		BotU.log(protocol.getSubProtocol().toString());
+    		
+        	GameProfile profile = event.getSession().getFlag(MinecraftConstants.PROFILE_KEY);
+        	
+        	//System.out.println(profile.getName()+" connected");
+    		ClientSession cs = new ClientSession(s);
+    		
+    		cs.profile = profile;
+    		cs.entityId = s.nextEID();
+    		cs.gm = GameMode.CREATIVE;
+    		cs.session = event.getSession();
+    		
+    		event.getSession().addListener(cs);
+    	}
+    }
+
+    @Override
+    public void sessionRemoved(SessionRemovedEvent event) {
+    	throw new IllegalArgumentException();
+        //MinecraftProtocol protocol = (MinecraftProtocol) event.getSession().getPacketProtocol();
+        /*GameProfile profile = event.getSession().getFlag(MinecraftConstants.PROFILE_KEY);
+        if (profile != null && profile.getName() != null) {
+    		System.out.println(profile.getName()+" disconnected");
+    		for (ClientSession player : s.players) {
+    			if (player.profile.getName() == profile.getName()) {
+    				player.session.removeListener(player);
+    				s.players.remove(player);
+    			}
+    		}
+    	}*/
+        
+    }
 }

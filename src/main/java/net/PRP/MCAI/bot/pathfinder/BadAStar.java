@@ -57,7 +57,6 @@ public class BadAStar implements IPathfinder{
 		boolean shortcuted = false;
 		while (true) {
 			if (toWalk.size() > maxpath) {
-				BotU.log("maxpath1");
 				if (!shortcuted) {
 					shortcuted = true;
 				} else {
@@ -72,7 +71,7 @@ public class BadAStar implements IPathfinder{
 			List<Vector3D> neighbors;
 			neighbors = getNeighbors(cursor,1);
 			if (neighbors.isEmpty()) {
-				if (Main.debug) System.out.println("pizdec1");
+				//if (Main.debug) System.out.println("pizdec1");
 				return false;
 			}
 			cursor = pickCloser(neighbors);
@@ -90,7 +89,7 @@ public class BadAStar implements IPathfinder{
 		toWalk.add(start);
 		while (true) {
 			if (toWalk.size() > maxpath) {
-				if (Main.debug) System.out.println("maxpath2");
+				//if (Main.debug) System.out.println("maxpath2");
 				return false;
 			}
 			if (VectorUtils.equalsInt(cursor, end)) {
@@ -101,7 +100,7 @@ public class BadAStar implements IPathfinder{
 			List<Vector3D> neighbors;
 			neighbors = getNeighbors(cursor,2);
 			if (neighbors.isEmpty()) {
-				if (Main.debug) System.out.println("pizdec2");
+				//if (Main.debug) System.out.println("pizdec2");
 				return false;
 			}
 			cursor = pickCloser(neighbors);

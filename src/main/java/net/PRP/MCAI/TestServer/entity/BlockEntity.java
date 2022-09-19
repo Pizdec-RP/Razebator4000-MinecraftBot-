@@ -21,13 +21,15 @@ public class BlockEntity extends DefaultEntity {
 	
 	public boolean captured = false;
 	public int blockState;
+	public Server Server;
 
-	public BlockEntity(int id, Vector3D pos, int blockState) {
-		this(id,pos,blockState,new Vector3D(0,0,0));
+	public BlockEntity(int id, Vector3D pos, int blockState, Server s) {
+		this(id,pos,blockState,new Vector3D(0,0,0),s);
+		this.Server = s;
 	}
 	
-	public BlockEntity(int id, Vector3D pos, int blockState, Vector3D vel) {
-		super(id, UUID.randomUUID(), EntityType.FALLING_BLOCK, pos.x, pos.y, pos.z, 1000, null, 0, 0, vel.x, vel.y, vel.z);
+	public BlockEntity(int id, Vector3D pos, int blockState, Vector3D vel, Server s) {
+		super(id, UUID.randomUUID(), EntityType.FALLING_BLOCK, pos.x, pos.y, pos.z, 1000, null, 0, 0, vel.x, vel.y, vel.z, s);
 		this.blockState = blockState;
 		float height = this.getHeight();
         double radius = this.getWidth() / 2d;

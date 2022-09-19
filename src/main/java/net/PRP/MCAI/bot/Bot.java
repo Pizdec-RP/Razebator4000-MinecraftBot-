@@ -103,7 +103,7 @@ public class Bot implements Runnable {
         this.pathfinder = new PathExecutor(this);
         this.crafter = new Crafting(this);
         Main.bots.add(this);
-        BotU.log(name+" added to list");
+        //BotU.log(name+" added to list");
         build();
         getSession().connect();
     }
@@ -119,11 +119,11 @@ public class Bot implements Runnable {
 			int raznica = (int) (timetwo - timeone);
 			if (needtocompensate > 5000) {
 				needtocompensate = 0;
-				BotU.log("client overloaded, skiped "+needtocompensate/tickrate+" ticks");
+				//BotU.log("client overloaded, skiped "+needtocompensate/tickrate+" ticks");
 			}
 			if (raznica > 0 && raznica < tickrate) {
 				curcomp = tickrate-raznica;
-				if (Main.debug) System.out.println("comp "+raznica+"ms");
+				//if (Main.debug) System.out.println("comp "+raznica+"ms");
 				if (needtocompensate <= 0) {
 					ThreadU.sleep(curcomp);
 				} else {
@@ -136,7 +136,7 @@ public class Bot implements Runnable {
 					needtocompensate-=tickrate;
 				}
 			} else {
-				if (Main.debug) System.out.println("pass "+raznica+"ms");
+				//if (Main.debug) System.out.println("pass "+raznica+"ms");
 				needtocompensate += raznica-tickrate;
 			}
 		}
@@ -155,7 +155,7 @@ public class Bot implements Runnable {
     	this.bbm = null;
     	this.pathfinder = null;
     	this.cursor = null;
-    	Thread.currentThread().interrupt();
+    	Thread.currentThread().stop();
     }
 
     public void build() {
@@ -203,7 +203,6 @@ public class Bot implements Runnable {
         
         if ((boolean) Main.gamerule("nuker")) {
         	rl.listeners.add(new NukerFucker(this));
-        	BotU.log("nuke");
         }
         if (host.contains("holyworld")) {
         	rl.listeners.add(new holyworld(this));

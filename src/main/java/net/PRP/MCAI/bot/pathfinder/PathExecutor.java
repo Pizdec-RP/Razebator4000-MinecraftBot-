@@ -36,7 +36,7 @@ public class PathExecutor {
 		this.end = end;
 		this.from = start;
 		this.state = State.SEARCHING;
-		if (Main.debug) System.out.println("pf: "+end.forCommand());
+		//if (Main.debug) System.out.println("pf: "+end.forCommand());
 	}
 	
 	public void setupNoBreak(Vector3D end) {
@@ -45,7 +45,7 @@ public class PathExecutor {
 		this.end = end;
 		this.from = start;
 		this.state = State.WALKING;
-		if (Main.debug) System.out.println("pf: "+end.forCommand());
+		//if (Main.debug) System.out.println("pf: "+end.forCommand());
 		this.path = new BadAStar(client, this.end);
 		if (path.buildPath(true)) {
 			if (path.toWalk.isEmpty()) return;
@@ -145,7 +145,7 @@ public class PathExecutor {
 	public void finish(String reason) {
 		this.state = State.FINISHED;
 		pticks = 0;
-		if (Main.debug) System.out.println("ended, ref:("+reason+"). from"+this.start+" to:"+this.end);
+		//if (Main.debug) System.out.println("ended, ref:("+reason+"). from"+this.start+" to:"+this.end);
 		this.start = null;
 		this.end = null;
 		//client.pm.Back();

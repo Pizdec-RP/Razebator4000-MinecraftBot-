@@ -110,6 +110,7 @@ public class VectorUtils {
 		}
 		
 		Vector3D temp = getNear(client.getEyeLocation(), blockfaces);
+		if (temp == null) return BlockFace.UP;
 		if (temp.x > target.x) {//x+
 			bf = BlockFace.EAST;
 		} else if (temp.x < target.x) {//x-
@@ -123,7 +124,7 @@ public class VectorUtils {
 		} else if (temp.y < target.y) {//y-
 			bf = BlockFace.DOWN;
 		}
-		BotU.log("target:"+target.toString()+" bfc: "+bf.toString());
+		//BotU.log("target:"+target.toString()+" bfc: "+bf.toString());
 		return bf;
 	}
 	
@@ -439,9 +440,10 @@ public class VectorUtils {
 		}
 	}*/
 	
-	@SuppressWarnings({ "deprecation", "serial" })
+	@SuppressWarnings({ "serial" })
 	public static Block placeBlockNear(Bot client, String block) {
 		Vector3D pos = findPosForPlace(client);
+		if (pos == null) return null;
 		if (client.playerInventory.hotbarContain(block, 1)) {
 			Integer slot = client.playerInventory.getHotbarContain(block, 1);
 			if (slot == null) return null;

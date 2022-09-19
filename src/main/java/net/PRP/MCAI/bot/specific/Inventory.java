@@ -65,7 +65,7 @@ public class Inventory extends SessionAdapter {
 			//if (client.crafter.windowType != null) client.playerInventory.setSlot(p.getSlot()-Main.getMCData().slotMultipiler.get(client.crafter.windowType), p.getItem());
 			/*else*/client.playerInventory.setSlot(p.getSlot(), p.getItem());
 			currentWindowId = p.getWindowId();
-			if (Main.debug && p.getItem() != null) System.out.println("sssp slot:"+p.getSlot()+ " item:"+Main.getMCData().items.get(p.getItem().getId()).name);
+			//if (Main.debug && p.getItem() != null) System.out.println("sssp slot:"+p.getSlot()+ " item:"+Main.getMCData().items.get(p.getItem().getId()).name);
 		}
 	}
 	

@@ -1,8 +1,14 @@
 {
+    "mode": 2, #1-рейд конеретного айпи 2-рейд всего мониторинга
+    #-------------------------------mode-2---------------------------
+    "etime": 30, #сколько секунд занимает рейд сервера
+    #"multipileraids": 2, #сколько серверов может рейдиться одновременно
+    #-------------------------------mode-1---------------------------
     "host": "localhost:25565", #айпи:порт
-    "bots": 5, #скок ботов
+    #--------------------------general-settings----------------------
+    "bots": 50, #скок ботов
     "enterrange": 500, #задержка между соединениями (в милисекундах)
-    "useproxy": false,
+    "useproxy": true,
     "proxytype": "socks5", #socks4 socks5 http
     "KeepAlivePackets": false, #hz
     "reconect": true,
@@ -29,14 +35,14 @@
 
     "loginfrase": "/spawn",
 
-    "chetodelat": false, # ШЛЕМ НАХУЙ АФК
+    "chetodelat": true, # ШЛЕМ НАХУЙ АФК
     "mineonlyiftouchair": true,
     "walkeverymilseconds": 0, #цикл действий каждые X милисекунд
     "iol": false, #задает используемый список для копания. true - "minertargetid", false - "minetargetnames"
     "minertargetid": [8,35,13,12,139,191,243,146,498,452], # самое основное: 146-oak_stairs 8 grass 16 sp log 47-oakwood 28-sand 452-oak_slab 13-oak_planks 9-dirt 1-stone 35-oak_log 12-cobla 139-mossy_cobble 191-oak_fence 243-glass_pane
     "minetargetnames": ["log","plank","quartz","stair","path","trapdoor","glass","chest","pot","fence","door","sign","wool","smooth","bricks","table","furnace","bed","snow","cobble","barrel","fire","slab","cutter","anvil","torch","wheat","stem","grass","dirt"],
     "maxpostoblock": 5,
-    "raidspam": false, #спам в режиме рейда
+    "raidspam": true, #спам в режиме рейда
     "spamrange": 1000, #спам каждые X милисекунд
     "timebeforeraidon": 2000 #задержка между входом бота на сервер и включением режима рейд-атаки
 }

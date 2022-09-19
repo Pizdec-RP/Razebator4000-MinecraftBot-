@@ -57,7 +57,7 @@ public class SessionListener extends SessionAdapter {
     
     @Override
     public void packetReceived(PacketReceivedEvent receiveEvent) {
-    	System.out.println(receiveEvent.getPacket().getClass().getName());
+    	//System.out.println(receiveEvent.getPacket().getClass().getName());
         if (receiveEvent.getPacket() instanceof ServerJoinGamePacket) {
         	//System.out.println("(" + client.getGameProfile().getName() + ") Подлючился");
         	ServerJoinGamePacket p = (ServerJoinGamePacket) receiveEvent.getPacket();
@@ -98,7 +98,7 @@ public class SessionListener extends SessionAdapter {
 			client.setPitch(packet.getPitch());
 			client.pm.beforePitch = packet.getPitch();
 			client.pm.beforeYaw = packet.getYaw();
-            BotU.log("pos packet received x:"+packet.getX()+" y:"+packet.getY()+" z:"+packet.getZ()+" yaw:"+packet.getYaw()+" pitch:"+packet.getPitch());
+           // BotU.log("pos packet received x:"+packet.getX()+" y:"+packet.getY()+" z:"+packet.getZ()+" yaw:"+packet.getYaw()+" pitch:"+packet.getPitch());
             client.getSession().send(new ClientPlayerPositionRotationPacket(client.onGround,packet.getX(),packet.getY(),packet.getZ(), client.getYaw(), client.getPitch()));
             //client.getSession().send(new ClientRequestPacket(ClientRequest.STATS));
             client.pm.resetVel();
@@ -117,7 +117,7 @@ public class SessionListener extends SessionAdapter {
             	client.pvp.endPVP();
             	client.bbm.reset();
             	client.pathfinder.reset();
-            	BotU.log("h:"+p.getHealth()+" f:"+p.getFood()+" s:"+p.getSaturation());
+            	//BotU.log("h:"+p.getHealth()+" f:"+p.getFood()+" s:"+p.getSaturation());
         
         //server chunks
         
@@ -142,12 +142,12 @@ public class SessionListener extends SessionAdapter {
 			client.getWorld().addChunkColumn(new ChunkCoordinates(data.getColumn().getX(), data.getColumn().getZ()), data.getColumn());
 		} else if (receiveEvent.getPacket() instanceof ServerPluginMessagePacket) {
 			
-			ServerPluginMessagePacket data = (ServerPluginMessagePacket) receiveEvent.getPacket();
+			/*ServerPluginMessagePacket data = (ServerPluginMessagePacket) receiveEvent.getPacket();
 			BotU.log(data.getChannel());
 			
 			for (byte b:data.getData()) {
 				BotU.log(b);
-			}
+			}*/
 			
 		} else if (receiveEvent.getPacket() instanceof ServerBlockChangePacket) {
 			ServerBlockChangePacket packet = (ServerBlockChangePacket) receiveEvent.getPacket();
@@ -201,14 +201,13 @@ public class SessionListener extends SessionAdapter {
 			ServerPlayerAbilitiesPacket p = (ServerPlayerAbilitiesPacket)receiveEvent.getPacket();
 			client.walkSpeed = p.getWalkSpeed();
 			client.flySpeed = p.getFlySpeed();
-			BotU.log("walkspeed = "+p.getWalkSpeed());
 		} else if (receiveEvent.getPacket() instanceof ServerPlayerChangeHeldItemPacket) {
 			ServerPlayerChangeHeldItemPacket p = (ServerPlayerChangeHeldItemPacket)receiveEvent.getPacket();
-			BotU.SetSlot(client, p.getSlot());
+			//BotU.SetSlot(client, p.getSlot());
 		} else if (receiveEvent.getPacket() instanceof ServerSpawnEntityPacket) {
-			BotU.log(receiveEvent.getPacket().toString());
+			//BotU.log(receiveEvent.getPacket().toString());
 		} else if (receiveEvent.getPacket() instanceof ServerEntityMetadataPacket) {
-			BotU.log(receiveEvent.getPacket().toString());
+			//BotU.log(receiveEvent.getPacket().toString());
 		}
     }
     
@@ -216,12 +215,12 @@ public class SessionListener extends SessionAdapter {
     public void disconnected(DisconnectedEvent event) {
     	if (!client.reconectAvable) return;
     	client.connected = false;
-    	BotU.log("disconnected");
-    	System.out.println(event.getReason());
-    	Main.write("[dc] ",event.getReason());
-    	if (event.getCause() != null) {
+    	//BotU.log("disconnected");
+    	//System.out.println(event.getReason());
+    	//Main.write("[dc] ",event.getReason());
+    	/*if (event.getCause() != null) {
     		event.getCause().printStackTrace();
-    	}
+    	}*/
 		if ((boolean) Main.gamerule("reconect")) {
 			ThreadU.sleep(6000);
 			client.build();

@@ -44,7 +44,6 @@ public class Miner {
 		state = bbmct.ENDED;
 	}
 	
-	@SuppressWarnings("deprecation")
 	public void tick() {
 		if (state == bbmct.ENDED) return;
 		if (!client.isOnline() || client.pvp.state != CombatState.END_COMBAT || pos == null) {
@@ -53,7 +52,6 @@ public class Miner {
 		}
 		if (state == bbmct.STARTED) {
 			if (pos.getBlock(client).type == Type.AIR || pos.getBlock(client).type == Type.LIQUID || pos.getBlock(client).type == Type.UNBREAKABLE) {
-				BotU.log("a");
 				state = bbmct.ENDED;
 				return;
 			}
@@ -93,16 +91,14 @@ public class Miner {
 		}
 	}
 	
-	@SuppressWarnings("deprecation")
 	public void endDigging() {
-		if (Main.debug) System.out.println("mining ended");
+		//if (Main.debug) System.out.println("mining ended");
 		client.getSession().send(new ClientPlayerActionPacket(PlayerAction.FINISH_DIGGING, pos.translate(), VectorUtils.rbf(client, pos.add(0.5, 0.5, 0.5))));
 		state = bbmct.ENDED;
 	}
 	
-	@SuppressWarnings("deprecation")
 	public void FinishDiggingAGTI() {
-		if (Main.debug) System.out.println("mining ended");
+		//if (Main.debug) System.out.println("mining ended");
 		client.getSession().send(new ClientPlayerActionPacket(PlayerAction.FINISH_DIGGING, pos.translate(), VectorUtils.rbf(client, pos.add(0.5, 0.5, 0.5))));
 		state = bbmct.ENDED;
 	}

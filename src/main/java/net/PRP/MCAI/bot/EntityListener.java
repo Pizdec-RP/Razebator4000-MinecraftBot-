@@ -37,7 +37,7 @@ public class EntityListener extends SessionAdapter {
 				final ServerEntityPositionPacket p = (ServerEntityPositionPacket) event.getPacket();
 	
 	            Entity entity = client.getWorld().Entities.get(p.getEntityId());
-	            
+	            if (entity == null) return;
 	            if (this.recordpos && client.getWorld().Entities.get(p.getEntityId()).uuid.toString().equalsIgnoreCase(recorduuid.toString())) {
 	        		System.out.println("onGround:"+p.isOnGround()+" x:"+p.getMoveX()+"  y:"+String.format("%.2f",p.getMoveY())+"  z:"+String.format("%.2f",p.getMoveZ())+"  milis:"+System.currentTimeMillis());
 	            }
@@ -74,12 +74,14 @@ public class EntityListener extends SessionAdapter {
             } else if (event.getPacket() instanceof ServerEntityTeleportPacket) {
                 final ServerEntityTeleportPacket p = event.getPacket();
                 Entity entity = client.getWorld().Entities.get(p.getEntityId());
+                if (entity == null) return;
                 entity.pos = new Vector3D(p.getX(), p.getY(), p.getZ());
                 entity.pitch = p.getPitch();
                 entity.yaw = p.getYaw();
             } else if (event.getPacket() instanceof ServerEntityPositionRotationPacket) {
                 final ServerEntityPositionRotationPacket p = event.getPacket();
                 Entity entity = client.getWorld().Entities.get(p.getEntityId());
+                if (entity == null) return;
                 entity.pos.setX(entity.pos.getX() + p.getMoveX());
                 entity.pos.setY(entity.pos.getY() + p.getMoveY());
                 entity.pos.setZ(entity.pos.getZ() + p.getMoveZ());
@@ -88,6 +90,7 @@ public class EntityListener extends SessionAdapter {
             } else if (event.getPacket() instanceof ServerEntityRotationPacket) {
                 final ServerEntityRotationPacket p = event.getPacket();
                 Entity entity = client.getWorld().Entities.get(p.getEntityId());
+                if (entity == null) return;
                 entity.pitch = p.getPitch();
                 entity.yaw = p.getYaw();
             } else if (event.getPacket() instanceof ServerEntityVelocityPacket) {

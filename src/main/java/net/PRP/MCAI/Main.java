@@ -10,8 +10,12 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.net.Proxy;
+import java.net.SocketTimeoutException;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,12 +24,23 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.yaml.snakeyaml.Yaml;
 
+import com.github.steveice10.mc.auth.service.SessionService;
+import com.github.steveice10.mc.protocol.MinecraftConstants;
+import com.github.steveice10.mc.protocol.MinecraftProtocol;
+import com.github.steveice10.mc.protocol.data.status.handler.ServerInfoHandler;
+import com.github.steveice10.mc.protocol.data.status.handler.ServerPingTimeHandler;
+import com.github.steveice10.packetlib.Session;
+import com.github.steveice10.packetlib.tcp.TcpClientSession;
+import com.github.steveice10.packetlib.tcp.TcpSession;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
 
+import ch.jamiete.mcping.MinecraftPing;
+import ch.jamiete.mcping.MinecraftPingOptions;
+import ch.jamiete.mcping.MinecraftPingReply;
 import net.PRP.MCAI.GUI.SteeringWheel;
 import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.data.BlockData;
@@ -40,14 +55,15 @@ import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.StringU;
 import net.PRP.MCAI.utils.ThreadU;
 import net.PRP.MCAI.utils.VectorUtils;
+import ru.justnanix.parser.ServerParser;
 public class Main {
-	static int nicksnumb = -1;
-	static FileInputStream inputStream;
-	static Yaml yaml = new Yaml();
+	public static int nicksnumb = -1;
+	public static FileInputStream inputStream;
+	public static Yaml yaml = new Yaml();
 	public static Map<?, ?> data;
-	static List<Proxy> proxies;
-	static int proxyNumb = 0;
-	static String hash;
+	public static List<Proxy> proxies;
+	public static int proxyNumb = 0;
+	public static String hash;
 	public static boolean debug = true;
 	public static List<Bot> bots = new CopyOnWriteArrayList<Bot>();
 	public static Proxy proxy = Proxy.NO_PROXY;
@@ -59,6 +75,7 @@ public class Main {
 	public static List<List<Vector3D>> tomine = new CopyOnWriteArrayList<>();
 	public static List<String> nicks;
 	public static int allVec = 0;
+	public static boolean raidObjectCreatedAlready = false;
 	
     public static void main(String... args) {
     	initializeBlockType();
@@ -67,42 +84,91 @@ public class Main {
     	updatePasti();
     	nicks = getnicksinit();
     	//boolean a = true;
-    	if (debug) {//mc.dexland.su:25565
-    		new Thread(new Bot("_niggapidor1488", "localhost:25565", Proxy.NO_PROXY, false)).start();
-    	} else {
-    		new Thread(()->{
-    			int tsuc = 0;
-    			int tbad = 0;
-    			while (true) {
-    				tsuc = 0;
-    				tbad = 0;
-    				for (Bot bot:bots) {
-    					if (bot.connected) ++tsuc; else ++tbad;
-    				}
-    				suc = tsuc;
-    				bad = tbad;
-    				if (!debug) System.out.println("{ suc:"+suc+" bad:"+bad+" all:"+bots.size()+" }");
-        			updateSettings();
-        			updatePasti();
-        			ThreadU.sleep(1000);
-    			}
-    		}).start();
-	    	if ((boolean) gamerule("window")) {
-	    		new SteeringWheel();
+    	if ((int)gamerule("mode")==1) {
+	    	if (debug) {
+	    		new Thread(new Bot("_niggapidor1488", "localhost:25565", Proxy.NO_PROXY, false)).start();
 	    	} else {
-	    		int botcount = (int)gamerule("bots") == -1 ? proxies.size() : (int)gamerule("bots");
-		    	String ip = (String)gamerule("host");
-		    	for (int i = 0; i < botcount; i++) {
-			        String USERNAME = nextNick();
-			        nextProxy();
-			        new Thread(() -> {
-				        //System.out.println("created bot name: "+USERNAME+" proxy: "+proxy.toString());
-						new Thread(new Bot(USERNAME, ip, proxy,(boolean)gamerule("chetodelat"))).start();
-			        }).start();
-				    ThreadU.sleep((int) gamerule("enterrange"));
+	    		
+	    		new Thread(()->{
+	    			int tsuc = 0;
+	    			int tbad = 0;
+	    			while (true) {
+	    				tsuc = 0;
+	    				tbad = 0;
+	    				for (Bot bot:bots) {
+	    					if (bot.connected) ++tsuc; else ++tbad;
+	    				}
+	    				suc = tsuc;
+	    				bad = tbad;
+	    				if (!debug) System.out.println("{ suc:"+suc+" bad:"+bad+" all:"+bots.size()+" }");
+	        			updateSettings();
+	        			updatePasti();
+	        			ThreadU.sleep(1000);
+	    			}
+	    		}).start();
+		    	if ((boolean) gamerule("window")) {
+		    		new SteeringWheel();
+		    	} else {
+		    		int botcount = (int)gamerule("bots") == -1 ? proxies.size() : (int)gamerule("bots");
+			    	String ip = (String)gamerule("host");
+			    	for (int i = 0; i < botcount; i++) {
+				        String USERNAME = nextNick();
+				        nextProxy();
+				        new Thread(() -> {
+					        //System.out.println("created bot name: "+USERNAME+" proxy: "+proxy.toString());
+							new Thread(new Bot(USERNAME, ip, proxy,(boolean)gamerule("chetodelat"))).start();
+				        }).start();
+					    ThreadU.sleep((int) gamerule("enterrange"));
+			    	}
 		    	}
-	    	}
-    	}
+    		}
+		} else if ((int)gamerule("mode")==2) {
+			if ((boolean) gamerule("window")) {
+				BotU.log("оконный режим не поддерживается при этом методе рейда");
+			}
+			
+			new Thread(()->{
+				
+				ServerParser sp = new ServerParser().init();
+				List<String> ips = sp.getServers();
+				for (String ip : ips) {
+					if (!ip.contains(":")) {
+						ips.remove(ip);
+						ips.add(ip+":25565");
+					}
+				}
+				for (String ip : ips) {
+					BotU.log("checking: "+ip);
+					new Thread(()->{
+						try {
+							MinecraftPing h = new MinecraftPing();
+							MinecraftPingOptions mpo = new MinecraftPingOptions();
+							mpo.setHostname(ip.split(":")[0]);
+							mpo.setPort(Integer.parseInt(ip.split(":")[1]));
+							MinecraftPingReply p = h.getPing(mpo);
+							//if (p.getVersion().getProtocol() != MinecraftConstants.PROTOCOL_VERSION) return;
+							BotU.log("trahau: "+ip);
+							int botcount = (int)gamerule("bots") == -1 ? proxies.size() : (int)gamerule("bots");
+					    	for (int i = 0; i < botcount; i++) {
+						        String USERNAME = nextNick();
+						        nextProxy();
+						        //int ii = i;
+						        new Thread(() -> {
+							        //System.out.println("created bot "+ii+"/"+botcount+"name: "+USERNAME+" proxy: "+proxy.toString());
+									new Thread(new Bot(USERNAME, ip, proxy,(boolean)gamerule("chetodelat"))).start();
+						        }).start();
+							    ThreadU.sleep((int) gamerule("enterrange"));
+					    	}
+						} catch (IOException e) {
+							BotU.log("serv "+ip+" ne rabotaet");
+						}
+					}).start();
+					
+				}
+				
+			}).start();
+			
+		}
 	}
     
     public static void яеблан() {
