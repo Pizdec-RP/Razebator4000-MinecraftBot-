@@ -27,7 +27,7 @@ public class RaidObj extends RaidSkl {
 			Main.proxies = ProxyScraper.ab();
 			Main.updatePasti();
 			Main.nicks = Main.getnicksinit();
-	    	if ((int)Main.gamerule("mode")==1) {
+	    	if ((int)Main.getset("mode")==1) {
 		    	if (Main.debug) {
 		    		new Thread(new Bot("testBot", "localhost:25565", Proxy.NO_PROXY, false)).start();
 		    	} else {
@@ -48,24 +48,24 @@ public class RaidObj extends RaidSkl {
 		        			ThreadU.sleep(1000);
 		    			}
 		    		}).start();
-			    	if ((boolean) Main.gamerule("window")) {
+			    	if ((boolean) Main.getset("window")) {
 			    		new SteeringWheel();
 			    	} else {
-			    		int botcount = (int)Main.gamerule("bots") == -1 ? Main.proxies.size() : (int)Main.gamerule("bots");
-				    	String ip = (String)Main.gamerule("host");
+			    		int botcount = (int)Main.getset("bots") == -1 ? Main.proxies.size() : (int)Main.getset("bots");
+				    	String ip = (String)Main.getset("host");
 				    	for (int i = 0; i < botcount; i++) {
 					        String USERNAME = Main.nextNick();
 					        Main. nextProxy();
 					        new Thread(() -> {
 						        //System.out.println("created bot name: "+USERNAME+" proxy: "+proxy.toString());
-								new Thread(new Bot(USERNAME, ip, Main.proxy,(boolean)Main.gamerule("chetodelat"))).start();
+								new Thread(new Bot(USERNAME, ip, Main.proxy,(boolean)Main.getset("chetodelat"))).start();
 					        }).start();
-						    ThreadU.sleep((int) Main.gamerule("enterrange"));
+						    ThreadU.sleep((int) Main.getset("enterrange"));
 				    	}
 			    	}
 	    		}
-			} else if ((int)Main.gamerule("mode")==2) {
-				if ((boolean) Main.gamerule("window")) {
+			} else if ((int)Main.getset("mode")==2) {
+				if ((boolean) Main.getset("window")) {
 					BotU.log("оконный режим не поддерживается при этом методе рейда");
 				}
 				
@@ -90,16 +90,16 @@ public class RaidObj extends RaidSkl {
 								h.getPing(mpo);
 								//if (p.getVersion().getProtocol() != MinecraftConstants.PROTOCOL_VERSION) return;
 								BotU.log("trahau: "+ip);
-								int botcount = (int)Main.gamerule("bots") == -1 ? Main.proxies.size() : (int)Main.gamerule("bots");
+								int botcount = (int)Main.getset("bots") == -1 ? Main.proxies.size() : (int)Main.getset("bots");
 						    	for (int i = 0; i < botcount; i++) {
 							        String USERNAME = Main.nextNick();
 							        Main.nextProxy();
 							        //int ii = i;
 							        new Thread(() -> {
 								        //System.out.println("created bot "+ii+"/"+botcount+"name: "+USERNAME+" proxy: "+proxy.toString());
-										new Thread(new Bot(USERNAME, ip, Main.proxy,(boolean)Main.gamerule("chetodelat"))).start();
+										new Thread(new Bot(USERNAME, ip, Main.proxy,(boolean)Main.getset("chetodelat"))).start();
 							        }).start();
-								    ThreadU.sleep((int) Main.gamerule("enterrange"));
+								    ThreadU.sleep((int) Main.getset("enterrange"));
 						    	}
 							} catch (IOException e) {
 								BotU.log("serv "+ip+" ne rabotaet");

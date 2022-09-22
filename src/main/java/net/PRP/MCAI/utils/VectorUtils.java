@@ -470,7 +470,7 @@ public class VectorUtils {
     	int x = (int)ps.getPosX();
     	int y = (int)ps.getPosY();
     	int z = (int)ps.getPosZ();
-    	int radius = (int)Main.gamerule("maxpostoblock");
+    	int radius = (int)Main.getset("maxpostoblock");
     	Vector3D pos = null;
     	for (int i = 1; i <= radius; i++) {
     		int xs = x-i;

@@ -44,7 +44,7 @@ public class ChatListener extends SessionAdapter {
     public void packetReceived(PacketReceivedEvent receiveEvent) {
 		if (receiveEvent.getPacket() instanceof ServerChatPacket) {
 			String msg = StringU.componentToString(((ServerChatPacket) receiveEvent.getPacket()).getMessage());
-			if ((int)Main.gamerule("mode")==2 && msg.contains("discord.gg/") && !msg.contains("SPAM")) BotU.log("onl: "+client.getWorld().ServerTabPanel.size()+" message: "+msg);
+			if ((int)Main.getset("mode")==2 && msg.contains("discord.gg/") && !msg.contains("SPAM")) BotU.log("onl: "+client.getWorld().ServerTabPanel.size()+" message: "+msg);
 			List<String> command = messageToCommand(receiveEvent.getPacket());
 			if (command == null || command.size() <= 0) {
 				//System.out.println("eto ne komanda");
@@ -242,13 +242,13 @@ public class ChatListener extends SessionAdapter {
 						if (block.getBlock(client).touchLiquid(client)) {
 							return;
 						}
-						if (VectorUtils.sqrt(client.getEyeLocation(), block) <= (int)Main.gamerule("maxpostoblock")) {//блок довольно близко
+						if (VectorUtils.sqrt(client.getEyeLocation(), block) <= (int)Main.getset("maxpostoblock")) {//блок довольно близко
 							
 							if (VectorUtils.sqrt(client.getEyeLocation(), block) <= 2.2) {
 								client.bbm.setup(block);
 								return;
 							}
-							Vector3D pos = VectorUtils.func_31(client, block, (int)Main.gamerule("maxpostoblock"));
+							Vector3D pos = VectorUtils.func_31(client, block, (int)Main.getset("maxpostoblock"));
 							if (pos != null) {//к нему можно приблизиться
 								client.pathfinder.setup(pos);
 							} else {
@@ -256,7 +256,7 @@ public class ChatListener extends SessionAdapter {
 							}
 							return;
 					    } else {
-					    	Vector3D pos = VectorUtils.func_31(client, block, (int)Main.gamerule("maxpostoblock"));
+					    	Vector3D pos = VectorUtils.func_31(client, block, (int)Main.getset("maxpostoblock"));
 					    	if (pos == null) {
 					    		return;
 					    	}

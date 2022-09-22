@@ -26,7 +26,7 @@ public class VirtualMouse {
 		if (LMB) {
 			swingArm();
 			LMB = false;
-			List<Vector3D> ray = client.vis.createRay(client.getEyeLocation(), client.getYaw(), client.getPitch(), (int)((int)Main.gamerule("maxpostoblock") / scale), scale);
+			List<Vector3D> ray = client.vis.createRay(client.getEyeLocation(), client.getYaw(), client.getPitch(), (int)((int)Main.getset("maxpostoblock") / scale), scale);
 			for (Vector3D point : ray) {
 				Block b = point.getBlock(client);
 				if (!b.isAvoid() && !b.isLiquid()) {

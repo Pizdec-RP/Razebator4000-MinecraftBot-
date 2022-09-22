@@ -114,7 +114,7 @@ public class SteeringWheel {
 	    sendasrandom.setBounds(0,50,270,20);
 	    frame.add(sendasrandom);
 	    
-	    JTextField host = new JTextField((String) Main.gamerule("host"));
+	    JTextField host = new JTextField((String) Main.getset("host"));
 	    host.setBounds(330,50,200,20);
 	    frame.add(host);
 	    

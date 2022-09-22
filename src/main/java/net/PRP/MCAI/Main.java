@@ -84,7 +84,7 @@ public class Main {
     	updatePasti();
     	nicks = getnicksinit();
     	//boolean a = true;
-    	if ((int)gamerule("mode")==1) {
+    	if ((int)getset("mode")==1) {
 	    	if (debug) {
 	    		new Thread(new Bot("_niggapidor1488", "localhost:25565", Proxy.NO_PROXY, false)).start();
 	    	} else {
@@ -106,24 +106,24 @@ public class Main {
 	        			ThreadU.sleep(1000);
 	    			}
 	    		}).start();
-		    	if ((boolean) gamerule("window")) {
+		    	if ((boolean) getset("window")) {
 		    		new SteeringWheel();
 		    	} else {
-		    		int botcount = (int)gamerule("bots") == -1 ? proxies.size() : (int)gamerule("bots");
-			    	String ip = (String)gamerule("host");
+		    		int botcount = (int)getset("bots") == -1 ? proxies.size() : (int)getset("bots");
+			    	String ip = (String)getset("host");
 			    	for (int i = 0; i < botcount; i++) {
 				        String USERNAME = nextNick();
 				        nextProxy();
 				        new Thread(() -> {
 					        //System.out.println("created bot name: "+USERNAME+" proxy: "+proxy.toString());
-							new Thread(new Bot(USERNAME, ip, proxy,(boolean)gamerule("chetodelat"))).start();
+							new Thread(new Bot(USERNAME, ip, proxy,(boolean)getset("chetodelat"))).start();
 				        }).start();
-					    ThreadU.sleep((int) gamerule("enterrange"));
+					    ThreadU.sleep((int) getset("enterrange"));
 			    	}
 		    	}
     		}
-		} else if ((int)gamerule("mode")==2) {
-			if ((boolean) gamerule("window")) {
+		} else if ((int)getset("mode")==2) {
+			if ((boolean) getset("window")) {
 				BotU.log("оконный режим не поддерживается при этом методе рейда");
 			}
 			
@@ -141,25 +141,25 @@ public class Main {
 					BotU.log("checking: "+ip);
 					new Thread(()->{
 						try {
-							MinecraftPing h = new MinecraftPing();
-							MinecraftPingOptions mpo = new MinecraftPingOptions();
-							mpo.setHostname(ip.split(":")[0]);
-							mpo.setPort(Integer.parseInt(ip.split(":")[1]));
-							MinecraftPingReply p = h.getPing(mpo);
+							//MinecraftPing h = new MinecraftPing();
+							//MinecraftPingOptions mpo = new MinecraftPingOptions();
+							//mpo.setHostname(ip.split(":")[0]);
+							//mpo.setPort(Integer.parseInt(ip.split(":")[1]));
+							//MinecraftPingReply p = h.getPing(mpo);
 							//if (p.getVersion().getProtocol() != MinecraftConstants.PROTOCOL_VERSION) return;
 							BotU.log("trahau: "+ip);
-							int botcount = (int)gamerule("bots") == -1 ? proxies.size() : (int)gamerule("bots");
+							int botcount = (int)getset("bots") == -1 ? proxies.size() : (int)getset("bots");
 					    	for (int i = 0; i < botcount; i++) {
 						        String USERNAME = nextNick();
 						        nextProxy();
 						        //int ii = i;
 						        new Thread(() -> {
 							        //System.out.println("created bot "+ii+"/"+botcount+"name: "+USERNAME+" proxy: "+proxy.toString());
-									new Thread(new Bot(USERNAME, ip, proxy,(boolean)gamerule("chetodelat"))).start();
+									new Thread(new Bot(USERNAME, ip, proxy,(boolean)getset("chetodelat"))).start();
 						        }).start();
-							    ThreadU.sleep((int) gamerule("enterrange"));
+							    ThreadU.sleep((int) getset("enterrange"));
 					    	}
-						} catch (IOException e) {
+						} catch (Exception e) {
 							BotU.log("serv "+ip+" ne rabotaet");
 						}
 					}).start();
@@ -191,7 +191,7 @@ public class Main {
     }
     
     public static Proxy nextProxy() {
-    	if ((boolean) gamerule("useproxy")) {
+    	if ((boolean) getset("useproxy")) {
             if (++proxyNumb >= proxies.size()) {
                 proxyNumb = 0;
             }
@@ -250,8 +250,14 @@ public class Main {
 		}
 		return nicks;                   
     }
-    public static Object gamerule(String type) {
-    	return data.get(type);
+    
+	public static Object getset(String type) {
+    	if (data.containsKey(type)) {
+    		return data.get(type);
+    	} else {
+    		BotU.wn("cant get \""+type+"\" <-- this shit form settings.yml");
+    		return null;
+    	}
     }
     
     public static void updatePasti() {

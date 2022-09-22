@@ -18,7 +18,7 @@ public class ProxyScraper {
 		List<Proxy> proxies = new CopyOnWriteArrayList<Proxy>();
 		String filename = null;
 		Type proxypype = null;
-		String pt = (String)Main.gamerule("proxytype");
+		String pt = (String)Main.getset("proxytype");
 		if (pt.equalsIgnoreCase("socks4")) {
 			filename = "socks4.txt";
 			proxypype = Proxy.Type.SOCKS;

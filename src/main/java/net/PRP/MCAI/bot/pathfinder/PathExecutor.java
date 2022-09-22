@@ -29,7 +29,7 @@ public class PathExecutor {
 	public void setup(Vector3D end) {
 		if (state == State.WALKING) return;
 		if (end == null) {
-			if (Main.debug) System.out.println("null target");
+			BotU.log("null path target");
 			return;
 		}
 		this.start = client.getPositionInt();
@@ -117,7 +117,7 @@ public class PathExecutor {
 					this.to = path.toWalk.get(0);
 					tick();
 				} else {
-					if ((boolean)Main.gamerule("visualizePath")) {
+					if ((boolean)Main.getset("visualizePath")) {
 						if (path.toWalk.isEmpty()) {
 							return;
 						}
@@ -176,8 +176,8 @@ public class PathExecutor {
 	}
 	
 	public void moveEntity() {
-		if (botinpos(to) || (boolean)Main.gamerule("visualizePath")) {
-			if ((boolean)Main.gamerule("visualizePath")) BotU.chat(client, "/particle minecraft:barrier "+to.forCommand()+" 0 0 0 200 1");
+		if (botinpos(to) || (boolean)Main.getset("visualizePath")) {
+			if ((boolean)Main.getset("visualizePath")) BotU.chat(client, "/particle minecraft:barrier "+to.forCommand()+" 0 0 0 200 1");
 			pticks = 0;
 			/*if (!e(to, client.getPositionInt())) {
 				err++;
@@ -203,7 +203,7 @@ public class PathExecutor {
 			}
 		}
 		
-		if ((boolean)Main.gamerule("visualizePath")) return;
+		if ((boolean)Main.getset("visualizePath")) return;
 		
 		if (to.hasheddata > 0) {
 			if (client.bbm.state != bbmct.ENDED) return;

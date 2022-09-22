@@ -88,7 +88,7 @@ public class World {
 	}
 	
 	public void addChunkColumn(ChunkCoordinates coords, Column column) {
-		if ((boolean) Main.gamerule("multiworld")) {
+		if ((boolean) Main.getset("multiworld")) {
 			Multiworld.addChunkColumn(coords, column);
 		} else {
 			if (columns.containsKey(coords)) {
@@ -103,7 +103,7 @@ public class World {
 		int chunkX = (int)Math.floor(client.getPosX()) >> 4;
         int chunkY = (int)Math.floor(client.getPosY()) >> 4;
         int chunkZ = (int)Math.floor(client.getPosZ()) >> 4;
-		if ((boolean) Main.gamerule("multiworld")) {
+		if ((boolean) Main.getset("multiworld")) {
 			return Multiworld.getCurrentChunk(chunkX, chunkY, chunkZ);
 		} else {
 			return columns.get(new ChunkCoordinates(chunkX, chunkZ)).getChunks()[chunkY];
@@ -111,7 +111,7 @@ public class World {
 	}
 	
 	public void setBlock(Position pos, int state) {
-		if ((boolean) Main.gamerule("multiworld")) {
+		if ((boolean) Main.getset("multiworld")) {
 			Multiworld.setBlock(pos, state);
 		} else {
 			try {
@@ -133,7 +133,7 @@ public class World {
 				//e.printStackTrace();
 			}
 		}
-		if ((boolean)Main.gamerule("mineonlyiftouchair"))client.rl.blacklist.forEach((block)->{
+		if ((boolean)Main.getset("mineonlyiftouchair"))client.rl.blacklist.forEach((block)->{
 			if (block.getBlock(client).getNeighbors().contains(VectorUtils.convert(pos))) {
 				client.rl.blacklist.remove(block);
 			}
@@ -153,7 +153,7 @@ public class World {
 	}
 	
 	public Block getBlock(double x, double y, double z) {
-		if ((boolean) Main.gamerule("multiworld")) {
+		if ((boolean) Main.getset("multiworld")) {
 			return Multiworld.getBlock(x,y,z);
 		} else {
 			if (y < 0 || y > 256) {
@@ -188,7 +188,7 @@ public class World {
         int chunkY = (int)y >> 4;
         int chunkZ = (int)z >> 4;
 		try {
-			if ((boolean) Main.gamerule("multiworld")) {
+			if ((boolean) Main.getset("multiworld")) {
 				return Multiworld.columns.get(
 						new ChunkCoordinates(chunkX, chunkZ))
 						.getChunks()[chunkY]
@@ -206,7 +206,7 @@ public class World {
 	}
 	
 	public Block getBlock(Vector3D pos) {
-		if ((boolean) Main.gamerule("multiworld")) {
+		if ((boolean) Main.getset("multiworld")) {
 			return Multiworld.getBlock(pos);
 		} else {
 			if (pos.y < 0 || pos.y > 256) {

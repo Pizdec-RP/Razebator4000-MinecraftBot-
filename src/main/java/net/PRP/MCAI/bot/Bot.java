@@ -80,7 +80,7 @@ public class Bot implements Runnable {
 	public boolean automaticMode = false;
 	private boolean running = true;
 	public boolean isHoldSlowdownItem = false;//shield, bow, eating
-	public boolean catchedRegister = (boolean)Main.gamerule("catchreg");
+	public boolean catchedRegister = (boolean)Main.getset("catchreg");
 	public GameMode gamemode;
 	public LivePathExec lpe;
 	private int needtocompensate = 0;
@@ -161,7 +161,7 @@ public class Bot implements Runnable {
     public void build() {
     	world = new World(this);
         SocketAddress sa = proxy.address();
-        String pt = (String)Main.gamerule("proxytype");
+        String pt = (String)Main.getset("proxytype");
         Type proxypype = null;
 		if (pt.equalsIgnoreCase("socks4")) {
 			proxypype = ProxyInfo.Type.SOCKS4;
@@ -182,9 +182,9 @@ public class Bot implements Runnable {
 		this.session = client;
         //client.setFlag(MinecraftConstants.SESSION_SERVICE_KEY, sessionService);
         client.addListener(new SessionListener(this));
-        if ((boolean) Main.gamerule("KeepAlivePackets")) client.addListener(new Shit());
+        if ((boolean) Main.getset("KeepAlivePackets")) client.addListener(new Shit());
         client.addListener(new Inventory(this));
-        if ((boolean) Main.gamerule("listenEntities")) {
+        if ((boolean) Main.getset("listenEntities")) {
         	this.entityListener = new EntityListener(this);
         	client.addListener(this.entityListener);
         }
@@ -201,7 +201,7 @@ public class Bot implements Runnable {
         //client.addListener(pvp);
         client.addListener(this.crafter);
         
-        if ((boolean) Main.gamerule("nuker")) {
+        if ((boolean) Main.getset("nuker")) {
         	rl.listeners.add(new NukerFucker(this));
         }
         if (host.contains("holyworld")) {
@@ -228,7 +228,7 @@ public class Bot implements Runnable {
         ThreadU.sleep(100);
         session.send(new ClientChatPacket("/login 112233asdasd"));
         ThreadU.sleep(300);
-        BotU.chat(this, (String) Main.gamerule("loginfrase"));
+        BotU.chat(this, (String) Main.getset("loginfrase"));
     }
     
     public void reset() {

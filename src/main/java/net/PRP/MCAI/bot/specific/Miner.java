@@ -70,7 +70,7 @@ public class Miner {
 			}
 		} else if (state == bbmct.IN_PROGRESS) {
 			if (pos == null) {endDigging(); return;}
-			if (!(VectorUtils.sqrt(pos, client.getEyeLocation()) <= (int)Main.gamerule("maxpostoblock"))) {
+			if (!(VectorUtils.sqrt(pos, client.getEyeLocation()) <= (int)Main.getset("maxpostoblock"))) {
 				endDigging();
 				return;
 			}

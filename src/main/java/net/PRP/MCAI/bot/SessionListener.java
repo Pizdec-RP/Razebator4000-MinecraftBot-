@@ -128,7 +128,7 @@ public class SessionListener extends SessionAdapter {
 				//if (!client.pathfinder.ignored.contains(VectorUtils.convert(data.getPosition()))) client.pathfinder.func_2(VectorUtils.convert(data.getPosition()));
 			}
         } else if (receiveEvent.getPacket() instanceof ServerUnloadChunkPacket) {
-			if ((boolean) Main.gamerule("multiworld")) {
+			if ((boolean) Main.getset("multiworld")) {
 				ServerUnloadChunkPacket a = ((ServerUnloadChunkPacket)receiveEvent.getPacket());
 				client.getWorld().unloadColumn(new ChunkCoordinates(a.getX(), a.getZ()));
 			}
@@ -221,7 +221,7 @@ public class SessionListener extends SessionAdapter {
     	/*if (event.getCause() != null) {
     		event.getCause().printStackTrace();
     	}*/
-		if ((boolean) Main.gamerule("reconect")) {
+		if ((boolean) Main.getset("reconect")) {
 			ThreadU.sleep(6000);
 			client.build();
 			client.getSession().connect();
