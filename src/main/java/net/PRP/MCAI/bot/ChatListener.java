@@ -44,7 +44,8 @@ public class ChatListener extends SessionAdapter {
     public void packetReceived(PacketReceivedEvent receiveEvent) {
 		if (receiveEvent.getPacket() instanceof ServerChatPacket) {
 			String msg = StringU.componentToString(((ServerChatPacket) receiveEvent.getPacket()).getMessage());
-			if ((int)Main.getset("mode")==2 && msg.contains("discord.gg/") && !msg.contains("SPAM")) BotU.log("onl: "+client.getWorld().ServerTabPanel.size()+" message: "+msg);
+			//sBotU.p(msg);
+			//if ((int)Main.getset("mode")==2 && StringU.backwardContains(Main.pasti, msg)) BotU.p("ip"+client.getHost()+" online: "+client.getWorld().ServerTabPanel.size()+" message: "+msg);
 			List<String> command = messageToCommand(receiveEvent.getPacket());
 			if (command == null || command.size() <= 0) {
 				//System.out.println("eto ne komanda");
@@ -410,11 +411,34 @@ public class ChatListener extends SessionAdapter {
 					}
 				} else if (command.get(0).equalsIgnoreCase("dropsuperitem")) {
 					client.playerInventory.superItem();
+				} else if (command.get(0).equalsIgnoreCase("spiralTest")) {
+					
+					double y = client.getEyeLocation().y+0.5;
+					double centerX = client.getPosX();
+			        double centerZ = client.getPosZ();
+			        Vector3D beforepos = new Vector3D(centerX,y,centerZ);
+			        double x = centerX;
+			        double z = centerZ;
+			        double a = Double.parseDouble(command.get(1));//0.02 //shirina
+			        double b = Double.parseDouble(command.get(2));//0.01; //uzkost
+			        double angle = 0;
+			        for (angle = 0; angle <= 1440; angle = angle + 10) {
+			        	y+=0.2;
+			            double radius = a + b * angle;
+			            double deltaX = radius*Math.cos(Math.PI*angle/180);
+			            double deltaZ = radius*Math.sin(Math.PI*angle/180);
+			            double nextX = (int) (centerX + deltaX);
+			            double nextZ = (int) (centerZ - deltaZ);
+			            BotU.chat(client, "/particle minecraft:large_smoke "+x+" "+y+" "+z+" "+beforepos.subtract(x,y,z).forCommandD()+" 0 1");
+			            x = nextX;
+			            z = nextZ;
+			            beforepos.setComponents(x, y, z);
+			        }
 				}
 			}
 		} 
 	}
-	
+	//BotU.chat(client, "/particle minecraft:end_rod "+x+" "+y+" "+z+" 0 0 0 0 1");
 	public static List<String> messageToCommand(Packet event) {
 		try {
 			String message = StringU.componentToString(((ServerChatPacket) event).getMessage());

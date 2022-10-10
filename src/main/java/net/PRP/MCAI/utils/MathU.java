@@ -144,7 +144,7 @@ public class MathU {
 		max -= min;
 		return (int) ((Math.random() * ++max) + min);
 	}
-	public static Object random(List<?> list) {
+	public static <M> M random(List<M> list) {
 		return list.get(rnd(0,list.size()-1));
 	}
 	

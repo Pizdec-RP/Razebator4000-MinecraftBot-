@@ -153,6 +153,7 @@ public class Living extends SessionAdapter {
             			pasta = pasta.replaceFirst("=rrl=", StringU.RndRuLetter());
             		}
             		BotU.chat(this.client, pasta);
+            		if ((int)Main.getset("mode")==2) Main.msg++;
             		//BotU.log("chat: ("+client.getHost()+") "+pasta);
 				}
 			}

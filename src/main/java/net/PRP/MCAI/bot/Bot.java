@@ -15,6 +15,7 @@ import net.PRP.MCAI.ListenersForServers.NukerFucker;
 import net.PRP.MCAI.ListenersForServers.dexland;
 import net.PRP.MCAI.ListenersForServers.holyworld;
 import net.PRP.MCAI.ListenersForServers.mst;
+import net.PRP.MCAI.ListenersForServers.pixserv;
 import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.ThreadU;
 import net.PRP.MCAI.utils.VectorUtils;
@@ -210,6 +211,8 @@ public class Bot implements Runnable {
         	rl.listeners.add(new dexland(this));
         } else if (host.contains("mstnw")) {
         	rl.listeners.add(new mst(this));
+        } else if (host.contains("foldyworld")) {
+        	rl.listeners.add(new pixserv(this));
         }
         
         this.playerInventory = new Inventory(this);

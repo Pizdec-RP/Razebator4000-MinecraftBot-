@@ -76,6 +76,7 @@ public class Main {
 	public static List<String> nicks;
 	public static int allVec = 0;
 	public static boolean raidObjectCreatedAlready = false;
+	public static int msg = 0;
 	
     public static void main(String... args) {
     	initializeBlockType();
@@ -86,7 +87,7 @@ public class Main {
     	//boolean a = true;
     	if ((int)getset("mode")==1) {
 	    	if (debug) {
-	    		new Thread(new Bot("_niggapidor1488", "localhost:25565", Proxy.NO_PROXY, false)).start();
+	    		new Thread(new Bot("_niggapidor1488", "play.foldyworld.ml:25565", Proxy.NO_PROXY, false)).start();
 	    	} else {
 	    		
 	    		new Thread(()->{
@@ -138,7 +139,6 @@ public class Main {
 					}
 				}
 				for (String ip : ips) {
-					BotU.log("checking: "+ip);
 					new Thread(()->{
 						try {
 							//MinecraftPing h = new MinecraftPing();
@@ -147,7 +147,7 @@ public class Main {
 							//mpo.setPort(Integer.parseInt(ip.split(":")[1]));
 							//MinecraftPingReply p = h.getPing(mpo);
 							//if (p.getVersion().getProtocol() != MinecraftConstants.PROTOCOL_VERSION) return;
-							BotU.log("trahau: "+ip);
+							BotU.p("fuck: "+ip);
 							int botcount = (int)getset("bots") == -1 ? proxies.size() : (int)getset("bots");
 					    	for (int i = 0; i < botcount; i++) {
 						        String USERNAME = nextNick();
@@ -160,12 +160,15 @@ public class Main {
 							    ThreadU.sleep((int) getset("enterrange"));
 					    	}
 						} catch (Exception e) {
-							BotU.log("serv "+ip+" ne rabotaet");
+							BotU.p("serv "+ip+" ne rabotaet");
 						}
 					}).start();
 					
 				}
-				
+    			while (true) {
+    				BotU.p("сообщений отослано: "+msg);
+        			ThreadU.sleep(1000);
+    			}
 			}).start();
 			
 		}

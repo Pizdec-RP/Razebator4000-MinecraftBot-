@@ -12,6 +12,9 @@ public class BotU {
 	public static void log(Object f) {
     	if (Main.debug) System.out.println("[log] "+f.toString());
     }
+	public static void p(Object f) {
+    	System.out.println("[i] "+f.toString());
+    }
 	public static void wn(Object f) {
     	System.out.println("[warn] "+f.toString());
     }
