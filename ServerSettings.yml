@@ -2,7 +2,7 @@
     "host": "192.168.0.108",
     "port": 25567,
     "maxPlayers": 1488,
-    "serverName": "discord.gg/nMgWUGGg72",
+    "serverName": "тест серв",
     "worldfile": "world.json",
     "spawnpoint": "4.0 7.0 17.0"
 }
