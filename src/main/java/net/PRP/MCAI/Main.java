@@ -258,7 +258,7 @@ public class Main {
     	if (data.containsKey(type)) {
     		return data.get(type);
     	} else {
-    		BotU.wn("cant get \""+type+"\" <-- this shit form settings.yml");
+    		BotU.wn("не могу достать параметр \""+type+"\" из settings.yml");
     		return null;
     	}
     }
@@ -279,7 +279,7 @@ public class Main {
             			temp = temp.replaceFirst("=rrl=", "b");
             		}
                 	if (temp.length() > 256) {
-                		System.out.println(pasta+"\n ^^^^^^^^^^\nthis shit is too long for minecraft chat packet ("+temp.length()+">256)");
+                		System.out.println(pasta+"\n ^^^^^^^^^^\n эта фраза слишком длинная удали ее и перезапусти("+temp.length()+">256)");
                 		System.exit(0);
                 	}
                     pasti.add(pasta);
