@@ -29,6 +29,7 @@ public class Physics extends SessionAdapter {
 	private boolean SNEAK = false;
 	boolean xzcollided = false;
 	private boolean jumpQueued;
+	private double moveForward = 0.0F;
 	
 	public Physics(Bot client) {
 		this.client = client;
@@ -80,11 +81,6 @@ public class Physics extends SessionAdapter {
 		RUN = true;
 	}
 	
-	private double getMoveSpeed() {
-		if (RUN) return 0.38985D;
-		else if (WALK) return 0.3473D;
-		else return 0D;
-    }
 	
 	public void moveRelative(double forward, double strafe, double friction) {
         double distance = strafe * strafe + forward * forward;
@@ -109,14 +105,23 @@ public class Physics extends SessionAdapter {
         }
     }
 	
+	
 	public void moveEntityWithHeading(double forward, double strafe) {
 		float prevSlipperiness = (float) physics.airborneInertia;//inertia
         double value = physics.airborneAcceleration;//acceleration
         
         if (!client.isInLiquid()) {
+        	
+        	
+        	float attributeSpeed = 0.1F;
+        	
+        	if (RUN) {
+        		attributeSpeed = 0.15F;
+        	}
+        	
             if (client.onGround) {
             	prevSlipperiness = (blockUnder.getfriction() == 0.6F ? getBlockPosBelowThatAffectsMyMovement().getfriction() : blockUnder.getfriction()) * 0.91F;//inertiа
-        		value = getMoveSpeed() * (0.1627714F / (prevSlipperiness * prevSlipperiness * prevSlipperiness));//acceleration
+        		value = attributeSpeed * (0.1627714F / (prevSlipperiness * prevSlipperiness * prevSlipperiness));//acceleration
             }
             
             vel.x *= prevSlipperiness;
@@ -164,14 +169,22 @@ public class Physics extends SessionAdapter {
 		}
 		
 		double strafe = 0;
-		double forward = (RUN || WALK) ? getMoveSpeed() : 0 * 0.98;
+		this.moveForward *= 0.98;
 		
-		if (SNEAK || client.isHoldSlowdownItem) {
-			strafe *= physics.sneakSpeed;
-			forward *= physics.sneakSpeed;
+		
+		moveEntityWithHeading(moveForward,strafe);
+	}
+	
+	public void updatePlayerMoveState() {
+		this.moveForward = 0.0d;
+		
+		if (WALK) {
+			++moveForward;
 		}
 		
-		moveEntityWithHeading(forward,strafe);
+		if (SNEAK || client.isHoldSlowdownItem) {
+			moveForward *= physics.sneakSpeed;
+		}
 	}
 	
 	private void PhysicsUpdate() {
@@ -180,6 +193,12 @@ public class Physics extends SessionAdapter {
 			return;
 		}
 		xzcollided = false;
+		
+		updatePlayerMoveState();
+		
+		vel.x = vel.x*0.98;
+		vel.y = vel.y*0.98;
+		vel.z = vel.z*0.98;
 		
 		blockUnder = client.getWorld().getBlock(client.getPosition().floor().add(0,-1,0));
 		if (client.foodlvl <= 6) RUN = false;

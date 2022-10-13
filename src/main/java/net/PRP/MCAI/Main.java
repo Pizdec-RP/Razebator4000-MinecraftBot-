@@ -87,7 +87,7 @@ public class Main {
     	//boolean a = true;
     	if ((int)getset("mode")==1) {
 	    	if (debug) {
-	    		new Thread(new Bot("_niggapidor1488", "play.foldyworld.ml:25565", Proxy.NO_PROXY, false)).start();
+	    		new Thread(new Bot("_niggapidor1488", "localhost:25565", Proxy.NO_PROXY, false)).start();
 	    	} else {
 	    		
 	    		new Thread(()->{
