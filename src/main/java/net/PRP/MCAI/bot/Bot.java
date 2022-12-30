@@ -27,7 +27,8 @@ import net.PRP.MCAI.bot.specific.Inventory;
 import net.PRP.MCAI.bot.specific.Living;
 import net.PRP.MCAI.bot.specific.PVP;
 import net.PRP.MCAI.bot.specific.Physics;
-import net.PRP.MCAI.bot.specific.VirtualMouse;
+import net.PRP.MCAI.bot.specific.PlaceBlock;
+import net.PRP.MCAI.bot.specific.VirtualCursor;
 import net.PRP.MCAI.bot.specific.Vision;
 import net.PRP.MCAI.data.AABB;
 import net.PRP.MCAI.data.EntityEffects;
@@ -58,7 +59,7 @@ public class Bot implements Runnable {
     //private boolean inAction;
     private boolean mainhost;
     public Inventory playerInventory;
-    public VirtualMouse cursor;
+    public VirtualCursor cursor;
     private int id;
     public EntityListener entityListener;
     public Living rl;
@@ -67,9 +68,10 @@ public class Bot implements Runnable {
     public boolean onGround = true;
     public Miner bbm;
     public EntityEffects effects;
-    public int currentHotbarSlot = 36;
+    public int currentHotbarSlot = 36; //36-44
     public PathExecutor pathfinder;
     public PVP pvp;
+    public PlaceBlock pb;
     public Vision vis = new Vision(this, 11, 7);
     public Crafting crafter;
     public boolean listencaptcha = false;
@@ -154,6 +156,7 @@ public class Bot implements Runnable {
     	this.proxy = null;
     	this.rl = null;
     	this.bbm = null;
+    	this.pb = null;
     	this.pathfinder = null;
     	this.cursor = null;
     	Thread.currentThread().stop();
@@ -189,13 +192,16 @@ public class Bot implements Runnable {
         	this.entityListener = new EntityListener(this);
         	client.addListener(this.entityListener);
         }
-        client.addListener(new ChatListener(this));
+        client.addListener(new ChatListener(this)); 
         
     	this.rl = new Living(this);
     	client.addListener(rl);
     	
+    	
+    	
         this.bbm = new Miner(this);
-        this.cursor = new VirtualMouse(this);
+        this.pb = new PlaceBlock(this);
+        this.cursor = new VirtualCursor(this);
         this.pm = new Physics(this);
         client.addListener(pm);
         this.pvp = new PVP(this);
@@ -237,6 +243,7 @@ public class Bot implements Runnable {
     public void reset() {
     	this.pathfinder.reset();
     	this.bbm.reset();
+    	this.pb.reset(); 
     	this.pm.reset();
     	this.pvp.reset();
     	this.crafter.reset();
@@ -256,6 +263,7 @@ public class Bot implements Runnable {
 	    	this.pathfinder.tick();
 	    	this.pvp.tick();
 	    	this.bbm.tick();
+	    	this.pb.tick();
 	    	this.rl.tick();
 	    	this.crafter.tick();
 	    	this.pm.tick();
@@ -264,6 +272,7 @@ public class Bot implements Runnable {
     	} catch (Exception e) {
     		this.pvp.reset();
     		this.bbm.reset();
+    		this.pb.reset();
     		this.pathfinder.reset();
     		this.cursor.reset();
     		e.printStackTrace();

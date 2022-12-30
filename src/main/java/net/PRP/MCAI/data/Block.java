@@ -202,6 +202,10 @@ public class Block {
 		return type == Type.LIQUID;
 	}
 	
+	public boolean isAir() {
+		return type == Type.AIR | type == Type.VOID;
+	}
+	
 	public boolean isWater() {
 		return id == 26;
 	}

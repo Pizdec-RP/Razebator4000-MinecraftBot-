@@ -434,6 +434,15 @@ public class ChatListener extends SessionAdapter {
 			            z = nextZ;
 			            beforepos.setComponents(x, y, z);
 			        }
+				} else if (command.get(0).equalsIgnoreCase("placetest1")) {
+					try {
+						client.pb.sstart(new Vector3D(Integer.parseInt(command.get(1)), Integer.parseInt(command.get(2)), Integer.parseInt(command.get(3))), client.currentHotbarSlot);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				} else if (command.get(0).equalsIgnoreCase("tellmebname")) {
+					Vector3D vec = new Vector3D(Integer.parseInt(command.get(1)), Integer.parseInt(command.get(2)), Integer.parseInt(command.get(3)));
+					BotU.chat(client, vec.getBlock(client).name);
 				}
 			}
 		} 

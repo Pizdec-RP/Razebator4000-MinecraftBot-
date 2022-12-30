@@ -52,7 +52,7 @@ public class MinecraftData {
 		return i;
 	}
 	
-	public static Type getTypeByState(int state) {
+	public Type getTypeByState(int state) {
 		return Main.getMCData().bt(Main.getMCData().blockStates.get(state).id);
 	}
 	

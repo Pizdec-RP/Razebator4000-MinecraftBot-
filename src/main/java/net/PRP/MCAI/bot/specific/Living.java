@@ -85,7 +85,22 @@ public class Living extends SessionAdapter {
 		add(EntityType.ENDER_DRAGON);
 		add(EntityType.ENDERMAN);
 		add(EntityType.HUSK);
+		add(EntityType.PILLAGER);
 	}};
+	
+	public List<EntityType> food = new ArrayList<EntityType>() {
+		private static final long serialVersionUID = -6373621458088442703L;
+
+	{
+		add(EntityType.COW);
+		add(EntityType.PIG);
+		add(EntityType.SHEEP);
+		add(EntityType.RABBIT);
+		add(EntityType.CHICKEN);
+	}};
+	
+	public int[] fooditems = new int[] {};
+	
 	int spamticks = 0;
 	public int goforwardticks = 0;
 	

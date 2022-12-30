@@ -10,14 +10,14 @@ import net.PRP.MCAI.bot.Bot;
 import net.PRP.MCAI.data.Block;
 import net.PRP.MCAI.data.Vector3D;
 
-public class VirtualMouse {
+public class VirtualCursor {
 	public Bot client;
 	private boolean RMB = false, LMB = false;
 	private static final double scale = 0.4D;
 	public Block currentMineable = null;
 	private int animPassTicks = 0;
 	
-	public VirtualMouse(Bot client) {
+	public VirtualCursor(Bot client) {
 		this.client = client;
 	}
 	

@@ -1,10 +1,14 @@
 package net.PRP.MCAI.bot.pathfinder;
 
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.concurrent.CopyOnWriteArrayList;
+
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.ItemStack;
 
 import net.PRP.MCAI.Main;
 import net.PRP.MCAI.bot.Bot;
+import net.PRP.MCAI.data.MinecraftData.Type;
 import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.MathU;
@@ -210,6 +214,32 @@ public class BadAStar implements IPathfinder{
 				pos.add(0,-1,0).getBlock(client).isWater();
 	}
 	
+	public boolean sustPATTERN(Vector3D pos) {
+		return pos.getBlock(client).isAir()
+				&& 
+				pos.add(0,1,0).getBlock(client).isAvoid()
+				&& 
+				pos.add(0,-1,0).getBlock(client).isAvoid()
+				&&
+				bothastrashfullblock();
+	}
+	
+	public boolean bothastrashfullblock() {
+		for (Entry<Integer, ItemStack> item : client.playerInventory.getAllInventory().entrySet()) {
+			if (item.getValue() != null) {
+				try {
+					if (Main.getMCData().getTypeByState(Main.getMCData().oldIdToNew(Main.getMCData().itemToOldId(item.getValue().getId()))) == Type.HARD) {
+						return true;
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		return false;
+	}
+	
+	
 	public boolean stepupIsFromWater(Vector3D pos) {
 		return sfsPATTERN(getLastPoint()) && sfwPATTERN(pos);
 	}
@@ -300,6 +330,10 @@ public class BadAStar implements IPathfinder{
 				neighbors.add(psy);
 			}
 			
+			psy = ps.add(0,1,0);
+			psy.hasheddata = 5;
+			if (sustPATTERN(psy)) neighbors.add(psy);
+			
 			psy = ps.add(1,0,0);
 			psy.hasheddata = 1;
 			if (psy.isCanStayHere(client)) neighbors.add(psy);
@@ -339,8 +373,6 @@ public class BadAStar implements IPathfinder{
 						if (poss.isMineable(client) && poss.add(0,1,0).isMineable(client) && ps.add(0,2,0).isMineable(client)) {
 							neighbors.add(poss);
 						}
-					} else {
-						System.out.println("godddamn man");
 					}
 				}
 			});

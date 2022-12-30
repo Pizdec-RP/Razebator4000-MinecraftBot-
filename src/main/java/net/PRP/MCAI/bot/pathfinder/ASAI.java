@@ -9,6 +9,19 @@ import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.VectorUtils;
 
+
+//
+//
+//
+//
+//
+//          ХУЙНЯ
+//
+//
+//
+//
+//
+
 public class ASAI implements IPathfinder {
 	public List<Vector3D> used = new CopyOnWriteArrayList<>();
 	public List<Vector3D> toWalk = new CopyOnWriteArrayList<>();

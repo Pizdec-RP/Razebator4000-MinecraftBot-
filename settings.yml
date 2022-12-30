@@ -6,9 +6,9 @@
     #-------------------------------mode-1---------------------------
     "host": "localhost:25565", #айпи:порт
     #--------------------------general-settings----------------------
-    "bots": 50, #скок ботов
+    "bots": 10, #скок ботов
     "enterrange": 500, #задержка между соединениями (в милисекундах)
-    "useproxy": true,
+    "useproxy": false,
     "proxytype": "socks5", #socks4 socks5 http
     "KeepAlivePackets": false, #hz
     "reconect": true,
