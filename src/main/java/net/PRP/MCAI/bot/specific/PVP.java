@@ -63,6 +63,7 @@ public class PVP {
 	public void tick() {
 		//System.out.println("atacking: "+enemy+" state:"+state+" toen:"+VectorUtils.sqrt(client.getWorld().Entites.get(enemy).Position, client.getPosition()));
 		if (state == CombatState.ENTER_COMBAT) {
+			
 			if (!shieldmode) {
 				if (client.playerInventory.contain("shield")) {
 					if (client.crafter.windowType != null) {
@@ -124,26 +125,26 @@ public class PVP {
 						holdShield();
 					}
 					
-					/*if ((int)tempenemy.Position.y == (int)client.posY) {
-						BotU.LookHead(client, tempenemy.Position.add(0,1,0));
+					if ((int)tempenemy.pos.y == (int)client.posY) {
+						BotU.LookHead(client, tempenemy.pos.add(0,1,0));
 						client.pm.Walk();
-					} else {*/
-					if (client.pathfinder.testForPath(tempenemy.pos)) {
-						client.pathfinder.setup(tempenemy.pos);
-						folowEnemy = true;
-						return;
 					} else {
-						Vector3D pos = VectorUtils.randomPointInRaduis(client, 1, 2);
-						if (pos == null || VectorUtils.sqrt(pos, tempenemy.pos) > 4) {
-							endPVP();
-							return;
-						} else {
-							client.pathfinder.setup(pos);
+						if (client.pathfinder.testForPath(tempenemy.pos)) {
+							client.pathfinder.setup(tempenemy.pos);
 							folowEnemy = true;
 							return;
+						} else {
+							Vector3D pos = VectorUtils.randomPointInRaduis(client, 1, 2);
+							if (pos == null || VectorUtils.sqrt(pos, tempenemy.pos) > 4) {
+								endPVP();
+								return;
+							} else {
+								client.pathfinder.setup(pos);
+								folowEnemy = true;
+								return;
+							}
 						}
 					}
-					//}
 				} else {
 					endPVP();
 					return;
@@ -152,7 +153,7 @@ public class PVP {
 			
 			/*for (Entry<Integer, Entity> entity : client.getWorld().Entites.entrySet()) {
 				if (entity.getValue().type == EntityType.ARROW) {
-					if (client.distance(entity.getValue().Position) <= 3) {
+					if (client.distance(entity.getValue().pos) <= 3) {
 						holdShield();
 						return;
 					}

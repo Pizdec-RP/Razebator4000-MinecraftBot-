@@ -16,6 +16,7 @@ import net.PRP.MCAI.ListenersForServers.dexland;
 import net.PRP.MCAI.ListenersForServers.holyworld;
 import net.PRP.MCAI.ListenersForServers.mst;
 import net.PRP.MCAI.ListenersForServers.pixserv;
+import net.PRP.MCAI.ListenersForServers.woka;
 import net.PRP.MCAI.utils.BotU;
 import net.PRP.MCAI.utils.ThreadU;
 import net.PRP.MCAI.utils.VectorUtils;
@@ -219,6 +220,8 @@ public class Bot implements Runnable {
         	rl.listeners.add(new mst(this));
         } else if (host.contains("foldyworld")) {
         	rl.listeners.add(new pixserv(this));
+        } else if (host.contains("185.17.0.49")) {
+        	rl.listeners.add(new woka(this));
         }
         
         this.playerInventory = new Inventory(this);
@@ -234,10 +237,13 @@ public class Bot implements Runnable {
     public void register() {
     	if (catchedRegister) return;
         session.send(new ClientChatPacket("/register 112233asdasd 112233asdasd"));
-        ThreadU.sleep(100);
+        ThreadU.sleep(1000);
         session.send(new ClientChatPacket("/login 112233asdasd"));
-        ThreadU.sleep(300);
-        BotU.chat(this, (String) Main.getset("loginfrase"));
+        ThreadU.sleep(1100);
+        String lf = (String) Main.getset("loginfrase");
+        if (lf.equals("")) return;
+        for (String m : lf.split("|"))
+        	BotU.chat(this, m);
     }
     
     public void reset() {

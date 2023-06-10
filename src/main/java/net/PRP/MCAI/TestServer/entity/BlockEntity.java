@@ -30,6 +30,7 @@ public class BlockEntity extends DefaultEntity {
 	
 	public BlockEntity(int id, Vector3D pos, int blockState, Vector3D vel, Server s) {
 		super(id, UUID.randomUUID(), EntityType.FALLING_BLOCK, pos.x, pos.y, pos.z, 1000, null, 0, 0, vel.x, vel.y, vel.z, s);
+		this.Server = s;
 		this.blockState = blockState;
 		float height = this.getHeight();
         double radius = this.getWidth() / 2d;

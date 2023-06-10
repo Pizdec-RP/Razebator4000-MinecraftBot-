@@ -35,6 +35,7 @@ import net.kyori.adventure.text.Component;
 public class ChatListener extends SessionAdapter {
 
 	private Bot client;
+	List<String> history = new CopyOnWriteArrayList<>();
 	
 	public ChatListener(Bot client) {
 		this.client = client;
@@ -43,7 +44,11 @@ public class ChatListener extends SessionAdapter {
 	@Override
     public void packetReceived(PacketReceivedEvent receiveEvent) {
 		if (receiveEvent.getPacket() instanceof ServerChatPacket) {
-			String msg = StringU.componentToString(((ServerChatPacket) receiveEvent.getPacket()).getMessage());
+			ServerChatPacket p = (ServerChatPacket) receiveEvent.getPacket();
+			String msg = StringU.componentToString(p.getMessage());
+			history.add(msg);
+			if (history.size() > 30) history.remove(0);
+			Main.onMessageReceived(msg);
 			//sBotU.p(msg);
 			//if ((int)Main.getset("mode")==2 && StringU.backwardContains(Main.pasti, msg)) BotU.p("ip"+client.getHost()+" online: "+client.getWorld().ServerTabPanel.size()+" message: "+msg);
 			List<String> command = messageToCommand(receiveEvent.getPacket());

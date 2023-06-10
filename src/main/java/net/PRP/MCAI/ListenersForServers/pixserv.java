@@ -24,7 +24,6 @@ import net.PRP.MCAI.utils.StringU;
 
 public class pixserv extends SessionAdapter implements ServerListener {
 	
-	public static final boolean allGameCapt = false;
 	Bot client;
 	private mode mod = mode.NON;
 	private String windowname = "";
@@ -33,6 +32,9 @@ public class pixserv extends SessionAdapter implements ServerListener {
 		NON,PICKMODE, PICKSERVER, IDLE, getitem
 	}
 	
+	public boolean allGameCapt() {
+		return false;
+	}
 	
 	public pixserv(Bot client) {
 		this.client = client;

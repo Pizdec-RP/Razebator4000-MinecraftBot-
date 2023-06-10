@@ -19,5 +19,9 @@ public class mst extends SessionAdapter implements ServerListener {
 		// TODO Auto-generated method stub
 		
 	}
+	
+	public boolean allGameCapt() {
+		return false;
+	}
 
 }

@@ -1,8 +1,8 @@
 {
-    "host": "192.168.0.108",
-    "port": 25567,
+    "host": "192.168.0.82",
+    "port": 25565,
     "maxPlayers": 1488,
-    "serverName": "тест серв",
+    "serverName": "ЗИГ卐ХАЙЛЬ卐САМОПИС卐ЯДРО卐СЕРВЕРА",
     "worldfile": "world.json",
     "spawnpoint": "4.0 7.0 17.0"
 }

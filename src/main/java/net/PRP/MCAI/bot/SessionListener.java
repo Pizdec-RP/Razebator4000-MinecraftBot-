@@ -3,7 +3,6 @@ package net.PRP.MCAI.bot;
 import com.github.steveice10.mc.protocol.data.game.PlayerListEntry;
 import com.github.steveice10.mc.protocol.data.game.PlayerListEntryAction;
 import com.github.steveice10.mc.protocol.data.game.ResourcePackStatus;
-import com.github.steveice10.mc.protocol.data.game.chunk.NibbleArray3d;
 import com.github.steveice10.mc.protocol.data.game.entity.player.HandPreference;
 import com.github.steveice10.mc.protocol.data.game.setting.ChatVisibility;
 import com.github.steveice10.mc.protocol.data.game.setting.SkinPart;
@@ -13,27 +12,22 @@ import com.github.steveice10.mc.protocol.packet.ingame.client.ClientSettingsPack
 import com.github.steveice10.mc.protocol.packet.ingame.client.player.ClientPlayerPositionRotationPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.window.ClientCloseWindowPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.client.world.ClientTeleportConfirmPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.server.ServerDeclareCommandsPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerJoinGamePacket;
-import com.github.steveice10.mc.protocol.packet.ingame.server.entity.ServerEntityEquipmentPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.ServerEntityMetadataPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.server.entity.ServerEntityPropertiesPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.player.ServerPlayerAbilitiesPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.player.ServerPlayerChangeHeldItemPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.player.ServerPlayerHealthPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.player.ServerPlayerPositionRotationPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.spawn.ServerSpawnEntityPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.server.entity.spawn.ServerSpawnLivingEntityPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerBlockChangePacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerChunkDataPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerMapDataPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerMultiBlockChangePacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerUnloadChunkPacket;
-import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerUpdateLightPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerPlayerListEntryPacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerPluginMessagePacket;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerResourcePackSendPacket;
 import com.github.steveice10.mc.protocol.packet.login.server.LoginSuccessPacket;
-import com.github.steveice10.opennbt.tag.builtin.CompoundTag;
 import com.github.steveice10.packetlib.event.session.DisconnectedEvent;
 import com.github.steveice10.packetlib.event.session.PacketReceivedEvent;
 import com.github.steveice10.packetlib.event.session.SessionAdapter;
@@ -44,8 +38,17 @@ import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.utils.*;
 import com.github.steveice10.mc.protocol.data.game.world.block.BlockChangeRecord;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.UUID;
+
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JTextField;
 
 public class SessionListener extends SessionAdapter {
     private Bot client;
@@ -208,6 +211,36 @@ public class SessionListener extends SessionAdapter {
 			//BotU.log(receiveEvent.getPacket().toString());
 		} else if (receiveEvent.getPacket() instanceof ServerEntityMetadataPacket) {
 			//BotU.log(receiveEvent.getPacket().toString());
+		} else if (receiveEvent.getPacket() instanceof ServerMapDataPacket) {
+			if (!(boolean)Main.getset("displaymaps")) return;
+			ServerMapDataPacket p = (ServerMapDataPacket)receiveEvent.getPacket();
+			JFrame frame = new JFrame("captcha");
+			frame.setSize(300, 380);
+			BufferedImage image = MapUtils.mapToPng(p);
+	        JLabel l = new JLabel(new ImageIcon(image));
+	        l.setBounds(0, 0, 256, 256);
+	        
+	        JTextField b = new JTextField();
+	        b.setBounds(0,310,60,20);
+		    frame.add(b);
+	        
+	        
+	        JButton enter = new JButton("отправить");
+	        enter.setBounds(65, 310, 120, 20);
+	        enter.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent event) {
+					try {
+						BotU.chat(client, b.getText());
+					} catch (Exception ignd) {
+						
+					}
+				}
+		    });
+		    frame.add(enter);
+		    frame.add(l);
+	        
+	        frame.setVisible(true);
 		}
     }
     
@@ -215,9 +248,8 @@ public class SessionListener extends SessionAdapter {
     public void disconnected(DisconnectedEvent event) {
     	if (!client.reconectAvable) return;
     	client.connected = false;
-    	//BotU.log("disconnected");
-    	//System.out.println(event.getReason());
-    	//Main.write("[dc] ",event.getReason());
+    	BotU.log("disconnected");
+    	Main.logError(event.getReason());
     	/*if (event.getCause() != null) {
     		event.getCause().printStackTrace();
     	}*/

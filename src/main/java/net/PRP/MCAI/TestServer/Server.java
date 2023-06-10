@@ -113,7 +113,7 @@ public class Server {
 	Yaml yaml = new Yaml();
     private final boolean VERIFY_USERS = false;
     public static List<ClientSession> players = new CopyOnWriteArrayList<ClientSession>();
-    public Map<?, ?> settings;
+    public static Map<?, ?> settings;
     public final int Mincolumn = -3, Maxcolumn = 3;
     public State serverState = State.non;
     public int entitiesid = 0;
@@ -406,7 +406,7 @@ public class Server {
     			serverState = State.loadWorld;
         		loadWorld(false);
         	}
-    	}
+    	} 
     	try {
     		BotU.log("sleep 10 sec");
     		ThreadU.sleep(10000);
@@ -428,7 +428,7 @@ public class Server {
                             new VersionInfo("PZDC 1.4.88 1.16.5", MinecraftConstants.PROTOCOL_VERSION),
                             new PlayerInfo(
                             		(int) gets("maxPlayers"),
-                            		players.size(),
+                            		228,
                             		getPlayers()
                             ),
                             Component.text((String)gets("serverName")),
@@ -664,7 +664,7 @@ public class Server {
 		}
     }
     
-    public Object gets(String n) {
+    public static Object gets(String n) {
     	return settings.get(n);
     }
     

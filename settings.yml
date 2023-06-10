@@ -4,45 +4,47 @@
     #"etime": 30, #сколько секунд занимает рейд сервера
     #"multipileraids": 2, #сколько серверов может рейдиться одновременно
     #-------------------------------mode-1---------------------------
-    "host": "localhost:25565", #айпи:порт
+    "host": "Gamesub10.aternos.me:12584", #айпи:порт
     #--------------------------general-settings----------------------
-    "bots": 10, #скок ботов
-    "enterrange": 500, #задержка между соединениями (в милисекундах)
-    "useproxy": false,
+    "bots": -1, #скок ботов (если -1 то ботов будет столько же сколько проксей)
+    "enterrange": 30, #задержка между соединениями (в милисекундах)
+    "useproxy": true, #юзать прокси?
     "proxytype": "socks5", #socks4 socks5 http
-    "KeepAlivePackets": false, #hz
-    "reconect": true,
-    "multiworld": true, #обьедененный мир для всех ботов
-    "catchreg": false,
+    "KeepAlivePackets": false, #устарело + хуйня + не трогать
+    "reconect": true, #при вылете с сервера боты перезаходят
+    "multiworld": true, #обьедененный мир для всех ботов (лучше не трогать)
+    "catchreg": false, #если true то боты при заходе на сервер не будут писать команды регистрации сразу а только если в чате будет уведомление о том что это надо написать
 
-    "visualizePath": false,
+    "visualizePath": false, #хуйня
 
-    "listenEntities": true,
+    "listenEntities": true, #не трогать
 
-    "nuker": false,
+    "nuker": false, #нюкер, работает криво и только если у ботов креатив
 
     "isitfollow": false, #боты будут ходить около указаной цели
-    "followtarget": "__Flashback__", #цель либо корды либо ник
-    "radius": 8,
+    "followtarget": "__Flashback__", #цель либо корды в формате (x z) (x y z) либо ник либо текст который копируется при нажатии f3+c (вставлять без изменений)
+    "radius": 8, #радиус допустимый до позиции
+    "displaymaps": true, #когда у бота в инвентаре появляется карта(капча), открывается окно с полем для ввода
 
+    "pvpwithplayers": true, #включение режима пвп
+    "pvpamongthemselves": false, #пвп среди ботов
+    "pvpblacklist": ["__Flashback__"], #кого не будет трогать бот при пвп
 
-    "pvpwithplayers": false,
-    "pvpamongthemselves": false,
-    "pvpblacklist": ["__Flashback__"], #"__Flashback__"
-
-    "window": false, 
+    "window": false, #устарело
     "living": true, #по дефолту бот работает или стоит. изменяется в процессе игры командой >>living
 
-    "loginfrase": "/spawn",
+    "loginfrase": "", #Что бот пишет после регистрации. Каждое сообщение разделяй знаком "|". Можно ваще ничо не писать.
 
-    "chetodelat": false, # ШЛЕМ НАХУЙ АФК
-    "mineonlyiftouchair": true,
-    "walkeverymilseconds": 0, #цикл действий каждые X милисекунд
+    "chetodelat": true, # устарело
+    "mineonlyiftouchair": true, #добывать блок только если вокруг него есть хоть 1 пустой блок
+    "walkeverymilseconds": 0, #задержка между действиями
     "iol": false, #задает используемый список для копания. true - "minertargetid", false - "minetargetnames"
-    "minertargetid": [8,35,13,12,139,191,243,146,498,452], # самое основное: 146-oak_stairs 8 grass 16 sp log 47-oakwood 28-sand 452-oak_slab 13-oak_planks 9-dirt 1-stone 35-oak_log 12-cobla 139-mossy_cobble 191-oak_fence 243-glass_pane
-    "minetargetnames": ["log","plank","quartz","stair","path","trapdoor","glass","chest","pot","fence","door","sign","wool","smooth","bricks","table","furnace","bed","snow","cobble","barrel","fire","slab","cutter","anvil","torch","wheat","stem","grass","dirt"],
-    "maxpostoblock": 5,
-    "raidspam": false, #спам в режиме рейда
-    "spamrange": 1000, #спам каждые X милисекунд
+    "minertargetid": [8,35,13,12,139,191,243,146,498,452], #список айди блоков которые будет копать бот
+    "minetargetnames": ["log","plank","quartz","stair","path","trapdoor","glass","chest","pot","fence",
+    "door","sign","wool","smooth","bricks","table","furnace","bed","snow","cobble","barrel","fire","slab",
+    "cutter","anvil","torch","wheat","stem","grass","dirt"], #список названий(можно не полным словом) блоков которые будет копать бот
+    "maxpostoblock": 5, #дальность курсора бота
+    "raidspam": true, #спам
+    "spamrange": 1000, #задержка спама в милисекундах
     "timebeforeraidon": 2000 #задержка между входом бота на сервер и включением режима рейд-атаки
 }

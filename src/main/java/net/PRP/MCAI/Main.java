@@ -1,5 +1,10 @@
 package net.PRP.MCAI;
 
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -20,8 +25,31 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.JTextPane;
+import javax.swing.WindowConstants;
+import javax.swing.text.Document;
+
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.data.xy.XYDataset;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 import org.yaml.snakeyaml.Yaml;
 
 import com.github.steveice10.mc.auth.service.SessionService;
@@ -52,9 +80,12 @@ import net.PRP.MCAI.data.oldMinecraftBlocks;
 import net.PRP.MCAI.data.slabState;
 import net.PRP.MCAI.data.MinecraftData.Type;
 import net.PRP.MCAI.utils.BotU;
+import net.PRP.MCAI.utils.MapUtils;
 import net.PRP.MCAI.utils.StringU;
 import net.PRP.MCAI.utils.ThreadU;
 import net.PRP.MCAI.utils.VectorUtils;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import ru.justnanix.parser.ServerParser;
 public class Main {
 	public static int nicksnumb = -1;
@@ -64,19 +95,21 @@ public class Main {
 	public static List<Proxy> proxies;
 	public static int proxyNumb = 0;
 	public static String hash;
-	public static boolean debug = true;
+	public static boolean debug = false;
 	public static List<Bot> bots = new CopyOnWriteArrayList<Bot>();
 	public static Proxy proxy = Proxy.NO_PROXY;
 	public static List<String> pasti = new CopyOnWriteArrayList<String>();
 	private static MinecraftData MCData = new MinecraftData();
 	//public static ExecutorService threadPool = ThreadPoolExecutor();
 	public static int suc = 0;
-	public static int bad = 0;
 	public static List<List<Vector3D>> tomine = new CopyOnWriteArrayList<>();
 	public static List<String> nicks;
 	public static int allVec = 0;
 	public static boolean raidObjectCreatedAlready = false;
 	public static int msg = 0;
+	public static Map<String, Integer> errors = new ConcurrentHashMap<>();
+	private static List<String> messages = new ArrayList<>();
+	private static JTextArea chat;
 	
     public static void main(String... args) {
     	initializeBlockType();
@@ -87,24 +120,111 @@ public class Main {
     	//boolean a = true;
     	if ((int)getset("mode")==1) {
 	    	if (debug) {
-	    		new Thread(new Bot("_niggapidor1488", "localhost:25565", Proxy.NO_PROXY, false)).start();
+	    		new Thread(new Bot("_nigapidr228", "185.17.0.49:25565", Proxy.NO_PROXY, false)).start();
 	    	} else {
 	    		
 	    		new Thread(()->{
-	    			int tsuc = 0;
-	    			int tbad = 0;
-	    			while (true) {
-	    				tsuc = 0;
-	    				tbad = 0;
-	    				for (Bot bot:bots) {
-	    					if (bot.connected) ++tsuc; else ++tbad;
+	    			List<Integer> graphdata = new ArrayList<>();
+	    			JFrame frame = new JFrame("razebator4000");
+	    			frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+	    			frame.setSize(910, 440);
+	    			frame.getContentPane().setBackground(new Color(0, 0, 50));
+
+	    			JPanel panel = new JPanel();
+	    			panel.setLayout(null); // Use null layout
+
+	    			//инфа по ботам
+	    			JTextField botinfo = new JTextField("жду инфу....");
+	    			botinfo.setBounds(0, 380, 350, 20);
+	    			botinfo.setEditable(false);
+	    			panel.add(botinfo);
+
+	    			//ошибки ботов
+	    			JTextArea errorsInfo = new JTextArea("жду инфу....");
+	    			errorsInfo.setEditable(false);
+	    			errorsInfo.setLineWrap(true);
+	    			errorsInfo.setWrapStyleWord(true);
+	    			JScrollPane scrollPane = new JScrollPane(errorsInfo);
+	    			scrollPane.setBounds(350, 0, 255, 400);
+	    			panel.add(scrollPane);
+	    			
+	    			//график приходов
+	    			XYSeries series = new XYSeries(0);
+	    	        XYDataset xyDataset = new XYSeriesCollection(series);
+
+	    	        JFreeChart chart = ChartFactory
+	    	                .createXYLineChart("график подключений ботов", "X", "Y",
+	    	                        xyDataset,
+	    	                        PlotOrientation.VERTICAL,
+	    	                        false, true, true);
+	    	        XYPlot plot = chart.getXYPlot();
+	    	        plot.setBackgroundPaint(Color.black);
+	    	        XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer();
+	    	        renderer.setSeriesPaint(0, Color.white);
+	    	        renderer.setSeriesShapesVisible(0, false);
+	    	        plot.setRenderer(renderer);
+	    	        NumberAxis domain = (NumberAxis) plot.getDomainAxis();
+	    	        domain.setVisible(false);
+	    	        NumberAxis range = (NumberAxis) plot.getRangeAxis();
+	    	        range.setVisible(false);
+	    	        ChartPanel chartPanel = new ChartPanel(chart);
+	    	        chartPanel.setBounds(0, 0, 350, 380);
+	    	        frame.add(chartPanel);
+	    	        
+	    	        //чат сервера
+	    			chat = new JTextArea("жду инфу....");
+	    			chat.setEditable(false);
+	    			chat.setLineWrap(true);
+	    			chat.setWrapStyleWord(true);
+	    			JScrollPane scrollPane1 = new JScrollPane(chat);
+	    			scrollPane1.setBounds(605, 0, 295, 360);
+	    			panel.add(scrollPane1);
+	    			
+	    			JTextField text = new JTextField("админ петух!");
+	    			text.setBounds(605,360,226,40);
+	    		    panel.add(text);
+	    			
+	    			JButton send = new JButton("send");
+	    		    send.addActionListener(new ActionListener() {
+	    				@Override
+	    				public void actionPerformed(ActionEvent event) {
+	    					for (Bot client : bots) {
+	    						BotU.chat(client, text.getText());
+	    					}
 	    				}
-	    				suc = tsuc;
-	    				bad = tbad;
-	    				if (!debug) System.out.println("{ suc:"+suc+" bad:"+bad+" all:"+bots.size()+" }");
+	    		    });
+	    		    send.setBounds(831,360,69,40);
+	    		    panel.add(send);
+
+	    			frame.add(panel);
+	    			frame.setLocationRelativeTo(null);
+	    			frame.setVisible(true);
+	    			while (true) {
+	    				ThreadU.sleep(2000);
+	    				suc = 0;
+	    				for (Bot bot:bots) {
+	    					if (bot.connected) {
+	    						suc++;
+	    					}
+	    				}
+	    				
+	    				botinfo.setText("присоединилось: "+suc+", всего: "+bots.size());
+	    				StringBuilder s = new StringBuilder("ошибки отключений ботов:\n");
+	    				for (Entry<String, Integer> error : errors.entrySet()) {
+	    					s.append("("+error.getValue()+") "+error.getKey()+"\n");
+	    				}
+	    				errorsInfo.setText(s.toString());
+	    				
+	    				graphdata.add(suc);
+	    				if (graphdata.size() > 60) graphdata.remove(0);
+	    				series.clear();
+	    				for (int index = 0; index < graphdata.size(); index++) {
+	    					series.add(index, graphdata.get(index));
+	    				}
+	    				chartPanel.repaint();
+	    				
 	        			updateSettings();
 	        			updatePasti();
-	        			ThreadU.sleep(1000);
 	    			}
 	    		}).start();
 		    	if ((boolean) getset("window")) {
@@ -170,12 +290,31 @@ public class Main {
         			ThreadU.sleep(1000);
     			}
 			}).start();
-			
 		}
 	}
     
     public static void яеблан() {
     	яеблан();
+    }
+    
+    public static void onMessageReceived(String content) {
+    	if (debug || (int)getset("mode")!=1) return;
+    	if (messages.size() > 40) messages.remove(0);
+    	
+    	int start = Math.max(0, messages.size() - 3);
+
+        for (int i = start; i < messages.size(); i++) {
+            if (content.equals(messages.get(i))) return; 
+        }
+        
+        messages.add(content);
+    	
+    	StringBuilder s = new StringBuilder();
+		for (String msg : messages) {
+			s.append(msg+"\n\n");
+		}
+		
+		chat.setText(s.toString());
     }
     
     public static void updateSettings() {
@@ -207,7 +346,7 @@ public class Main {
     
     public static String read() {
     	String text = "";
-		File file = new File("test.txt");
+		File file = new File("log.txt");
 		if (file.exists()) {
             try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
                 while (reader.ready()) {
@@ -219,6 +358,33 @@ public class Main {
 			
 		}
 		return text;                   
+    }
+    
+    public static void logError(String err) {
+    	err = err.toLowerCase();
+    	if (err.contains("ban")) err = "ban";
+    	else if (err.contains("kick")) err = "kick";
+    	else if (err.contains("no further")) err = "no server response";
+    	else if (err.contains("whitelist")) err = "not whitelisted";
+    	else if (err.contains("bot") && err.contains("detect")) err = "antibotted";
+    	else if (err.contains("reconnect")) err = "ask for reconnect";
+    	else if (err.contains("unexpected authmethod")) err = "proxy error";
+    	else if (err.contains("connection reset")) err = "badass proxy";
+    	else if (err.contains("proxyconnectexception")) err = "proxy error";
+    	else if (err.contains("invalid packet")) err = "bad packet";
+    	else if (err.contains("no buffer space")) err = "maximum connections reached";
+    	else if (err.contains("failed to create a child event loop")) err = "failed to create a child event loop"; 
+    	else if (err.contains("unregistered outgoing packet")) err = "unregistered outgoing packet"; 
+    	else if (err.contains("decoder")) err = "decoder exception";
+    	
+    	if (err.contains("textcomponentimpl")) err = StringU.componentToString(GsonComponentSerializer.gson().deserialize(err.replace("textcomponentimpl", "")));
+    	if (errors.containsKey(err)) {
+    		int c = errors.get(err);
+    		errors.replace(err, c+1);
+    	} else {
+    		errors.put(err, 1);
+    	}
+    	//write("[err] ", err);
     }
     
     public static void write(String prefix, String text) {

@@ -33,7 +33,6 @@ import net.PRP.MCAI.utils.ThreadU;
 
 public class holyworld extends SessionAdapter implements ServerListener {
 	
-	public static final boolean allGameCapt = false;
 	Bot client;
 	private mode mod = mode.NON;
 	private String windowname = "";
@@ -42,6 +41,9 @@ public class holyworld extends SessionAdapter implements ServerListener {
 		NON,PICKMODE, PICKSERVER, IDLE, getitem
 	}
 	
+	public boolean allGameCapt() {
+		return false;
+	}
 	
 	public holyworld(Bot client) {
 		this.client = client;

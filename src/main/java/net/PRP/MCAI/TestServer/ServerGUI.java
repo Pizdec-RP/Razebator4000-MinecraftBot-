@@ -12,8 +12,10 @@ import javax.swing.JLabel;
 import javax.swing.JTextField;
 
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.ItemStack;
+import com.github.steveice10.mc.protocol.packet.ingame.server.ServerChatPacket;
 
 import net.PRP.MCAI.utils.BotU;
+import net.kyori.adventure.text.Component;
 
 public class ServerGUI {
 	JFrame frame;
@@ -50,6 +52,14 @@ public class ServerGUI {
 						if (player.profile.getName().contains(namecont)) {
 							BotU.log("adding to player "+player.profile.getName());
 							player.addToInv(slot, new ItemStack(itemid,1));
+						}
+					}
+				} else if (command.split(" ")[0].equals("op")) {
+					String namecont = command.split(" ")[1];
+					for (ClientSession player : Server.players) {
+						if (player.profile.getName().contains(namecont)) {
+							player.op = true;
+							server.sendForEver(new ServerChatPacket(Component.text(namecont+" теперь оператор")));
 						}
 					}
 				}

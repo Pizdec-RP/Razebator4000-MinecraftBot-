@@ -176,7 +176,7 @@ public class Living extends SessionAdapter {
 			if (!listeners.isEmpty()) {
 				for (ServerListener listener : listeners) {
 					listener.tick();
-					if (listener.allGameCapt) return;
+					if (listener.allGameCapt()) return;
 				}
 	
 			}

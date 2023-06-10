@@ -45,6 +45,10 @@ public class dexland extends SessionAdapter implements ServerListener {
 		client.catchedRegister = true;
 	}
 	
+	public boolean allGameCapt() {
+		return false;
+	}
+	
 	@Override
 	public void packetReceived(PacketReceivedEvent receiveEvent) {
 		//BotU.log(receiveEvent.getPacket().getClass().getName());

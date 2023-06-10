@@ -232,7 +232,7 @@ public class BadAStar implements IPathfinder{
 						return true;
 					}
 				} catch (Exception e) {
-					e.printStackTrace();
+					//e.printStackTrace();
 				}
 			}
 		}

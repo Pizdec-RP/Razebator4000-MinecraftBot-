@@ -22,7 +22,7 @@ public class BotU {
 		System.out.println(p);
 	}
 	public static void chat (Bot client, String text) {
-		client.getSession().send(new ClientChatPacket(text));
+		if (client.getSession() != null && client.isGameReady()) client.getSession().send(new ClientChatPacket(text));
 		//log("message sended, content: "+text);
 	}
 	
