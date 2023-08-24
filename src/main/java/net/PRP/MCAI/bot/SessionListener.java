@@ -3,6 +3,7 @@ package net.PRP.MCAI.bot;
 import com.github.steveice10.mc.protocol.data.game.PlayerListEntry;
 import com.github.steveice10.mc.protocol.data.game.PlayerListEntryAction;
 import com.github.steveice10.mc.protocol.data.game.ResourcePackStatus;
+import com.github.steveice10.mc.protocol.data.game.entity.metadata.ItemStack;
 import com.github.steveice10.mc.protocol.data.game.entity.player.HandPreference;
 import com.github.steveice10.mc.protocol.data.game.setting.ChatVisibility;
 import com.github.steveice10.mc.protocol.data.game.setting.SkinPart;
@@ -36,6 +37,8 @@ import net.PRP.MCAI.Main;
 import net.PRP.MCAI.data.ChunkCoordinates;
 import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.utils.*;
+import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
+
 import com.github.steveice10.mc.protocol.data.game.world.block.BlockChangeRecord;
 
 import java.awt.event.ActionEvent;
@@ -53,7 +56,6 @@ import javax.swing.JTextField;
 public class SessionListener extends SessionAdapter {
     private Bot client;
     
-
     public SessionListener(Bot client) {
         this.client = client;
     }
@@ -62,6 +64,7 @@ public class SessionListener extends SessionAdapter {
     public void packetReceived(PacketReceivedEvent receiveEvent) {
     	//System.out.println(receiveEvent.getPacket().getClass().getName());
         if (receiveEvent.getPacket() instanceof ServerJoinGamePacket) {
+        	client.connecterrors = 0;
         	//System.out.println("(" + client.getGameProfile().getName() + ") Подлючился");
         	ServerJoinGamePacket p = (ServerJoinGamePacket) receiveEvent.getPacket();
         	client.getWorld().renderDistance = p.getViewDistance();
@@ -214,34 +217,31 @@ public class SessionListener extends SessionAdapter {
 		} else if (receiveEvent.getPacket() instanceof ServerMapDataPacket) {
 			if (!(boolean)Main.getset("displaymaps")) return;
 			ServerMapDataPacket p = (ServerMapDataPacket)receiveEvent.getPacket();
-			JFrame frame = new JFrame("captcha");
-			frame.setSize(300, 380);
-			BufferedImage image = MapUtils.mapToPng(p);
-	        JLabel l = new JLabel(new ImageIcon(image));
-	        l.setBounds(0, 0, 256, 256);
-	        
-	        JTextField b = new JTextField();
-	        b.setBounds(0,310,60,20);
-		    frame.add(b);
-	        
-	        
-	        JButton enter = new JButton("отправить");
-	        enter.setBounds(65, 310, 120, 20);
-	        enter.addActionListener(new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent event) {
-					try {
-						BotU.chat(client, b.getText());
-					} catch (Exception ignd) {
-						
-					}
-				}
-		    });
-		    frame.add(enter);
-		    frame.add(l);
-	        
-	        frame.setVisible(true);
+			client.maps.put(p.getMapId(), p);
 		}
+    }
+    
+    public void seterror(String err) {
+    	err = err.toLowerCase();
+    	if (err.contains("ban")) err = "ban";
+    	else if (err.contains("kick")) err = "kick";
+    	else if (err.contains("no further")) err = "no server response";
+    	else if (err.contains("whitelist")) err = "not whitelisted";
+    	else if (err.contains("bot") && err.contains("detect")) err = "antibotted";
+    	else if (err.contains("reconnect")) err = "ask for reconnect";
+    	else if (err.contains("unexpected authmethod")) err = "proxy error";
+    	else if (err.contains("connection reset")) err = "badass proxy";
+    	else if (err.contains("proxyconnectexception")) err = "proxy error";
+    	else if (err.contains("invalid packet")) err = "bad packet";
+    	else if (err.contains("no buffer space")) err = "maximum connections reached";
+    	else if (err.contains("failed to create a child event loop")) err = "failed to create a child event loop"; 
+    	else if (err.contains("unregistered outgoing packet")) err = "unregistered outgoing packet"; 
+    	else if (err.contains("decoder")) err = "decoder exception";
+    	else if (err.contains("full")) err = "server is full";
+    	
+    	if (err.contains("textcomponentimpl")) err = StringU.componentToString(GsonComponentSerializer.gson().deserialize(err.replace("textcomponentimpl", "")));
+    	
+    	client.lastdisconnectreason = err;
     }
     
     @Override
@@ -249,7 +249,17 @@ public class SessionListener extends SessionAdapter {
     	if (!client.reconectAvable) return;
     	client.connected = false;
     	BotU.log("disconnected");
-    	Main.logError(event.getReason());
+    	Main.write("disc", event.getReason());
+    	BotU.log(event.getReason());
+    	int rii = ((int)Main.getset("removeifnonactive"));
+    	if (rii != 0) {
+    		client.connecterrors++;
+	    	if (client.connecterrors >= rii) {
+	    		client.kill();
+	    		return;
+	    	}
+    	}
+    	seterror(event.getReason());
     	/*if (event.getCause() != null) {
     		event.getCause().printStackTrace();
     	}*/

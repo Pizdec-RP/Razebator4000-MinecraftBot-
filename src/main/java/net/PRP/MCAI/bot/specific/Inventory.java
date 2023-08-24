@@ -59,12 +59,38 @@ public class Inventory extends SessionAdapter {
 		if (receiveEvent.getPacket() instanceof ServerWindowItemsPacket) {
 			final ServerWindowItemsPacket p = (ServerWindowItemsPacket) receiveEvent.getPacket();
 			client.playerInventory.setup(p.getItems());
-			
+			for (ItemStack i : p.getItems()) {
+				if (i == null) continue;
+				if (i.getId() == 733) {//map
+					client.checkmap(client);
+				}
+			}
 		} else if (receiveEvent.getPacket() instanceof ServerSetSlotPacket) {
 			final ServerSetSlotPacket p = (ServerSetSlotPacket) receiveEvent.getPacket();
 			//if (client.crafter.windowType != null) client.playerInventory.setSlot(p.getSlot()-Main.getMCData().slotMultipiler.get(client.crafter.windowType), p.getItem());
 			/*else*/client.playerInventory.setSlot(p.getSlot(), p.getItem());
 			currentWindowId = p.getWindowId();
+			if (p.getItem() == null) return;
+			if (p.getItem().getId() == 733) {//map
+				client.checkmap(client);
+			}
+			/*BotU.log("ss "+p.getItem().getId());
+			if (p.getItem().getId() == 733) {//map
+				BotU.log("huy");
+				BotU.log(p.getItem().getNbt() == null);
+				CompoundTag nbt = p.getItem().getNbt();
+				BotU.log(nbt.size());
+				BotU.log("keys");
+				for (String key : p.getItem().getNbt().keySet()) {
+					BotU.log(key);
+				}
+				BotU.log("vals");
+				for (Tag val : p.getItem().getNbt().values()) {
+					BotU.log(val.getName());
+					BotU.log(val.getValue());
+				}
+				//client.checkmap(currentWindowId, client);
+			}*/
 			//if (Main.debug && p.getItem() != null) System.out.println("sssp slot:"+p.getSlot()+ " item:"+Main.getMCData().items.get(p.getItem().getId()).name);
 		}
 	}

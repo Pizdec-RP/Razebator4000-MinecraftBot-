@@ -110,6 +110,7 @@ public class Main {
 	public static Map<String, Integer> errors = new ConcurrentHashMap<>();
 	private static List<String> messages = new ArrayList<>();
 	private static JTextArea chat;
+	public static int clearedbots;
 	
     public static void main(String... args) {
     	initializeBlockType();
@@ -120,118 +121,14 @@ public class Main {
     	//boolean a = true;
     	if ((int)getset("mode")==1) {
 	    	if (debug) {
-	    		new Thread(new Bot("_nigapidr228", "185.17.0.49:25565", Proxy.NO_PROXY, false)).start();
+	    		new Thread(new Bot("_nigapidr2288", "play.armlix.ru:25565", Proxy.NO_PROXY, false)).start();
 	    	} else {
-	    		
-	    		new Thread(()->{
-	    			List<Integer> graphdata = new ArrayList<>();
-	    			JFrame frame = new JFrame("razebator4000");
-	    			frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-	    			frame.setSize(910, 440);
-	    			frame.getContentPane().setBackground(new Color(0, 0, 50));
-
-	    			JPanel panel = new JPanel();
-	    			panel.setLayout(null); // Use null layout
-
-	    			//инфа по ботам
-	    			JTextField botinfo = new JTextField("жду инфу....");
-	    			botinfo.setBounds(0, 380, 350, 20);
-	    			botinfo.setEditable(false);
-	    			panel.add(botinfo);
-
-	    			//ошибки ботов
-	    			JTextArea errorsInfo = new JTextArea("жду инфу....");
-	    			errorsInfo.setEditable(false);
-	    			errorsInfo.setLineWrap(true);
-	    			errorsInfo.setWrapStyleWord(true);
-	    			JScrollPane scrollPane = new JScrollPane(errorsInfo);
-	    			scrollPane.setBounds(350, 0, 255, 400);
-	    			panel.add(scrollPane);
-	    			
-	    			//график приходов
-	    			XYSeries series = new XYSeries(0);
-	    	        XYDataset xyDataset = new XYSeriesCollection(series);
-
-	    	        JFreeChart chart = ChartFactory
-	    	                .createXYLineChart("график подключений ботов", "X", "Y",
-	    	                        xyDataset,
-	    	                        PlotOrientation.VERTICAL,
-	    	                        false, true, true);
-	    	        XYPlot plot = chart.getXYPlot();
-	    	        plot.setBackgroundPaint(Color.black);
-	    	        XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer();
-	    	        renderer.setSeriesPaint(0, Color.white);
-	    	        renderer.setSeriesShapesVisible(0, false);
-	    	        plot.setRenderer(renderer);
-	    	        NumberAxis domain = (NumberAxis) plot.getDomainAxis();
-	    	        domain.setVisible(false);
-	    	        NumberAxis range = (NumberAxis) plot.getRangeAxis();
-	    	        range.setVisible(false);
-	    	        ChartPanel chartPanel = new ChartPanel(chart);
-	    	        chartPanel.setBounds(0, 0, 350, 380);
-	    	        frame.add(chartPanel);
-	    	        
-	    	        //чат сервера
-	    			chat = new JTextArea("жду инфу....");
-	    			chat.setEditable(false);
-	    			chat.setLineWrap(true);
-	    			chat.setWrapStyleWord(true);
-	    			JScrollPane scrollPane1 = new JScrollPane(chat);
-	    			scrollPane1.setBounds(605, 0, 295, 360);
-	    			panel.add(scrollPane1);
-	    			
-	    			JTextField text = new JTextField("админ петух!");
-	    			text.setBounds(605,360,226,40);
-	    		    panel.add(text);
-	    			
-	    			JButton send = new JButton("send");
-	    		    send.addActionListener(new ActionListener() {
-	    				@Override
-	    				public void actionPerformed(ActionEvent event) {
-	    					for (Bot client : bots) {
-	    						BotU.chat(client, text.getText());
-	    					}
-	    				}
-	    		    });
-	    		    send.setBounds(831,360,69,40);
-	    		    panel.add(send);
-
-	    			frame.add(panel);
-	    			frame.setLocationRelativeTo(null);
-	    			frame.setVisible(true);
-	    			while (true) {
-	    				ThreadU.sleep(2000);
-	    				suc = 0;
-	    				for (Bot bot:bots) {
-	    					if (bot.connected) {
-	    						suc++;
-	    					}
-	    				}
-	    				
-	    				botinfo.setText("присоединилось: "+suc+", всего: "+bots.size());
-	    				StringBuilder s = new StringBuilder("ошибки отключений ботов:\n");
-	    				for (Entry<String, Integer> error : errors.entrySet()) {
-	    					s.append("("+error.getValue()+") "+error.getKey()+"\n");
-	    				}
-	    				errorsInfo.setText(s.toString());
-	    				
-	    				graphdata.add(suc);
-	    				if (graphdata.size() > 60) graphdata.remove(0);
-	    				series.clear();
-	    				for (int index = 0; index < graphdata.size(); index++) {
-	    					series.add(index, graphdata.get(index));
-	    				}
-	    				chartPanel.repaint();
-	    				
-	        			updateSettings();
-	        			updatePasti();
-	    			}
-	    		}).start();
+	    		startBotMonitor();
 		    	if ((boolean) getset("window")) {
 		    		new SteeringWheel();
 		    	} else {
 		    		int botcount = (int)getset("bots") == -1 ? proxies.size() : (int)getset("bots");
-			    	String ip = (String)getset("host");
+			    	String ip = (String)getset("host")+":25565";
 			    	for (int i = 0; i < botcount; i++) {
 				        String USERNAME = nextNick();
 				        nextProxy();
@@ -247,7 +144,7 @@ public class Main {
 			if ((boolean) getset("window")) {
 				BotU.log("оконный режим не поддерживается при этом методе рейда");
 			}
-			
+			startBotMonitor();
 			new Thread(()->{
 				
 				ServerParser sp = new ServerParser().init();
@@ -292,6 +189,126 @@ public class Main {
 			}).start();
 		}
 	}
+    
+    public static void startBotMonitor() {
+    	new Thread(()->{
+			List<Integer> graphdata = new ArrayList<>();
+			JFrame frame = new JFrame("razebator4000");
+			frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+			frame.setSize(910, 440);
+			frame.getContentPane().setBackground(new Color(0, 0, 50));
+
+			JPanel panel = new JPanel();
+			panel.setLayout(null); // Use null layout
+
+			//инфа по ботам
+			JTextField botinfo = new JTextField("жду инфу....");
+			botinfo.setBounds(0, 380, 350, 20);
+			botinfo.setEditable(false);
+			panel.add(botinfo);
+
+			//ошибки ботов
+			JTextArea errorsInfo = new JTextArea("жду инфу....");
+			errorsInfo.setEditable(false);
+			errorsInfo.setLineWrap(true);
+			errorsInfo.setWrapStyleWord(true);
+			JScrollPane scrollPane = new JScrollPane(errorsInfo);
+			scrollPane.setBounds(350, 0, 255, 400);
+			panel.add(scrollPane);
+			
+			//график приходов
+			XYSeries series = new XYSeries(0);
+	        XYDataset xyDataset = new XYSeriesCollection(series);
+
+	        JFreeChart chart = ChartFactory
+	                .createXYLineChart("график подключений ботов", "X", "Y",
+	                        xyDataset,
+	                        PlotOrientation.VERTICAL,
+	                        false, true, true);
+	        XYPlot plot = chart.getXYPlot();
+	        plot.setBackgroundPaint(Color.black);
+	        XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer();
+	        renderer.setSeriesPaint(0, Color.white);
+	        renderer.setSeriesShapesVisible(0, false);
+	        plot.setRenderer(renderer);
+	        NumberAxis domain = (NumberAxis) plot.getDomainAxis();
+	        domain.setVisible(false);
+	        NumberAxis range = (NumberAxis) plot.getRangeAxis();
+	        range.setVisible(false);
+	        ChartPanel chartPanel = new ChartPanel(chart);
+	        chartPanel.setBounds(0, 0, 350, 380);
+	        frame.add(chartPanel);
+	        
+	        //чат сервера
+			chat = new JTextArea("жду инфу....");
+			chat.setEditable(false);
+			chat.setLineWrap(true);
+			chat.setWrapStyleWord(true);
+			JScrollPane scrollPane1 = new JScrollPane(chat);
+			scrollPane1.setBounds(605, 0, 295, 360);
+			panel.add(scrollPane1);
+			
+			JTextField text = new JTextField("админ петух!");
+			text.setBounds(605,360,226,40);
+		    panel.add(text);
+			
+			JButton send = new JButton("send");
+		    send.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent event) {
+					for (Bot client : bots) {
+						BotU.chat(client, text.getText());
+					}
+				}
+		    });
+		    send.setBounds(831,360,69,40);
+		    panel.add(send);
+
+			frame.add(panel);
+			frame.setLocationRelativeTo(null);
+			frame.setVisible(true);
+			while (true) {
+				ThreadU.sleep(2000);
+				suc = 0;
+				int ticktimesumm = 0;
+				for (Bot bot:bots) {
+					if (bot.connected) {
+						ticktimesumm+=bot.ticktime;
+						suc++;
+					}
+				}
+				int avgticktime = (suc==0) ? 0 : (ticktimesumm/suc);
+				botinfo.setText("зашло: "+suc+", всего: "+bots.size()+", avg ticktime: "+avgticktime+", очищено ботов: "+clearedbots);
+				StringBuilder s = new StringBuilder("ошибки отключений ботов:\n");
+				errors.clear();
+				for (Bot bot : bots) {
+					if (!bot.lastdisconnectreason.equals("")) {
+						if (errors.containsKey(bot.lastdisconnectreason)) {
+				    		int c = errors.get(bot.lastdisconnectreason);
+				    		errors.replace(bot.lastdisconnectreason, c+1);
+				    	} else {
+				    		errors.put(bot.lastdisconnectreason, 1);
+				    	}
+					}
+				}
+				for (Entry<String, Integer> error : errors.entrySet()) {
+					s.append("("+error.getValue()+") "+error.getKey()+"\n");
+				}
+				errorsInfo.setText(s.toString());
+				
+				graphdata.add(suc);
+				if (graphdata.size() > 60) graphdata.remove(0);
+				series.clear();
+				for (int index = 0; index < graphdata.size(); index++) {
+					series.add(index, graphdata.get(index));
+				}
+				chartPanel.repaint();
+				
+    			updateSettings();
+    			updatePasti();
+			}
+		}).start();
+    }
     
     public static void яеблан() {
     	яеблан();
@@ -358,33 +375,6 @@ public class Main {
 			
 		}
 		return text;                   
-    }
-    
-    public static void logError(String err) {
-    	err = err.toLowerCase();
-    	if (err.contains("ban")) err = "ban";
-    	else if (err.contains("kick")) err = "kick";
-    	else if (err.contains("no further")) err = "no server response";
-    	else if (err.contains("whitelist")) err = "not whitelisted";
-    	else if (err.contains("bot") && err.contains("detect")) err = "antibotted";
-    	else if (err.contains("reconnect")) err = "ask for reconnect";
-    	else if (err.contains("unexpected authmethod")) err = "proxy error";
-    	else if (err.contains("connection reset")) err = "badass proxy";
-    	else if (err.contains("proxyconnectexception")) err = "proxy error";
-    	else if (err.contains("invalid packet")) err = "bad packet";
-    	else if (err.contains("no buffer space")) err = "maximum connections reached";
-    	else if (err.contains("failed to create a child event loop")) err = "failed to create a child event loop"; 
-    	else if (err.contains("unregistered outgoing packet")) err = "unregistered outgoing packet"; 
-    	else if (err.contains("decoder")) err = "decoder exception";
-    	
-    	if (err.contains("textcomponentimpl")) err = StringU.componentToString(GsonComponentSerializer.gson().deserialize(err.replace("textcomponentimpl", "")));
-    	if (errors.containsKey(err)) {
-    		int c = errors.get(err);
-    		errors.replace(err, c+1);
-    	} else {
-    		errors.put(err, 1);
-    	}
-    	//write("[err] ", err);
     }
     
     public static void write(String prefix, String text) {

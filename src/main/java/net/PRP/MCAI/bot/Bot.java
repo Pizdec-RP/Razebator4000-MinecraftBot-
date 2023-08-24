@@ -5,6 +5,7 @@ import com.github.steveice10.mc.protocol.MinecraftProtocol;
 import com.github.steveice10.mc.protocol.data.game.entity.metadata.ItemStack;
 import com.github.steveice10.mc.protocol.data.game.entity.player.GameMode;
 import com.github.steveice10.mc.protocol.packet.ingame.client.ClientChatPacket;
+import com.github.steveice10.mc.protocol.packet.ingame.server.world.ServerMapDataPacket;
 import com.github.steveice10.packetlib.ProxyInfo;
 import com.github.steveice10.packetlib.ProxyInfo.Type;
 import com.github.steveice10.packetlib.Session;
@@ -18,6 +19,7 @@ import net.PRP.MCAI.ListenersForServers.mst;
 import net.PRP.MCAI.ListenersForServers.pixserv;
 import net.PRP.MCAI.ListenersForServers.woka;
 import net.PRP.MCAI.utils.BotU;
+import net.PRP.MCAI.utils.MapUtils;
 import net.PRP.MCAI.utils.ThreadU;
 import net.PRP.MCAI.utils.VectorUtils;
 import net.PRP.MCAI.bot.pathfinder.LivePathExec;
@@ -36,10 +38,21 @@ import net.PRP.MCAI.data.EntityEffects;
 import net.PRP.MCAI.data.Vector3D;
 import net.PRP.MCAI.data.World;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
 import java.net.Proxy;
 import java.net.SocketAddress;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JTextField;
 
 public class Bot implements Runnable {
     private MinecraftProtocol account;
@@ -89,9 +102,13 @@ public class Bot implements Runnable {
 	public LivePathExec lpe;
 	private int needtocompensate = 0;
 	public float health = 20;
+	public int connecterrors = 0;
+	public String lastdisconnectreason = "";
+	public int ticktime = 0;
 	//ABILITIES
 	public float walkSpeed = 0;
 	public float flySpeed = 0;
+	
     
     public Bot(String name, String ip, Proxy proxy, boolean automaticMode) {
     	if (proxy == null)
@@ -100,7 +117,8 @@ public class Bot implements Runnable {
     		this.proxy = proxy;
     	this.automaticMode = automaticMode;
     	this.account = new MinecraftProtocol(name);
-    	this.host = ip.split(":")[0];
+    	String[] splt = ip.split(":");
+    	this.host = splt[0];
     	this.port = Integer.parseInt(ip.split(":")[1]);
     	this.name = name;
     	this.effects = new EntityEffects();
@@ -120,20 +138,20 @@ public class Bot implements Runnable {
 			long timeone = System.currentTimeMillis();
 			if (isOnline()) tick();
 			long timetwo = System.currentTimeMillis();
-			int raznica = (int) (timetwo - timeone);
+			ticktime = (int) (timetwo - timeone);
 			if (needtocompensate > 5000) {
 				needtocompensate = 0;
 				//BotU.log("client overloaded, skiped "+needtocompensate/tickrate+" ticks");
 			}
-			if (raznica > 0 && raznica < tickrate) {
-				curcomp = tickrate-raznica;
+			if (ticktime > 0 && ticktime < tickrate) {
+				curcomp = tickrate-ticktime;
 				//if (Main.debug) System.out.println("comp "+raznica+"ms");
 				if (needtocompensate <= 0) {
 					ThreadU.sleep(curcomp);
 				} else {
 					needtocompensate-=curcomp;
 				}
-			} else if (raznica == 0){
+			} else if (ticktime == 0){
 				if (needtocompensate <= 0) {
 					ThreadU.sleep(tickrate);
 				} else {
@@ -141,12 +159,13 @@ public class Bot implements Runnable {
 				}
 			} else {
 				//if (Main.debug) System.out.println("pass "+raznica+"ms");
-				needtocompensate += raznica-tickrate;
+				needtocompensate += ticktime-tickrate;
 			}
 		}
 	}
     
 	public void kill() {
+		Main.clearedbots++;
 		running = false;
 		Main.bots.remove(this);
 		reconectAvable = false;
@@ -242,8 +261,10 @@ public class Bot implements Runnable {
         ThreadU.sleep(1100);
         String lf = (String) Main.getset("loginfrase");
         if (lf.equals("")) return;
-        for (String m : lf.split("|"))
+        for (String m : lf.split("--")) {
+        	if (m.equals("")) continue;
         	BotU.chat(this, m);
+        }
     }
     
     public void reset() {
@@ -511,5 +532,43 @@ public class Bot implements Runnable {
 	
 	public double distance(Vector3D r) {
 		return VectorUtils.sqrt(getPosition(), r);
+	}
+	
+	public Map<Integer, ServerMapDataPacket> maps = new ConcurrentHashMap<>();
+	public void checkmap(Bot client) {
+		if (!(boolean)Main.getset("displaymaps")) return;
+		for (Entry<Integer, ServerMapDataPacket> map : maps.entrySet()) {
+			//if (map.getKey() == id) {
+			maps.remove(map.getKey());
+			BotU.log("fetched map");
+			JFrame frame = new JFrame("captcha");
+			frame.setSize(300, 380);
+			BufferedImage image = MapUtils.mapToPng(map.getValue());
+	        JLabel l = new JLabel(new ImageIcon(image));
+	        l.setBounds(0, 0, 256, 256);
+	        
+	        JTextField b = new JTextField();
+	        b.setBounds(0,310,60,20);
+		    frame.add(b);
+	        
+	        
+	        JButton enter = new JButton("отправить");
+	        enter.setBounds(65, 310, 120, 20);
+	        enter.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent event) {
+					try {
+						BotU.chat(client, b.getText());
+					} catch (Exception ignd) {
+						
+					}
+				}
+		    });
+		    frame.add(enter);
+		    frame.add(l);
+	        
+	        frame.setVisible(true);
+			//}
+		}
 	}
 }

@@ -378,7 +378,7 @@ public class ChatListener extends SessionAdapter {
 					List<Block> a = client.vis.getVisibleBlocks();
 					long et = System.currentTimeMillis();
 					BotU.chat(client, a.size()+" points returned, time: "+(et-st));
-				} else if (command.get(0).equalsIgnoreCase("airun")) {
+				/*} else if (command.get(0).equalsIgnoreCase("airun")) {
 					UUID uuid = ((ServerChatPacket) receiveEvent.getPacket()).getSenderUuid();
 					Vector3D to = client.getWorld().getEntity(uuid).getValue().pos.floor();
 					client.lpe.start(to);
@@ -403,8 +403,7 @@ public class ChatListener extends SessionAdapter {
 					for (Vector3D pos : list) {
 						BotU.chat(client, "/particle minecraft:end_rod "+pos.forCommandD()+" 0 0 0 0 1");
 						BotU.log(pos.forCommandD());
-					}
-					client.lpe.pcts.get(pattern).learning(data);
+					}*/
 				} else if (command.get(0).equalsIgnoreCase("dropinv")) {
 					for (Entry<Integer, ItemStack> i : client.playerInventory.getHotbar().entrySet()) {
 						if (i.getValue() != null) {

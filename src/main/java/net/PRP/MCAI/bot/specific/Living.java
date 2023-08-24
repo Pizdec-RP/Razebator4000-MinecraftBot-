@@ -56,7 +56,7 @@ public class Living extends SessionAdapter {
 	Integer enemy = null;
 	public boolean a = false;
 	
-	public List<EntityType> badentities = new ArrayList<EntityType>() {
+	public static final List<EntityType> badentities = new ArrayList<EntityType>() {
 		private static final long serialVersionUID = -6373621458088442703L;
 
 	{
@@ -88,7 +88,7 @@ public class Living extends SessionAdapter {
 		add(EntityType.PILLAGER);
 	}};
 	
-	public List<EntityType> food = new ArrayList<EntityType>() {
+	public static final List<EntityType> food = new ArrayList<EntityType>() {
 		private static final long serialVersionUID = -6373621458088442703L;
 
 	{
@@ -99,7 +99,7 @@ public class Living extends SessionAdapter {
 		add(EntityType.CHICKEN);
 	}};
 	
-	public int[] fooditems = new int[] {};
+	//public int[] fooditems = new int[] {};
 	
 	int spamticks = 0;
 	public int goforwardticks = 0;
@@ -182,6 +182,7 @@ public class Living extends SessionAdapter {
 			}
 			
 			if (state == raidState.IDLE) {
+				if (!((boolean)Main.getset("chetodelat"))) return;
 				if (a) {
 					Entity t = client.getWorld().getNearestIfContain("mineflayer");
 					if (t != null) {

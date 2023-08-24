@@ -34,9 +34,9 @@ public class ProxyScraper {
 		} else {
 			proxypype = Proxy.Type.DIRECT;
 		}
-		System.out.println("парсю с файла");
     	File file = new File(filename);
         if (file.exists()) {
+        	System.out.println("парсю с файла");
             try {
                 try (BufferedReader reader = new BufferedReader(new FileReader(file));){
                     while (reader.ready()) {
