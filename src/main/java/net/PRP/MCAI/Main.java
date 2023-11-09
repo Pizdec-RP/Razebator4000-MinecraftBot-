@@ -118,8 +118,9 @@ public class Main {
     	proxies = ProxyScraper.ab();
     	updatePasti();
     	nicks = getnicksinit();
+    	int mode = (int)getset("mode");
     	//boolean a = true;
-    	if ((int)getset("mode")==1) {
+    	if (mode==1) {
 	    	if (debug) {
 	    		new Thread(new Bot("_nigapidr2288", "play.armlix.ru:25565", Proxy.NO_PROXY, false)).start();
 	    	} else {
@@ -140,14 +141,14 @@ public class Main {
 			    	}
 		    	}
     		}
-		} else if ((int)getset("mode")==2) {
+		} else if (mode == 2 || mode == 3) {
 			if ((boolean) getset("window")) {
 				BotU.log("оконный режим не поддерживается при этом методе рейда");
 			}
 			startBotMonitor();
 			new Thread(()->{
 				
-				ServerParser sp = new ServerParser().init();
+				ServerParser sp = new ServerParser().init(mode==2?true:false);
 				List<String> ips = sp.getServers();
 				for (String ip : ips) {
 					if (!ip.contains(":")) {

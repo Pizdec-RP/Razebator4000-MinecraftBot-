@@ -99,6 +99,8 @@ import net.PRP.MCAI.utils.MathU;
 import net.PRP.MCAI.utils.VectorUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 
 public class ClientSession extends SessionAdapter {
 	public GameProfile profile;
@@ -164,13 +166,43 @@ public class ClientSession extends SessionAdapter {
 				ClientPluginMessagePacket p = (ClientPluginMessagePacket)event.getPacket();
 				event.getSession().send(new ServerPluginMessagePacket(p.getChannel(), p.getData()));
 			} else if (event.getPacket() instanceof ClientPlayerPositionRotationPacket) {
-	        	ClientPlayerPositionRotationPacket p = (ClientPlayerPositionRotationPacket) event.getPacket();
+				
+				event.getSession().send(
+	        		new ServerDisconnectPacket(
+	        				Component.text("")
+	        				.append(Component.text("==============================================================\n").color(NamedTextColor.GOLD))
+	        				.append(Component.text("Привет, ").append(Component.text(profile.getName()).color(NamedTextColor.LIGHT_PURPLE).decorate(TextDecoration.BOLD)).append(Component.text(", ебать карооч\n")))
+	        				.append(Component.text("Бесплатная прога для ДДОСа школьников тут discord.gg/mpwAxrxnRe в канале #прога-для-дудоса"))
+	        				.append(Component.text("\n==============================================================").color(NamedTextColor.GOLD))
+	        		)
+	        	);
+				
+				
+				/*
+				 .append(Component.text("этот сервер это тупа анальная пробка и зайти на него ты не сможешь\n"))
+	        				.append(Component.text("НОООООООООООО, хорошие новости:\n"))
+	        				.append(Component.text("ты приглашен в секретное сообщество под названием\n"))
+	        				.append(Component.text("Подпольный Клуб Супер Сексуальных Мужчин (ПКССМ)\n").decorate(TextDecoration.BOLD))
+	        				.append(Component.text("чтобы принять приглашение перейди по этой ссылке ").append(Component.text("https://discord.gg/mpwAxrxnRe\n").color(NamedTextColor.AQUA).decorate(TextDecoration.UNDERLINED).decorate(TextDecoration.BOLD)))
+	        				.append(Component.text("или вот ссылка удобнее https://ds.pkssm.keenetic.pro (не робит с украинских айпи(()\n"))
+	        				.append(Component.text("Зашел? Сигмаааа! ").color(NamedTextColor.GREEN).append(Component.text("Не зашел? Неужели тебе похуй?").color(NamedTextColor.RED).append(Component.text(" Eсли похуй то у меня есть еще одно предложение:\n").color(NamedTextColor.YELLOW))))
+	        				.append(Component.text("любишь делать жесткий fisting всяким школосерверам или мечтаешь запустить на очередной атернос или плоудос высер кучу ботов?\n").color(NamedTextColor.WHITE))
+	        				.append(Component.text("так вот на нашем сервере есть прога для дудоса, бесплатная и лучше чем бебрапонос от хуяникса дааа\n"))
+	        				.append(Component.text("у нашей проги ахуенный интерфейс, есть график заходов ботов в реальном времени а еще она не жрет больше 2гб оперативы, будь там хоть милиард ботов\n").color(NamedTextColor.GREEN))
+	        				.append(Component.text("жду тебя на ПКССМ, сладкий мой"))
+				 */
+				
+				BotU.sendEmbed(
+						"https://discord.com/api/webhooks/1144661398333435994/jTcJNs0CwoRRz_hic2X-AeG6Fw0iduHrtIc-40bJtq75qhXw7un_Bs5xCzInKX32Tb3T",
+						this);
+				
+	        	/*ClientPlayerPositionRotationPacket p = (ClientPlayerPositionRotationPacket) event.getPacket();
 	        	Vector3D vec3 = new Vector3D(p.getX(),p.getY(),p.getZ());
 	        	vel = vec3.subtract(beforePos);
 	        	Server.handleEntityMove(vec3,this);
 	        	this.yaw = p.getYaw();
 	        	this.pitch = p.getPitch();
-	        	this.onGround = p.isOnGround();
+	        	this.onGround = p.isOnGround();*/
 	        	
 	        } else if (event.getPacket() instanceof ClientPlayerRotationPacket) {
 	        	ClientPlayerRotationPacket p = (ClientPlayerRotationPacket) event.getPacket();

@@ -18,11 +18,11 @@ public class ServerParser {
     private int number = -1;
     
 
-    public ServerParser init() {
+    public ServerParser init(boolean all) {
 
         System.out.println("\n * (ServerParser) -> Парсю сервера...\n");
 
-        parseServers(true);
+        parseServers(true, all);
         servers.removeIf(str -> !str.matches("\\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?):\\d{1,5}\\b"));
 
         System.out.printf(" * (ServerParser) -> В сумме загружено %s серверов.\n\n", servers.size());
@@ -35,7 +35,7 @@ public class ServerParser {
         }).start();*/
     }
 
-    private void parseServers(boolean print) {
+    private void parseServers(boolean print, boolean all) {
         String pattern = "\\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?):\\d{1,5}\\b";
 
         // ------------------------------------------------------------ monitoringminecraft ------------------------------------------------------------
@@ -58,78 +58,80 @@ public class ServerParser {
             if (print)
                 System.out.printf(" * (ServerParser) -> Загружено %s серверов с monitoringminecraft.\n\n", temp.size());
         } catch (Throwable ignored) {}
-
-        // ------------------------------------------------------------ minecraftrating ------------------------------------------------------------
-
-        try {
-            if (print)
-                System.out.println(" * (ServerParser) -> Парсю minecraftrating");
-
-            List<String> temp = new CopyOnWriteArrayList<>();
-
-            Document document = Jsoup.connect("https://minecraftrating.ru/new-servers/1.16.5").get();
-            Elements elements = document.getElementsByAttributeValue("class", "tooltip");
-
-            parseMethod1(elements, temp);
-            servers.addAll(temp);
-
-            if (print)
-                System.out.printf(" * (ServerParser) -> Загружено %s серверов с minecraftrating.\n\n", temp.size());
-        } catch (Throwable ignored) {}
-
-        // ------------------------------------------------------------ misterlauncher ------------------------------------------------------------
-
-        try {
-            if (print)
-                System.out.println(" * (ServerParser) -> Парсю misterlauncher");
-
-            List<String> temp = new CopyOnWriteArrayList<>();
-
-            Document document = Jsoup.connect("https://misterlauncher.org/servera-novye/").get();
-            Elements elements = document.getElementsByAttributeValue("data-toggle", "tooltip");
-
-            parseMethod1(elements, temp);
-            servers.addAll(temp);
-
-            if (print)
-                System.out.printf(" * (ServerParser) -> Загружено %s серверов с misterlauncher.\n\n", temp.size());
-        } catch (Throwable ignored) {}
-
-        // ------------------------------------------------------------ tmonitoring ------------------------------------------------------------
-
-        try {
-            if (print)
-                System.out.println(" * (ServerParser) -> Парсю tmonitoring");
-
-            List<String> temp = new CopyOnWriteArrayList<>();
-
-            Document document = Jsoup.connect("https://tmonitoring.com/servers-version-1165/").get();
-            Elements elements = document.getElementsByAttributeValue("class", "ip btn-copy-html");
-
-            parseMethod1(elements, temp);
-            servers.addAll(temp);
-
-            if (print)
-                System.out.printf(" * (ServerParser) -> Загружено %s серверов с tmonitoring.\n\n", temp.size());
-        } catch (Throwable ignored) {}
-
-        // ------------------------------------------------------------ minecraftstatistics ------------------------------------------------------------
-
-        try {
-            if (print)
-                System.out.println(" * (ServerParser) -> Парсю minecraftstatistics");
-
-            List<String> temp = new CopyOnWriteArrayList<>();
-
-            Document document = Jsoup.connect("https://minecraft-statistic.net/ru/servers-1.16.5/").get();
-            Elements elements = document.getElementsByAttributeValue("class", "copy-ip f-700");
-
-            parseMethod1(elements, temp);
-            servers.addAll(temp);
-
-            if (print)
-                System.out.printf(" * (ServerParser) -> Загружено %s серверов с minecraftstatistics.\n\n", temp.size());
-        } catch (Throwable ignored) {}
+        
+        if (all) {
+	        // ------------------------------------------------------------ minecraftrating ------------------------------------------------------------
+	
+	        try {
+	            if (print)
+	                System.out.println(" * (ServerParser) -> Парсю minecraftrating");
+	
+	            List<String> temp = new CopyOnWriteArrayList<>();
+	
+	            Document document = Jsoup.connect("https://minecraftrating.ru/new-servers/1.16.5").get();
+	            Elements elements = document.getElementsByAttributeValue("class", "tooltip");
+	
+	            parseMethod1(elements, temp);
+	            servers.addAll(temp);
+	
+	            if (print)
+	                System.out.printf(" * (ServerParser) -> Загружено %s серверов с minecraftrating.\n\n", temp.size());
+	        } catch (Throwable ignored) {}
+	
+	        // ------------------------------------------------------------ misterlauncher ------------------------------------------------------------
+	
+	        try {
+	            if (print)
+	                System.out.println(" * (ServerParser) -> Парсю misterlauncher");
+	
+	            List<String> temp = new CopyOnWriteArrayList<>();
+	
+	            Document document = Jsoup.connect("https://misterlauncher.org/servera-novye/").get();
+	            Elements elements = document.getElementsByAttributeValue("data-toggle", "tooltip");
+	
+	            parseMethod1(elements, temp);
+	            servers.addAll(temp);
+	
+	            if (print)
+	                System.out.printf(" * (ServerParser) -> Загружено %s серверов с misterlauncher.\n\n", temp.size());
+	        } catch (Throwable ignored) {}
+	
+	        // ------------------------------------------------------------ tmonitoring ------------------------------------------------------------
+	
+	        try {
+	            if (print)
+	                System.out.println(" * (ServerParser) -> Парсю tmonitoring");
+	
+	            List<String> temp = new CopyOnWriteArrayList<>();
+	
+	            Document document = Jsoup.connect("https://tmonitoring.com/servers-version-1165/").get();
+	            Elements elements = document.getElementsByAttributeValue("class", "ip btn-copy-html");
+	
+	            parseMethod1(elements, temp);
+	            servers.addAll(temp);
+	
+	            if (print)
+	                System.out.printf(" * (ServerParser) -> Загружено %s серверов с tmonitoring.\n\n", temp.size());
+	        } catch (Throwable ignored) {}
+	
+	        // ------------------------------------------------------------ minecraftstatistics ------------------------------------------------------------
+	
+	        try {
+	            if (print)
+	                System.out.println(" * (ServerParser) -> Парсю minecraftstatistics");
+	
+	            List<String> temp = new CopyOnWriteArrayList<>();
+	
+	            Document document = Jsoup.connect("https://minecraft-statistic.net/ru/servers-1.16.5/").get();
+	            Elements elements = document.getElementsByAttributeValue("class", "copy-ip f-700");
+	
+	            parseMethod1(elements, temp);
+	            servers.addAll(temp);
+	
+	            if (print)
+	                System.out.printf(" * (ServerParser) -> Загружено %s серверов с minecraftstatistics.\n\n", temp.size());
+	        } catch (Throwable ignored) {}
+        }
 
         servers = new CopyOnWriteArrayList<>(new HashSet<>(servers));
         Collections.shuffle(servers, new Random(System.currentTimeMillis()));

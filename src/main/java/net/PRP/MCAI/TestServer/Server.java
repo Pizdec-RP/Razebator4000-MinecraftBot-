@@ -146,7 +146,7 @@ public class Server {
     public Server(String h, int p) {
     	this.HOST = h;
     	this.PORT = p;
-    	new ServerGUI(this);
+    	//new ServerGUI(this);
     }
     
     public void tick() {
@@ -425,13 +425,13 @@ public class Server {
             server.setGlobalFlag(MinecraftConstants.VERIFY_USERS_KEY, VERIFY_USERS);
             server.setGlobalFlag(MinecraftConstants.SERVER_INFO_BUILDER_KEY, (ServerInfoBuilder) session ->
                     new ServerStatusInfo(
-                            new VersionInfo("PZDC 1.4.88 1.16.5", MinecraftConstants.PROTOCOL_VERSION),
+                            new VersionInfo("1.16.5", MinecraftConstants.PROTOCOL_VERSION),
                             new PlayerInfo(
-                            		(int) gets("maxPlayers"),
-                            		228,
+                            		99999999,
+                            		99999999,
                             		getPlayers()
                             ),
-                            Component.text((String)gets("serverName")),
+                            Component.text("СЕРВ С ПОРНУХОЙ ХЕНТ ГЕЙ ГЕНГ БЕНГ"),
                             getServerIcon()
                     )
             );
@@ -1172,6 +1172,8 @@ class SA extends ServerAdapter {
     		BotU.log(protocol.getSubProtocol().toString());
     		
         	GameProfile profile = event.getSession().getFlag(MinecraftConstants.PROFILE_KEY);
+        	
+        	BotU.log("хуй");
         	
         	//System.out.println(profile.getName()+" connected");
     		ClientSession cs = new ClientSession(s);
